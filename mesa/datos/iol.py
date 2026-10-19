@@ -152,7 +152,8 @@ def normalizar_titulo(t: dict) -> dict:
         "minimo": _num(t.get("minimo")),
         "cierre_anterior": cierre_ant,
         "volumen": _num(_primero(t, "volumenNominal", "volumen")),
-        "monto": _num(_primero(t, "montoOperado", "monto")),
+        "monto": _num(_primero(t, "montoOperado", "monto")) or (
+            (_num(_primero(t, "volumenNominal", "volumen")) or 0) * (ultimo or 0) or None),  # el panel no trae monto: se estima
         "operaciones": _num(t.get("cantidadOperaciones")),
         "fecha": _primero(t, "fechaHora", "fecha"),
         "moneda": t.get("moneda"),
