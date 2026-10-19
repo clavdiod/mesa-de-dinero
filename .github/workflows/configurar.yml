@@ -3,6 +3,9 @@ name: configurar
 # OJO: el repo es público y sus logs también. Este job no imprime secretos ni datos personales.
 on:
   workflow_dispatch:
+    inputs:
+      script:
+        default: probar_iol
 
 jobs:
   probar-iol:
@@ -19,4 +22,4 @@ jobs:
           MESA_INGESTA_TOKEN: ${{ secrets.MESA_INGESTA_TOKEN }}
           IOL_USUARIO: ${{ secrets.IOL_USUARIO }}
           IOL_CLAVE: ${{ secrets.IOL_CLAVE }}
-        run: PYTHONPATH=. python scripts/probar_iol.py
+        run: PYTHONPATH=. python scripts/${{ inputs.script || 'probar_iol' }}.py
