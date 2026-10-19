@@ -94,6 +94,13 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         if not toca_correr(ya, consumo.factor_frecuencia()):
             return {"corrio": False, "motivo": "no toca en este horario"}
 
+    if not simular and not forzar:
+        ultima = almacen.get("ronda/ultima") or {}
+        if ultima.get("ts") and ya.timestamp() - ultima["ts"] < 170:
+            return {"corrio": False, "motivo": "ya corrió una ronda hace menos de 3 minutos"}
+    if not simular:
+        almacen.put("ronda/ultima", {"ts": ya.timestamp(), "hora": ya.strftime("%H:%M")})
+
     iol = None
     if not simular:
         from .datos.iol import IOL

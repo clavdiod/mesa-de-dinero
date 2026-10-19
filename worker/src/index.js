@@ -217,7 +217,33 @@ async function api(req, env, url) {
   return nope("no encontrado", 404);
 }
 
+// ---- Reloj propio (Cloudflare Cron): dispara los procesos de GitHub Actions ----
+// Respaldo más confiable que el cron de GitHub. Requiere GITHUB_TOKEN (permiso Actions: read/write).
+async function disparar(env, workflow, inputs) {
+  if (!env.GITHUB_TOKEN || !env.GITHUB_REPO) return;
+  await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/actions/workflows/${workflow}/dispatches`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${env.GITHUB_TOKEN}`, accept: "application/vnd.github+json", "user-agent": "mesa-de-dinero" },
+    body: JSON.stringify({ ref: "main", inputs }),
+  });
+}
+
+async function reloj(evento, env) {
+  const d = new Date(evento.scheduledTime);
+  const hm = d.getUTCHours() * 60 + d.getUTCMinutes(), dia = d.getUTCDay();
+  if (dia >= 1 && dia <= 5) {
+    if (hm >= 13 * 60 + 30 && hm <= 20 * 60) await disparar(env, "ronda.yml", { forzar: "false" }); // 10:30-17:00 ART
+    if (hm === 13 * 60) await disparar(env, "tareas.yml", { tarea: "calificadoras" });                  // 10:00 ART
+    if (hm === 20 * 60 + 10) await disparar(env, "tareas.yml", { tarea: "diario" });                    // 17:10 ART
+    if (dia === 5 && hm === 20 * 60 + 30) await disparar(env, "tareas.yml", { tarea: "semanal" });      // vie 17:30
+  }
+  if (d.getUTCDate() <= 3 && hm === 21 * 60) await disparar(env, "tareas.yml", { tarea: "mensual" });
+}
+
 export default {
+  async scheduled(evento, env, ctx) {
+    ctx.waitUntil(reloj(evento, env));
+  },
   async fetch(req, env) {
     const url = new URL(req.url);
     if (url.pathname.startsWith("/api/")) {
