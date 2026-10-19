@@ -274,4 +274,13 @@ if __name__ == "__main__":
     ap.add_argument("--forzar", action="store_true")
     ap.add_argument("--simular", action="store_true")
     a = ap.parse_args()
-    print(json.dumps(correr(a.forzar, a.simular), ensure_ascii=False, indent=1, default=str))
+    import traceback
+    try:
+        r = correr(a.forzar, a.simular)
+        print(json.dumps(r, ensure_ascii=False, indent=1, default=str))
+        if r.get("corrio"):
+            print(f"::notice::Ronda OK: {r['nuevas']} propuestas, {r['senales']} señales, IOL {r['consumo']['total']}/{r['consumo']['tope']}")
+    except Exception as e:
+        tb = traceback.extract_tb(e.__traceback__)[-1]
+        print(f"::error::{type(e).__name__}: {str(e)[:400]} (en {tb.filename.split('/')[-1]}:{tb.lineno})")
+        raise

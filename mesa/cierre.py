@@ -108,4 +108,12 @@ def mensual() -> dict:
 if __name__ == "__main__":
     tarea = sys.argv[1] if len(sys.argv) > 1 else "diario"
     fn = {"diario": diario, "calificadoras": calificadoras, "semanal": semanal, "mensual": mensual}[tarea]
-    print(json.dumps(fn(), ensure_ascii=False, indent=1, default=str))
+    import traceback
+    try:
+        r = fn()
+        print(json.dumps(r, ensure_ascii=False, indent=1, default=str))
+        print(f"::notice::{tarea} OK: {str(r)[:300]}")
+    except Exception as e:
+        tb = traceback.extract_tb(e.__traceback__)[-1]
+        print(f"::error::{tarea}: {type(e).__name__}: {str(e)[:400]} (en {tb.filename.split('/')[-1]}:{tb.lineno})")
+        raise
