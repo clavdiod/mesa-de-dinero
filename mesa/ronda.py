@@ -140,12 +140,19 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     # candidatos: lo que alguien marcó + Mi lista; con carga de historial una sola vez por ticker
     marcados = [s.ticker for s in senales if s.direccion != 0 and ctx.titulo(s.ticker)]
     candidatos = list(dict.fromkeys(foco + marcados))
-    restantes_hist = 5  # máximo de cargas iniciales de historial por ronda (cuida el cupo)
+    # cargas iniciales de historial: máx. 2 por ronda y 15 por día (cuida el cupo de IOL);
+    # primero Mi lista y posiciones abiertas, después lo que marcaron los agentes
+    clave_cargas = f"cache/cargas/{hoy.isoformat()}"
+    cargas_hoy = int(almacen.get(clave_cargas) or 0)
+    restantes_hist = min(2, max(0, 15 - cargas_hoy))
     for tk in candidatos:
-        antes = len(cache.velas(tk))
-        cache.asegurar(tk, restantes_hist)
-        if antes == 0 and cache.velas(tk):
+        if restantes_hist <= 0:
+            break
+        if not cache.velas(tk):
+            cache.asegurar(tk, 1)
             restantes_hist -= 1
+            cargas_hoy += 1
+    almacen.put(clave_cargas, cargas_hoy)
     senales += analistas.tecnico(ctx, candidatos)
     senales += analistas.historiador(ctx, candidatos)
 
