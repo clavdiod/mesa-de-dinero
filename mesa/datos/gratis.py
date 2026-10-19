@@ -89,3 +89,27 @@ def noticias(urls: list[str] | None = None, horas: int = 24, max_items: int = 60
 def buscar_noticias(consulta: str, horas: int = 72, max_items: int = 10) -> list[dict]:
     url = config()["fuentes"]["google_news"].format(q=quote_plus(consulta))
     return noticias([url], horas=horas, max_items=max_items)
+
+
+def data912(grupo: str) -> list[dict]:
+    """Panel gratis de data912 (ONs, letras). Mismo formato normalizado que IOL."""
+    url = (config()["fuentes"].get("data912") or {}).get(grupo)
+    if not url:
+        return []
+    try:
+        filas = _json(url)
+    except Exception as e:
+        print(f"[data912] {grupo}: {e}")
+        return []
+    out = []
+    for f in filas or []:
+        ult = f.get("c")
+        if not f.get("symbol") or not ult:
+            continue
+        var = f.get("pct_change")
+        out.append({"simbolo": f["symbol"], "ultimo": float(ult), "variacion": float(var) if var is not None else None,
+                    "compra": f.get("px_bid") or None, "venta": f.get("px_ask") or None,
+                    "volumen": f.get("v"), "monto": None, "apertura": None, "maximo": None, "minimo": None,
+                    "cierre_anterior": None, "fuente": "data912",
+                    "puntas_compra": [], "puntas_venta": []})
+    return out

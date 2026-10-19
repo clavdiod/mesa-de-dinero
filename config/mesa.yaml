@@ -23,8 +23,6 @@ iol:
     - {instrumento: Acciones, panel: "Panel General", grupo: acciones}
     - {instrumento: Acciones, panel: "CEDEARs", grupo: cedears}
     - {instrumento: Bonos, panel: "Soberanos en dólares", grupo: soberanos}
-    - {instrumento: Bonos, panel: "Bonos corporativos en dólares", grupo: ons}
-    - {instrumento: Bonos, panel: "Soberanos en pesos a tasa fija", grupo: letras}
     - {instrumento: Cauciones, panel: "Todas", grupo: cauciones}
   # Puntas detalladas (1 llamada por ticker): solo Mi lista y posiciones abiertas.
   max_puntas_por_ronda: 6
@@ -77,4 +75,8 @@ fuentes:
   rss_noticias:
     - "https://www.ambito.com/rss/pages/finanzas.xml"
     - "https://www.cronista.com/files/rss/finanzas-mercados.xml"
+  # ONs y letras: IOL no las trae por panel; se toman gratis de data912 (sin gastar cupo)
+  data912:
+    ons: "https://data912.com/live/arg_corp"
+    letras: "https://data912.com/live/arg_notes"
   google_news: "https://news.google.com/rss/search?q={q}&hl=es-419&gl=AR&ceid=AR:es-419"

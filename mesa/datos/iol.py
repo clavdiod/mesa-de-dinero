@@ -81,6 +81,8 @@ class IOL:
     def panel(self, instrumento: str, panel: str, pais: str = "argentina") -> list[dict]:
         data = self._get(f"/api/v2/Cotizaciones/{instrumento}/{panel}/{pais}", "panel")
         titulos = data.get("titulos", data) if isinstance(data, dict) else data
+        if titulos and isinstance(titulos[0], dict) and "tasaPromedio" in titulos[0]:
+            return normalizar_cauciones(titulos)
         return [normalizar_titulo(t) for t in (titulos or [])]
 
     def cotizacion(self, simbolo: str, mercado: str = "bCBA", plazo: str = "t1") -> dict:
@@ -167,3 +169,19 @@ def normalizar_vela(v: dict) -> dict:
     return {"fecha": fecha, "apertura": _num(v.get("apertura")), "maximo": _num(v.get("maximo")),
             "minimo": _num(v.get("minimo")), "cierre": _num(_primero(v, "ultimoPrecio", "cierre")),
             "volumen": _num(_primero(v, "volumenNominal", "volumen")) or 0}
+
+
+def normalizar_cauciones(filas: list[dict]) -> list[dict]:
+    """Cauciones vienen como {plazo, tasaPromedio, montoContado, fechaVencimiento}. Se agrupa por plazo
+    quedándose con la de mayor monto del vencimiento más reciente."""
+    por_plazo: dict = {}
+    for f in filas:
+        pl, tasa, monto, venc = f.get("plazo"), _num(f.get("tasaPromedio")), _num(f.get("montoContado")) or 0, str(f.get("fechaVencimiento", ""))[:10]
+        if pl is None or not tasa:
+            continue
+        actual = por_plazo.get(pl)
+        if actual is None or (venc, monto) > (actual["fecha"], actual["monto"]):
+            por_plazo[pl] = {"simbolo": f"CAUCION{int(pl)}D", "descripcion": f"Caución {int(pl)} días", "ultimo": tasa,
+                             "variacion": None, "monto": monto, "fecha": venc, "volumen": None,
+                             "compra": None, "venta": None, "puntas_compra": [], "puntas_venta": []}
+    return [por_plazo[k] for k in sorted(por_plazo)]

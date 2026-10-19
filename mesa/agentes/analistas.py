@@ -135,7 +135,8 @@ def pesos_tasas(ctx: Contexto) -> list[Senal]:
     cau = [t for t in ctx.grupo("cauciones") if t.get("ultimo")]
     if not cau:
         return []
-    corta = min(cau, key=lambda t: t["simbolo"] or "")
+    import re as _re
+    corta = min(cau, key=lambda t: int((_re.findall(r"\d+", t["simbolo"] or "") or [999])[0]))
     ctx.extra["caucion_tna"] = corta["ultimo"]
     return [Senal("pesos_tasas", "PESOS", 0, 0.0, f"Caución más corta: {corta['ultimo']:.2f}% TNA.",
                   {"caucion": corta["ultimo"], "simbolo": corta["simbolo"]}, evaluable=False)]

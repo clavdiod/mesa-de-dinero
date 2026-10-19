@@ -84,6 +84,7 @@ function pintarEstado() {
     ["Oficial", num(d.oficial?.venta)], ["Reservas BCRA (M US$)", num(est.reservas?.valor, 0)]];
   $("#indicadores").innerHTML = mets.map(([a, b]) => `<div class="met"><span>${a}</span><b>${b}</b></div>`).join("");
   pintarSenales();
+  pintarInformes();
   $("#evaluados").innerHTML = (est.evaluados || []).map((e) => `<div class="card"><div class="fila"><b>${esc(e.ticker)}</b>
     <span class="chip ${e.riesgo.ok ? "verde" : "rojo"}">${e.riesgo.ok ? "Pasa" : "Rechazada"}</span></div>
     <p class="tenue">Entrada ${num(e.plan.entrada)} · stop ${num(e.plan.stop)} · objetivo ${num(e.plan.objetivo)} · ${num(e.riesgo.r_neto, 2)}R neto</p>
@@ -92,6 +93,19 @@ function pintarEstado() {
   $("#consumo").innerHTML = `<div class="card"><div class="fila"><b>${num(c.total, 0)} de ${num(tope, 0)}</b><span class="chip ${u >= 80 ? "rojo" : ""}">${num(u, 1)}%</span></div>
     <div class="barra-uso"><i style="width:${Math.min(100, u)}%"></i></div>
     <p class="tenue">Por tipo: ${Object.entries(c.por_tipo || {}).map(([k, v]) => `${esc(k)} ${v}`).join(" · ") || "—"}. Al 80% la mesa baja la frecuencia sola.</p></div>`;
+}
+
+function pintarInformes() {
+  const inf = ESTADO.estado?.informes || {};
+  const orden = ["acciones", "cedears", "bonos", "ons", "letras", "pesos", "tecnico"];
+  const html = orden.filter((k) => inf[k]).map((k, i) => { const x = inf[k];
+    const lectura = x.lectura_ia || x.lectura_ia_previa;
+    return `<details class="card" ${i === 0 ? "open" : ""}><summary><b>${esc(x.titulo)}</b></summary>
+      ${lectura ? `<p>${esc(lectura)}</p>` : ""}<p class="tenue">${esc(x.resumen)}</p>
+      <div class="tabla-scroll"><table><tr>${x.columnas.map((c, j) => `<th class="${j ? "n" : ""}">${esc(c)}</th>`).join("")}</tr>
+      ${x.filas.map((f) => `<tr>${f.map((v, j) => `<td class="${j ? "n" : ""}">${esc(v)}</td>`).join("")}</tr>`).join("")}</table></div>
+      ${x.nota ? `<p class="tenue">${esc(x.nota)}</p>` : ""}</details>`; }).join("");
+  $("#informes").innerHTML = html || '<p class="tenue">Los informes aparecen después de la próxima ronda.</p>';
 }
 
 function pintarSenales() {

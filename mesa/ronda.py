@@ -13,7 +13,7 @@ from datetime import date
 
 import yaml
 
-from .agentes import analistas, con_ia, riesgo
+from .agentes import analistas, con_ia, informes as informes_mod, riesgo
 from .datos import gratis
 from .datos.cache import CacheHistorico
 from .datos.consumo import Consumo, PresupuestoAgotado
@@ -48,6 +48,9 @@ def cargar_paneles(iol, consumo: Consumo, almacen, simular: bool) -> dict[str, l
             break
         except Exception as e:
             print(f"[panel] {clave}: {e}")
+    for grupo in ("ons", "letras"):  # gratis, no gastan cupo de IOL
+        if not out.get(grupo):
+            out[grupo] = gratis.data912(grupo)
     return out
 
 
@@ -217,6 +220,14 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     reg.guardar()
     cache.guardar()
 
+    # --- informe de cada analista (IA solo cada ~30 min para cuidar el costo) ---
+    minuto = ya.hour * 60 + ya.minute
+    informes = informes_mod.todos(ctx, ia if (forzar or minuto % 30 < 5) else None)
+    previos = (estado_ui.get("informes") or {})
+    for k, v in informes.items():
+        if "lectura_ia" not in v and (previos.get(k) or {}).get("lectura_ia"):
+            v["lectura_ia_previa"] = previos[k]["lectura_ia"]
+
     # --- estado para la web ---
     resumen = {
         "fecha": hoy.isoformat(), "hora": ctx.hora, "clima": ctx.extra.get("clima_estado"),
@@ -234,6 +245,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "tir_ons": ctx.extra.get("tir_ons"),
         "consumo_iol": consumo.resumen(), "ia_llamadas": ia.llamadas,
         "esperanza": reg.esperanza_mesa(),
+        "informes": informes,
     }
     almacen.put("ui/estado", {**estado_ui, **resumen})
     previas = almacen.get("ui/alertas") or []
