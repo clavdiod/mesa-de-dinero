@@ -85,6 +85,7 @@ function pintarEstado() {
   $("#indicadores").innerHTML = mets.map(([a, b]) => `<div class="met"><span>${a}</span><b>${b}</b></div>`).join("");
   pintarSenales();
   pintarInformes();
+  pintarOportunidades();
   $("#evaluados").innerHTML = (est.evaluados || []).map((e) => `<div class="card"><div class="fila"><b>${esc(e.ticker)}</b>
     <span class="chip ${e.riesgo.ok ? "verde" : "rojo"}">${e.riesgo.ok ? "Pasa" : "Rechazada"}</span></div>
     <p class="tenue">Entrada ${num(e.plan.entrada)} · stop ${num(e.plan.stop)} · objetivo ${num(e.plan.objetivo)} · ${num(e.riesgo.r_neto, 2)}R neto</p>
@@ -94,6 +95,26 @@ function pintarEstado() {
     <div class="barra-uso"><i style="width:${Math.min(100, u)}%"></i></div>
     <p class="tenue">Por tipo: ${Object.entries(c.por_tipo || {}).map(([k, v]) => `${esc(k)} ${v}`).join(" · ") || "—"}. Al 80% la mesa baja la frecuencia sola.</p></div>`;
 }
+
+let PLAZO = "corto";
+function pintarOportunidades() {
+  const ops = (ESTADO.estado?.oportunidades || {})[PLAZO] || [];
+  const col = { verde: "verde", amarillo: "amar", rojo: "rojo" };
+  $("#oportunidades").innerHTML = ops.length ? ops.map((o) => `<div class="card">
+    <div class="fila"><div><b style="font-size:17px">${esc(o.ticker)}</b> <span class="tenue">${esc(o.setup)}</span></div>
+    <span class="chip ${col[o.semaforo]}">${o.semaforo === "verde" ? "Pasa Riesgo" : o.semaforo === "amarillo" ? "Con cuidado" : "Riesgo la frena"}</span></div>
+    <p style="margin:6px 0">${esc(o.motivo)}</p>
+    <div class="grilla"><div class="met"><span>Compra límite</span><b>${num(o.plan.entrada)}</b></div>
+      <div class="met"><span>Objetivo</span><b style="color:var(--verde)">${num(o.plan.objetivo)} (${pct(o.plan.recompensa_pct, 1)})</b></div>
+      <div class="met"><span>Stop</span><b style="color:var(--rojo)">${num(o.plan.stop)} (−${num(o.plan.riesgo_pct, 1)}%)</b></div>
+      <div class="met"><span>Gana/arriesga neto</span><b>${num(o.r_neto, 2)}R</b></div></div>
+    <p class="tenue">${esc(o.historia)}. Vence ${esc(o.plan.vence)}.</p>
+    ${[...(o.riesgo.motivos || []), ...(o.riesgo.avisos || [])].map((m) => `<p class="tenue">• ${esc(m)}</p>`).join("")}
+  </div>`).join("") : '<div class="vacio">Nada cerca de una entrada en este plazo por ahora.</div>';
+}
+document.querySelectorAll("#ops-plazo button").forEach((b) => b.addEventListener("click", () => {
+  PLAZO = b.dataset.plazo; document.querySelectorAll("#ops-plazo button").forEach((x) => x.classList.toggle("prim", x === b)); pintarOportunidades();
+}));
 
 function pintarInformes() {
   const inf = ESTADO.estado?.informes || {};

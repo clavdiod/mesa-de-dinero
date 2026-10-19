@@ -13,7 +13,7 @@ from datetime import date
 
 import yaml
 
-from .agentes import analistas, con_ia, informes as informes_mod, riesgo
+from .agentes import analistas, con_ia, informes as informes_mod, oportunidades, riesgo
 from .datos import gratis
 from .datos.cache import CacheHistorico
 from .datos.consumo import Consumo, PresupuestoAgotado
@@ -213,6 +213,10 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                        "cantidad_sugerida": cantidad, "seguimiento": {"estado": "pendiente"}})
     reg.nuevas(nuevas)
 
+    # --- oportunidades de corto y mediano plazo (con semáforo de Riesgo) ---
+    ops = oportunidades.detectar(ctx, estado, vetos)
+    senales += oportunidades.como_senales(ops)
+
     # --- seguimiento de propuestas y señales ---
     reg.actualizar_seguimiento({k: v for k, v in ctx.por_simbolo.items()}, hoy)
     reg.guardar_senales(hoy, [s.dict() for s in senales],
@@ -246,6 +250,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "consumo_iol": consumo.resumen(), "ia_llamadas": ia.llamadas,
         "esperanza": reg.esperanza_mesa(),
         "informes": informes,
+        "oportunidades": ops,
     }
     almacen.put("ui/estado", {**estado_ui, **resumen})
     previas = almacen.get("ui/alertas") or []
