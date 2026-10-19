@@ -22,9 +22,9 @@ iol:
     - {instrumento: Acciones, panel: "Merval", grupo: acciones}
     - {instrumento: Acciones, panel: "Panel General", grupo: acciones}
     - {instrumento: Acciones, panel: "CEDEARs", grupo: cedears}
-    - {instrumento: Bonos, panel: "Soberanos", grupo: soberanos}
-    - {instrumento: Bonos, panel: "Obligaciones Negociables", grupo: ons}
-    - {instrumento: Bonos, panel: "Letras", grupo: letras}
+    - {instrumento: Bonos, panel: "Soberanos en dólares", grupo: soberanos}
+    - {instrumento: Bonos, panel: "Bonos corporativos en dólares", grupo: ons}
+    - {instrumento: Bonos, panel: "Soberanos en pesos a tasa fija", grupo: letras}
     - {instrumento: Cauciones, panel: "Todas", grupo: cauciones}
   # Puntas detalladas (1 llamada por ticker): solo Mi lista y posiciones abiertas.
   max_puntas_por_ronda: 6

@@ -58,6 +58,21 @@ def main():
     print(json.dumps(muestra[:2], ensure_ascii=False, indent=1))
     cot = iol.cotizacion("GGAL")
     print("\nGGAL con puntas:", json.dumps({k: cot[k] for k in ("ultimo", "compra", "venta", "variacion", "monto")}, ensure_ascii=False))
+    # Carga inicial de historial (UNA vez por ticker; después se completa gratis con el cierre)
+    from mesa.datos.cache import CacheHistorico
+    from mesa.nucleo.config import emisores
+    cache = CacheHistorico(a, iol)
+    tickers = list(emisores()) + ["AL30D", "GD30D", "AL35D", "GD35D"]
+    cargados = 0
+    for tk in tickers:
+        if not cache.velas(tk):
+            cache.asegurar(tk, 1)
+            cargados += 1 if cache.velas(tk) else 0
+    cache.guardar()
+    _anotar("notice", f"Historial: {cargados} tickers cargados; con historial: {len(cache.indice)}. "
+                      f"Ejemplo GGAL: {len(cache.velas('GGAL'))} ruedas, ultima {(cache.velas('GGAL') or [{}])[-1].get('fecha')}")
+    sob = iol.panel(*mapeo["Bonos|Soberanos en dólares"]) if "Bonos|Soberanos en dólares" in mapeo else []
+    _anotar("notice", "Soberanos: " + ", ".join(t["simbolo"] for t in sob[:30]))
     c.guardar()
     print("\nConsumo IOL:", c.resumen())
     _anotar("notice", f"OK. Muestra {len(muestra)} titulos. GGAL ultimo={cot.get('ultimo')} compra={cot.get('compra')} "
