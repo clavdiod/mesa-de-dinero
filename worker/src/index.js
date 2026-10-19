@@ -26,7 +26,7 @@ function esActions(req, env) {
 }
 
 // ---- sesión propia (sin Cloudflare Access): clave WEB_CLAVE + cookie firmada ----
-const DIAS_SESION = 30;
+const DIAS_SESION = 365; // y se renueva sola cada día que entrás: en la práctica no vence
 const enc = new TextEncoder();
 async function firmar(env, texto) {
   const k = await crypto.subtle.importKey("raw", enc.encode(`${env.INGESTA_TOKEN}|${claveWeb(env)}`),
@@ -48,6 +48,16 @@ async function sesionValida(req, env) {
   const [vence, sig] = c.split(".");
   if (!vence || !sig || Number(vence) < Date.now()) return false;
   return iguales(sig, await firmar(env, vence));
+}
+
+// Si la sesión tiene más de un día, devuelve una cookie nueva por otros 365 días (renovación automática).
+async function cookieSesionNueva(req, env) {
+  const c = leerCookie(req, "mesa_sesion");
+  if (!c || !(await sesionValida(req, env))) return null;
+  const vence = Number(c.split(".")[0]);
+  if (vence - Date.now() > (DIAS_SESION - 1) * 864e5) return null;
+  const nuevo = String(Date.now() + DIAS_SESION * 864e5);
+  return `mesa_sesion=${nuevo}.${await firmar(env, nuevo)}; Path=/; Max-Age=${DIAS_SESION * 86400}; HttpOnly; Secure; SameSite=Strict`;
 }
 
 async function esUsuario(req, env) {
@@ -123,11 +133,14 @@ async function api(req, env, url) {
   if (!(await esUsuario(req, env))) return nope("sin acceso", 403);
 
   if (p === "/api/estado") {
+    const renovar = await cookieSesionNueva(req, env);
     const [estado, cierre, alertas, consumo] = await Promise.all([
       leer(env, "ui/estado", {}), leer(env, "ui/cierre", {}), leer(env, "ui/alertas", []),
       leer(env, `consumo/${hoyBA().slice(0, 7)}`, { total: 0 }),
     ]);
-    return json({ estado, cierre, alertas, consumo, tope: Number(env.TOPE_IOL || 25000) });
+    const r = json({ estado, cierre, alertas, consumo, tope: Number(env.TOPE_IOL || 25000) });
+    if (renovar) r.headers.set("set-cookie", renovar);
+    return r;
   }
   if (p === "/api/propuestas") {
     const [props, dec] = await Promise.all([leer(env, "registro/propuestas", []), leer(env, "usuario/decisiones", {})]);
