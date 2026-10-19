@@ -112,12 +112,15 @@
   </section>
 
   <section id="v-asistente" class="vista">
-    <h2>¿Está bien el precio para entrar?</h2>
-    <form id="form-precio" class="fila-form">
-      <input name="ticker" placeholder="Ticker (GGAL, AL30D, AAPL…)" required autocapitalize="characters">
-      <button class="prim">Evaluar</button>
+    <h2>Debate</h2>
+    <p class="tenue">Elegí un activo: ves qué dice cada analista a favor y en contra, el debate y la opinión del supervisor.</p>
+    <form id="form-debate" class="fila-form">
+      <input name="ticker" placeholder="Ticker (GGAL, AL30D, AAPL…)" required autocapitalize="characters" list="debates-disp">
+      <button class="prim">Ver debate</button>
     </form>
-    <div id="eval-precio"></div>
+    <datalist id="debates-disp"></datalist>
+    <div id="debate-chips" class="tiras"></div>
+    <div id="debate"></div>
 
     <h2>Letras en pesos por vencimiento</h2>
     <p class="tenue">LECAP y BONCAP pagan todo (capital + interés) al vencimiento: elegí las que venzan cuando necesitás la plata.</p>
@@ -161,7 +164,7 @@
   <button data-v="propuestas" class="activa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><span>Propuestas</span></button>
   <button data-v="mercado"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg><span>Análisis</span></button>
   <button data-v="lista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg><span>Mi lista</span></button>
-  <button data-v="asistente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg><span>Consultor</span></button>
+  <button data-v="asistente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 9a6 6 0 0 0-11.4-2.6A6 6 0 0 0 3.5 13L2.5 16l3-1A6 6 0 0 0 14 9z"/><path d="M10 15.5a6 6 0 0 0 8.5 3.5l3 1-1-3A6 6 0 0 0 16 8.3"/></svg><span>Debate</span></button>
   <button data-v="ons"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Cobros</span></button>
   <button data-v="ranking"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 5.5 5.5"/></svg><span>Agentes</span></button>
 </nav>

@@ -74,3 +74,6 @@ details { margin: 14px 0; } summary { cursor: pointer; color: var(--azul); }
 .item-det { color: var(--tenue); font-size: 13px; margin-top: 4px; }
 button.quitar { min-height: 32px; width: 32px; padding: 0; border-radius: 99px; color: var(--tenue); flex: none; }
 .fila-form > button { flex: 0 1 120px; }
+.sup { border-left: 4px solid var(--borde); } .sup.verde { border-left-color: var(--verde); }
+.sup.amar { border-left-color: var(--amar); } .sup.rojo { border-left-color: var(--rojo); }
+.link { color: var(--azul); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }

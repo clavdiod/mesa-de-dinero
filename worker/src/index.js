@@ -206,6 +206,29 @@ async function api(req, env, url) {
     return json({ ok: true, modo: r.ok ? "inmediato" : "proxima_ronda",
       mensaje: r.ok ? "Ronda pedida: en 2-3 minutos se actualiza." : "Pedido anotado: corre en la próxima ronda." });
   }
+  if (p === "/api/debate") {
+    const t = (url.searchParams.get("t") || "").toUpperCase().replace(/[^A-Z0-9.]/g, "");
+    const deb = await leer(env, "ui/debates", {});
+    const pedido = await leer(env, "ui/pedido_debate", { tickers: [] });
+    return json({ expediente: deb[t] || null, disponibles: Object.keys(deb).sort(), pedido: (pedido.tickers || []).includes(t) });
+  }
+  if (p === "/api/debate/pedir" && req.method === "POST") {
+    const t = String((await req.json()).ticker || "").toUpperCase().replace(/[^A-Z0-9.]/g, "").slice(0, 12);
+    if (!t) return nope("falta ticker", 400);
+    const pedido = await leer(env, "ui/pedido_debate", { tickers: [] });
+    pedido.tickers = [...new Set([t, ...(pedido.tickers || [])])].slice(0, 5);
+    await guardar(env, "ui/pedido_debate", pedido);
+    let inmediato = false;
+    if (env.GITHUB_TOKEN && env.GITHUB_REPO) {
+      const r = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/actions/workflows/ronda.yml/dispatches`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${env.GITHUB_TOKEN}`, accept: "application/vnd.github+json", "user-agent": "mesa-de-dinero" },
+        body: JSON.stringify({ ref: "main", inputs: { forzar: "true" } }),
+      });
+      inmediato = r.ok;
+    }
+    return json({ ok: true, mensaje: inmediato ? `Debate de ${t} pedido: en 2-3 minutos está listo.` : `Debate de ${t} anotado: sale en la próxima ronda.` });
+  }
   if (p === "/api/panel") return json(await leer(env, "ui/panel", { titulos: {} }));
   if (p === "/api/asistente/estado") return json({ activo: Boolean(env.ANTHROPIC_API_KEY) });
   if (p === "/api/asistente" && req.method === "POST") {

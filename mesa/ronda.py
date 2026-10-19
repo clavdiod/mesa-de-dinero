@@ -13,7 +13,7 @@ from datetime import date
 
 import yaml
 
-from .agentes import analistas, con_ia, informes as informes_mod, oportunidades, riesgo
+from .agentes import analistas, con_ia, informes as informes_mod, oportunidades, riesgo, supervisor
 from .datos import gratis
 from .datos.cache import CacheHistorico
 from .datos.consumo import Consumo, PresupuestoAgotado
@@ -131,7 +131,10 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     ctx.extra["ons_usuario"] = almacen.get("usuario/ons") or {}
     ctx.extra["licitaciones"] = almacen.get("licitaciones/ultimo") or {}
     abiertas = [p["ticker"] for p in reg.abiertas()]
-    foco = list(dict.fromkeys(ctx.tickers_lista() + abiertas))
+    # pedidos de la hoja "Debate" de la web (se procesan una vez; máx. 3 por ronda)
+    pedido_deb = (almacen.get("ui/pedido_debate") or {}) if not simular else {}
+    pedidos = [tk for tk in (pedido_deb.get("tickers") or []) if ctx.titulo(tk)][:3]
+    foco = list(dict.fromkeys(pedidos + ctx.tickers_lista() + abiertas))
     if iol is not None:
         refrescar_puntas(ctx, iol, consumo, foco)
 
@@ -174,6 +177,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     puntajes = {tk: puntaje_ticker(ss, reg) for tk, ss in por_ticker.items() if ctx.titulo(tk)}
     preseleccion = [tk for tk, p in sorted(puntajes.items(), key=lambda x: -x[1]) if p >= 0.6][:8]
     preseleccion += [tk for tk in ctx.tickers_lista() if tk not in preseleccion and puntajes.get(tk, 0) > 0]
+    preseleccion += [tk for tk in pedidos if tk not in preseleccion]
 
     # --- hechos del emisor (solo preseleccionados, 1 búsqueda por emisor por día) ---
     hechos = [] if simular else con_ia.hechos_emisor(ctx, ia, preseleccion, almacen)
@@ -220,6 +224,29 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
             descartes[e["ticker"]] = e["puntaje"]
     if debatidos:
         almacen.put(f"jefe/descartes/{hoy.isoformat()}", descartes)
+
+    # --- expedientes para la hoja Debate (analistas a favor/en contra + opinión del supervisor) ---
+    try:
+        por_tk: dict[str, list[dict]] = {}
+        for s in senales:
+            por_tk.setdefault(s.ticker, []).append(s.dict())
+        ev_por = {e["ticker"]: e for e in evaluados}
+        el_por = {e["ticker"]: e for e in elegidos}
+        for e in evaluados:
+            if e["ticker"] in pedidos and "debate" not in e:
+                e["debate"] = con_ia.debate(ia, {"ticker": e["ticker"], "plan": e["plan"], "senales": e["senales"],
+                                                 "hechos": ctx.hechos.get(e["ticker"]), "clima": ctx.extra.get("clima_estado")})
+        tks = list(dict.fromkeys(pedidos + preseleccion + ctx.tickers_lista() + list(ya_propuestos)))
+        previos_deb = almacen.get("ui/debates") or {}
+        nuevos_deb = {tk: supervisor.expediente(tk, ctx, por_tk.get(tk, []), puntajes.get(tk, 0.0), ev_por.get(tk),
+                                                el_por.get(tk), ctx.hora) for tk in tks if ctx.titulo(tk)}
+        viejos = {k: v for k, v in previos_deb.items() if k not in nuevos_deb and v.get("fecha") == hoy.isoformat()}
+        almacen.put("ui/debates", {**dict(list(viejos.items())[:40]), **nuevos_deb})
+        if pedidos:
+            resto = [t for t in (pedido_deb.get("tickers") or []) if t not in pedidos and ctx.titulo(t)]
+            almacen.put("ui/pedido_debate", {"tickers": resto})
+    except Exception as ex:  # el debate nunca frena la ronda
+        print(f"[debate] {ex}")
 
     cap = {**config()["capital"], **{k: v for k, v in (almacen.get("usuario/capital") or {}).items() if v}}
     un_r = float(cap.get("monto_ars", 0)) * float(cap.get("riesgo_pct", cap.get("riesgo_por_operacion_pct", 1))) / 100

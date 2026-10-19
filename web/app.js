@@ -46,6 +46,7 @@ function tarjeta(p) {
     <p class="tenue">${p.cantidad_sugerida ? `Cantidad sugerida: ${num(p.cantidad_sugerida, 0)} (≈ $${num(p.cantidad_sugerida * pl.entrada, 0)}). ` : ""}Arriesga ${num(pl.riesgo_pct, 1)}% para ganar ${num(pl.recompensa_pct, 1)}%. Vence ${esc(pl.vence)}. ${esc((p.riesgo?.avisos || []).join(" "))}</p>
     ${p.debate ? `<div class="debate"><b>Alcista:</b> ${esc(p.debate.alcista)}</div><div class="debate baj"><b>Bajista:</b> ${esc(p.debate.bajista)}</div>` : ""}
     <details><summary>Lo que dijo cada agente</summary>${sen || '<p class="tenue">Sin detalle.</p>'}</details>
+    <button class="chico" data-abrir-debate="${esc(p.ticker)}">Ver debate completo</button>
     <p class="tenue">Seguimiento en prueba: ${esc(estadoSeg)}</p>
     ${ok ? `<div class="grilla" style="grid-template-columns:1fr 1fr"><button data-dec="rechazada" data-id="${esc(p.id)}">Rechazar</button>
       <button class="prim" data-dec="aprobada" data-id="${esc(p.id)}">Aprobar</button></div>
@@ -143,14 +144,14 @@ function pintarUsuario() {
   const color = (v) => (v > 0 ? "verde" : v < 0 ? "rojo" : "");
   $("#mi-lista").innerHTML = USUARIO.lista.length ? USUARIO.lista.map((x, i) => {
     const q = precios[x.ticker] || {}, dist = q.ultimo && x.precio ? (q.ultimo / x.precio - 1) * 100 : null;
-    return `<div class="item"><div class="item-cab"><b>${esc(x.ticker)}</b>
+    return `<div class="item"><div class="item-cab"><b class="link" data-abrir-debate="${esc(x.ticker)}">${esc(x.ticker)}</b>
         <span class="item-precio">${num(q.ultimo)} <span class="chip ${color(q.variacion)}">${pct(q.variacion)}</span></span>
         <button class="quitar" data-quitar-lista="${i}" aria-label="Quitar ${esc(x.ticker)}">✕</button></div>
       <div class="item-det">${x.precio ? `Tu precio ${num(x.precio)} · ${dist === null ? "sin cotización" : Math.abs(dist) < 0.3 ? "<b>¡en tu precio!</b>" : `está ${num(Math.abs(dist), 1)}% ${dist > 0 ? "arriba" : "abajo"}`}` : "Sin precio objetivo"}${x.nota ? ` · ${esc(x.nota)}` : ""}</div></div>`;
   }).join("") : '<p class="tenue">Agregá tickers para que la mesa los siga.</p>';
   $("#cartera").innerHTML = USUARIO.cartera.length ? USUARIO.cartera.map((x, i) => {
     const u = precios[x.ticker]?.ultimo, r = u && x.precio ? (u / x.precio - 1) * 100 : null;
-    return `<div class="item"><div class="item-cab"><b>${esc(x.ticker)}</b>
+    return `<div class="item"><div class="item-cab"><b class="link" data-abrir-debate="${esc(x.ticker)}">${esc(x.ticker)}</b>
         <span class="item-precio">${num(u)}${r === null ? "" : ` <span class="chip ${color(r)}">${pct(r)}</span>`}</span>
         <button class="quitar" data-quitar-cartera="${i}" aria-label="Quitar ${esc(x.ticker)}">✕</button></div>
       <div class="item-det">${num(x.cantidad, 0)} nominales · compra ${num(x.precio)}${u ? "" : " · sin cotización en la ronda"}</div></div>`;
@@ -268,33 +269,96 @@ const media = (a, n) => a.length >= n ? a.slice(-n).reduce((x, y) => x + y, 0) /
 function rsi(c, n = 14) { if (c.length < n + 1) return null; let s = 0, b = 0;
   for (let i = c.length - n; i < c.length; i++) { const d = c[i] - c[i - 1]; if (d > 0) s += d; else b -= d; }
   return b === 0 ? 100 : 100 - 100 / (1 + s / b); }
-$("#form-precio").addEventListener("submit", async (ev) => {
-  ev.preventDefault(); const tk = ev.target.ticker.value.trim().toUpperCase(); const box = $("#eval-precio");
-  box.innerHTML = '<p class="tenue">Calculando…</p>';
+// lectura técnica con el historial guardado (sin consultas a IOL)
+function lecturaTecnica(t, hist) {
+  const [ult, , compra, venta] = t;
+  if (!hist.length) return null;
+  const c = hist.map((v) => v.cierre).concat([ult]);
+  const m20 = media(c, 20), m50 = media(c, 50), r = rsi(c);
+  const u60 = hist.slice(-60), min60 = Math.min(...u60.map((v) => v.minimo)), max60 = Math.max(...u60.map((v) => v.maximo));
+  const pos = (ult - min60) / (max60 - min60 || 1) * 100;
+  const spread = compra && venta ? (venta / compra - 1) * 100 : null;
+  let veredicto = "Precio neutral", color = "amar"; const porque = [];
+  if ((r !== null && r < 35 && pos < 30) || (m20 && ult < m20 * 0.97 && pos < 35)) { veredicto = "Precio bajo: zona de compra"; color = "verde"; }
+  else if ((r !== null && r > 70) || pos > 85) { veredicto = "Precio alto: mejor esperar"; color = "rojo"; }
+  porque.push(`Está en el ${num(pos, 0)}% del rango de 60 ruedas (${num(min60)} a ${num(max60)}).`);
+  if (m20) porque.push(`${ult > m20 ? "Arriba" : "Abajo"} de su media de 20 ruedas (${num(m20)}).`);
+  if (m50) porque.push(`${ult > m50 ? "Arriba" : "Abajo"} de su media de 50 ruedas (${num(m50)}): tendencia ${ult > m50 ? "alcista" : "bajista"}.`);
+  if (r !== null) porque.push(`RSI ${num(r, 0)} (${r < 30 ? "sobrevendido" : r > 70 ? "sobrecomprado" : "normal"}).`);
+  if (spread !== null) porque.push(`Spread compra/venta ${num(spread)}%${spread > 1 ? ": poco líquido, usá orden límite" : ""}.`);
+  return { veredicto, color, porque };
+}
+
+// ---------- hoja Debate ----------
+const VEREDICTO = { comprar: ["verde", "Comprar"], esperar: ["amar", "Esperar"], evitar: ["rojo", "Evitar"], neutral: ["", "Neutral"] };
+const nombreAg = (a) => NOMBRES[a] || { oportunidades_corto: "Oportunidades (corto)", oportunidades_mediano: "Oportunidades (mediano)" }[a] || a;
+const fuerzaTxt = (f) => (f >= 0.7 ? "fuerte" : f >= 0.4 ? "media" : "débil");
+function filasAgentes(xs) {
+  return xs.map((s) => `<div class="agente"><b>${esc(nombreAg(s.agente))}<br><span class="tenue">${s.veto ? "VETO" : fuerzaTxt(s.fuerza || 0)}</span></b><span>${esc(s.texto)}</span></div>`).join("");
+}
+async function cargarDisponibles() {
   try {
-    const [p, hist] = await Promise.all([panel(), api(`historico?t=${encodeURIComponent(tk)}`)]);
-    const t = p.titulos?.[tk];
-    if (!t) { box.innerHTML = `<p class="tenue">No encontré ${esc(tk)} en la última ronda (${esc(p.fecha)} ${esc(p.hora)}).</p>`; return; }
-    const [ult, varDia, compra, venta] = t;
-    if (!hist.length) { box.innerHTML = `<div class="card"><b>${esc(tk)}</b> ${num(ult)} (${pct(varDia)})<p class="tenue">Todavía no tengo historial de ${esc(tk)} para comparar. Agregalo a Mi lista y en unos días la mesa lo carga.</p></div>`; return; }
-    const c = hist.map((v) => v.cierre).concat([ult]);
-    const m20 = media(c, 20), m50 = media(c, 50), r = rsi(c);
-    const u60 = hist.slice(-60), min60 = Math.min(...u60.map((v) => v.minimo)), max60 = Math.max(...u60.map((v) => v.maximo));
-    const pos = (ult - min60) / (max60 - min60 || 1) * 100;
-    const spread = compra && venta ? (venta / compra - 1) * 100 : null;
-    let veredicto = "Neutral", color = "amar", porque = [];
-    if ((r !== null && r < 35 && pos < 30) || (m20 && ult < m20 * 0.97 && pos < 35)) { veredicto = "Precio bajo: zona de compra"; color = "verde"; }
-    else if ((r !== null && r > 70) || pos > 85) { veredicto = "Precio alto: mejor esperar"; color = "rojo"; }
-    porque.push(`Está en el ${num(pos, 0)}% del rango de 60 ruedas (${num(min60)} a ${num(max60)}).`);
-    if (m20) porque.push(`${ult > m20 ? "Arriba" : "Abajo"} de su media de 20 ruedas (${num(m20)}).`);
-    if (m50) porque.push(`${ult > m50 ? "Arriba" : "Abajo"} de su media de 50 ruedas (${num(m50)}): tendencia ${ult > m50 ? "alcista" : "bajista"}.`);
-    if (r !== null) porque.push(`RSI ${num(r, 0)} (${r < 30 ? "sobrevendido" : r > 70 ? "sobrecomprado" : "normal"}).`);
-    if (spread !== null) porque.push(`Spread compra/venta ${num(spread)}%${spread > 1 ? ": poco líquido, usá orden límite" : ""}.`);
-    box.innerHTML = `<div class="card"><div class="fila"><b style="font-size:17px">${esc(tk)} ${num(ult)}</b><span class="chip ${color}">${veredicto}</span></div>
-      ${porque.map((x) => `<p class="tenue">• ${esc(x)}</p>`).join("")}
-      <p class="tenue">Precio de la ronda ${esc(p.fecha)} ${esc(p.hora)}. Es una lectura técnica, no una recomendación.</p></div>`;
-  } catch (e) { box.innerHTML = `<p class="tenue">No se pudo: ${esc(e.message)}</p>`; }
-});
+    const r = await api("debate?t=");
+    $("#debates-disp").innerHTML = r.disponibles.map((t) => `<option value="${esc(t)}">`).join("");
+    $("#debate-chips").innerHTML = r.disponibles.slice(0, 16).map((t) => `<button type="button" class="chico" data-deb="${esc(t)}">${esc(t)}</button>`).join("");
+    document.querySelectorAll("[data-deb]").forEach((b) => b.onclick = () => verDebate(b.dataset.deb));
+  } catch (_) {}
+}
+async function verDebate(tk) {
+  const box = $("#debate"); $("#form-debate").ticker.value = tk;
+  box.innerHTML = '<p class="tenue">Armando el debate…</p>';
+  try {
+    const [p, hist, d] = await Promise.all([panel(), api(`historico?t=${encodeURIComponent(tk)}`), api(`debate?t=${encodeURIComponent(tk)}`)]);
+    const t = p.titulos?.[tk], e = d.expediente;
+    if (!t && !e) {
+      box.innerHTML = `<div class="card"><b>${esc(tk)}</b><p class="tenue">${p.fecha ? `No está en los paneles de la última ronda (${esc(p.fecha)} ${esc(p.hora)}).` : "Todavía no hay ronda guardada."} Revisá el ticker (por ejemplo AL30D para la versión en dólares) o pedilo igual: si cotiza, la mesa lo debate en la próxima ronda.</p>
+        <button id="btn-pedir-debate" class="prim" style="width:100%">${d.pedido ? "Ya está pedido" : "Pedir debate"}</button></div>`;
+      $("#btn-pedir-debate").onclick = async () => { try { toast((await post("debate/pedir", { ticker: tk })).mensaje); } catch (x) { toast("No se pudo: " + x.message); } };
+      return;
+    }
+    const ult = e?.precio?.ultimo ?? t?.[0], vari = e?.precio?.variacion ?? t?.[1];
+    const tec = t ? lecturaTecnica(t, hist) : null;
+    let html = `<div class="card"><div class="fila"><div><div style="font-size:20px;font-weight:700">${esc(tk)}</div>
+      <span class="tenue">${e ? `Debate de la ronda ${esc(e.fecha)} ${esc(e.hora)}` : `Precio de la ronda ${esc(p.fecha)} ${esc(p.hora)}`}</span></div>
+      <div style="text-align:right"><b style="font-size:18px">${num(ult)}</b><br><span class="chip ${vari > 0 ? "verde" : vari < 0 ? "rojo" : ""}">${pct(vari)}</span></div></div></div>`;
+    if (e) {
+      const [col, eti] = VEREDICTO[e.supervisor.veredicto] || VEREDICTO.neutral;
+      html += `<div class="card sup ${col}"><div class="fila"><b>Opinión del supervisor</b><span class="chip ${col}">${eti}</span></div>
+        <p style="font-size:16px;font-weight:600;margin:8px 0">${esc(e.supervisor.titulo)}</p>
+        ${e.supervisor.detalle.map((x) => `<p class="tenue">• ${esc(x)}</p>`).join("")}
+        ${e.jefe ? `<p><b>Jefe:</b> ${e.jefe.decision === "propuesta" ? "la propuso" : "la descartó"}${e.jefe.texto ? ` — ${esc(e.jefe.texto)}` : ""}</p>` : ""}</div>`;
+      html += `<h2>Debate</h2><div class="debate"><b>Alcista:</b> ${esc(e.debate.alcista)}</div><div class="debate baj"><b>Bajista:</b> ${esc(e.debate.bajista)}</div>
+        ${e.debate.fuente === "reglas" ? '<p class="tenue">Debate armado con los argumentos de los propios analistas (sin IA).</p>' : ""}`;
+      html += `<h2>A favor (${e.favor.length})</h2>${e.favor.length ? `<div class="card">${filasAgentes(e.favor)}</div>` : '<p class="tenue">Ningún analista a favor.</p>'}`;
+      html += `<h2>En contra (${e.contra.length})</h2>${e.contra.length ? `<div class="card">${filasAgentes(e.contra)}</div>` : '<p class="tenue">Ningún analista en contra.</p>'}`;
+      if (e.neutral.length) html += `<details><summary>Neutrales (${e.neutral.length})</summary><div class="card">${filasAgentes(e.neutral)}</div></details>`;
+      if (e.plan) {
+        const r = e.riesgo || {};
+        html += `<h2>Plan de Riesgo</h2><div class="card"><div class="grilla">
+          <div class="met"><span>Entrada</span><b>${num(e.plan.entrada)}</b></div><div class="met"><span>Objetivo</span><b style="color:var(--verde)">${num(e.plan.objetivo)}</b></div>
+          <div class="met"><span>Stop</span><b style="color:var(--rojo)">${num(e.plan.stop)}</b></div><div class="met"><span>Relación neta</span><b>${num(r.r_neto)}R</b></div></div>
+          <p class="tenue">${r.ok ? "Pasa los filtros de Riesgo." : "No pasa Riesgo: " + esc((r.motivos || []).join(" "))} ${esc((r.avisos || []).join(" "))}</p></div>`;
+      }
+    } else {
+      const sen = (ESTADO.estado?.senales || []).filter((s) => s.ticker === tk);
+      html += `<div class="card"><b>Todavía no hay debate completo de ${esc(tk)}.</b>
+        <p class="tenue">${d.pedido ? "Ya está pedido: sale en la próxima ronda (en horario de mercado, hasta 5 minutos)." : "Pedilo y en la próxima ronda los analistas lo discuten y el supervisor opina."}</p>
+        ${sen.length ? `<p class="tenue">Mientras tanto, lo que ya dijeron:</p>${filasAgentes(sen)}` : ""}</div>`;
+    }
+    if (tec) html += `<h2>Precio de entrada (técnico)</h2><div class="card"><div class="fila"><b>${esc(tk)}</b><span class="chip ${tec.color}">${tec.veredicto}</span></div>
+      ${tec.porque.map((x) => `<p class="tenue">• ${esc(x)}</p>`).join("")}</div>`;
+    else if (t) html += '<p class="tenue">Sin historial guardado todavía para la lectura técnica: al pedir el debate, la mesa lo carga.</p>';
+    html += `<button id="btn-pedir-debate" class="${e ? "" : "prim"}" style="width:100%;margin-top:10px">${e ? "Actualizar debate" : "Pedir debate completo"}</button>
+      <p class="tenue">Es el análisis de la mesa, no una recomendación. La orden la decidís y cargás vos.</p>`;
+    box.innerHTML = html;
+    $("#btn-pedir-debate").onclick = async () => {
+      try { const r = await post("debate/pedir", { ticker: tk }); toast(r.mensaje); } catch (x) { toast("No se pudo: " + x.message); }
+    };
+  } catch (x) { box.innerHTML = `<p class="tenue">No se pudo: ${esc(x.message)}</p>`; }
+}
+function abrirDebate(tk) { document.querySelector('.tabs button[data-v="asistente"]').click(); verDebate(tk); }
+document.addEventListener("click", (ev) => { const b = ev.target.closest("[data-abrir-debate]"); if (b) abrirDebate(b.dataset.abrirDebate); });
+$("#form-debate").addEventListener("submit", (ev) => { ev.preventDefault(); verDebate(ev.target.ticker.value.trim().toUpperCase()); });
 $("#form-letras").addEventListener("submit", async (ev) => {
   ev.preventDefault(); const mes = ev.target.mes.value; const box = $("#lista-letras");
   const p = await panel(); const hoy = new Date();
@@ -371,10 +435,10 @@ async function cargar() {
 }
 $("#form-login").addEventListener("submit", async (ev) => {
   ev.preventDefault();
-  try { await post("login", { clave: ev.target.clave.value }); ev.target.reset(); await cargar(); pintarRanking().catch(() => {}); }
+  try { await post("login", { clave: ev.target.clave.value }); ev.target.reset(); await cargar().then(cargarDisponibles); pintarRanking().catch(() => {}); }
   catch (e) { toast(e.message); }
 });
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
-cargar(); pintarRanking().catch(() => {});
+cargar().then(cargarDisponibles); pintarRanking().catch(() => {});
 setInterval(() => { if (!document.hidden) cargar(); }, 60000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) cargar(); });
