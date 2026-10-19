@@ -272,6 +272,11 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "oportunidades": ops,
     }
     almacen.put("ui/estado", {**estado_ui, **resumen})
+    # foto compacta de TODOS los paneles para el Asistente (sin gastar consultas extra)
+    almacen.put("ui/panel", {"fecha": hoy.isoformat(), "hora": ctx.hora, "titulos": {
+        tk: [round(t.get("ultimo") or 0, 4), round(t["variacion"], 2) if t.get("variacion") is not None else None,
+             t.get("compra"), t.get("venta"), t.get("grupo")]
+        for tk, t in ctx.por_simbolo.items() if t.get("ultimo")}})
     previas = almacen.get("ui/alertas") or []
     ya_avisadas = {(a["fecha"], a["ticker"]) for a in previas}
     alertas_lista = [a for a in _alertas_lista(ctx, lista) if (a["fecha"], a["ticker"]) not in ya_avisadas]

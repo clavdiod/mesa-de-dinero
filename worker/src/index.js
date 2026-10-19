@@ -1,3 +1,4 @@
+import { asistente } from "./asistente.js";
 // Worker de la mesa: sirve la web y guarda los datos privados en Cloudflare KV.
 //
 // Seguridad:
@@ -204,6 +205,10 @@ async function api(req, env, url) {
     });
     return json({ ok: true, modo: r.ok ? "inmediato" : "proxima_ronda",
       mensaje: r.ok ? "Ronda pedida: en 2-3 minutos se actualiza." : "Pedido anotado: corre en la próxima ronda." });
+  }
+  if (p === "/api/asistente" && req.method === "POST") {
+    const r = await asistente(req, env);
+    return json(r.cuerpo, r.status);
   }
   if (p === "/api/push/clave") return json({ clave: env.VAPID_PUBLICA || null });
   if (p === "/api/push/suscribir" && req.method === "POST") {

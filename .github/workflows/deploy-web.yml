@@ -36,8 +36,9 @@ jobs:
           VAPID_PUBLICA: ${{ secrets.VAPID_PUBLICA }}
           GITHUB_TOKEN: ${{ secrets.MESA_GITHUB_TOKEN }}
           WEB_CLAVE: ${{ secrets.WEB_CLAVE }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          for s in INGESTA_TOKEN EMAIL_PERMITIDO VAPID_PUBLICA GITHUB_TOKEN WEB_CLAVE; do
+          for s in INGESTA_TOKEN EMAIL_PERMITIDO VAPID_PUBLICA GITHUB_TOKEN WEB_CLAVE ANTHROPIC_API_KEY; do
             if [ -n "${!s}" ]; then
               printf '%s' "${!s}" | npx --yes wrangler@3 secret put "$s" >/dev/null && echo "secreto $s cargado"
             else

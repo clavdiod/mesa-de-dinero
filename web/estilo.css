@@ -55,3 +55,9 @@ th { font-size: 12px; color: var(--tenue); font-weight: 500; } td.n, th.n { text
 #toast.ver { opacity: 1; }
 details { margin: 14px 0; } summary { cursor: pointer; color: var(--azul); }
 .vacio { color: var(--tenue); text-align: center; padding: 24px 8px; }
+
+.msg { border-radius: 12px; padding: 10px 12px; margin: 8px 0; white-space: pre-wrap; overflow-x: auto; }
+.msg.yo { background: var(--azul-bg); margin-left: 15%; }
+.msg.ia { background: var(--card); border: 1px solid var(--borde); }
+.msg table { white-space: normal; }
+.msg a { color: var(--azul); }

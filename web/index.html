@@ -111,6 +111,17 @@
     </details>
   </section>
 
+  <section id="v-asistente" class="vista">
+    <h2>Asistente</h2>
+    <p class="tenue">Preguntá lo que necesites. Ej: "bonos en pesos que paguen mensual o trimestral", "¿está bien el precio de GGAL para entrar?", "armame cobros todos los meses con 2 millones".</p>
+    <div id="chat"></div>
+    <form id="form-chat" class="pila">
+      <textarea name="pregunta" rows="3" placeholder="Escribí tu pregunta" required></textarea>
+      <div class="fila-form"><button class="prim">Preguntar</button><button type="button" id="btn-chat-borrar">Nueva conversación</button></div>
+    </form>
+    <p id="chat-info" class="tenue"></p>
+  </section>
+
   <section id="v-ranking" class="vista">
     <h2>Ranking de agentes</h2>
     <p class="tenue">Titular: su voto vale doble. A prueba: la mitad. Banco: no vota hasta mejorar. Se mide con al menos 20 casos.</p>
@@ -131,6 +142,7 @@
   <button data-v="propuestas" class="activa">Propuestas</button>
   <button data-v="mercado">Análisis</button>
   <button data-v="lista">Mi lista</button>
+  <button data-v="asistente">Asistente</button>
   <button data-v="ons">Cobros</button>
   <button data-v="ranking">Agentes</button>
 </nav>

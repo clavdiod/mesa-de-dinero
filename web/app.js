@@ -251,6 +251,37 @@ async function pintarRanking() {
     : '<p class="tenue">Sin cambios de nota registrados.</p>';
 }
 
+// ---------- asistente ----------
+let CHAT = [];
+try { CHAT = JSON.parse(localStorage.getItem("mesa_chat") || "[]"); } catch (_) { CHAT = []; }
+const guardarChat = () => { try { localStorage.setItem("mesa_chat", JSON.stringify(CHAT.slice(-20))); } catch (_) {} };
+function md(t) {
+  // markdown mínimo y seguro: escapa todo y después aplica negritas, tablas y links
+  const lineas = esc(t).split("\n"); let html = "", tabla = [];
+  const cerrarTabla = () => { if (!tabla.length) return; const filas = tabla.filter((l) => !/^\|?\s*:?-{2,}/.test(l));
+    html += `<div class="tabla-scroll"><table>${filas.map((l, i) => `<tr>${l.replace(/^\||\|$/g, "").split("|").map((c) => i ? `<td>${c.trim()}</td>` : `<th>${c.trim()}</th>`).join("")}</tr>`).join("")}</table></div>`; tabla = []; };
+  for (const l of lineas) { if (/^\s*\|/.test(l)) { tabla.push(l.trim()); continue; } cerrarTabla(); html += l + "\n"; }
+  cerrarTabla();
+  return html.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+}
+function pintarChat() {
+  $("#chat").innerHTML = CHAT.map((m) => `<div class="msg ${m.rol}">${m.rol === "ia" ? md(m.texto) : esc(m.texto)}
+    ${m.fuentes?.length ? `<p class="tenue">Fuentes: ${m.fuentes.map((f) => `<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.titulo || f.url)}</a>`).join(" · ")}</p>` : ""}</div>`).join("")
+    || '<p class="vacio">Todavía no preguntaste nada.</p>';
+}
+$("#form-chat").addEventListener("submit", async (ev) => {
+  ev.preventDefault(); const q = ev.target.pregunta.value.trim(); if (!q) return;
+  const historial = CHAT.slice(-8).map((m) => ({ rol: m.rol, texto: m.texto }));
+  CHAT.push({ rol: "yo", texto: q }); ev.target.reset(); pintarChat();
+  const btn = ev.target.querySelector("button.prim"); btn.disabled = true; $("#chat-info").textContent = "Pensando y buscando datos… (puede tardar 20-60 segundos)";
+  try { const r = await post("asistente", { pregunta: q, historial });
+    CHAT.push({ rol: "ia", texto: r.respuesta, fuentes: r.fuentes }); $("#chat-info").textContent = `Te quedan ${r.restantes} preguntas hoy.`;
+  } catch (e) { CHAT.push({ rol: "ia", texto: `No pude responder: ${e.message}` }); $("#chat-info").textContent = ""; }
+  btn.disabled = false; guardarChat(); pintarChat(); window.scrollTo(0, document.body.scrollHeight);
+});
+$("#btn-chat-borrar").addEventListener("click", () => { CHAT = []; guardarChat(); pintarChat(); });
+pintarChat();
+
 // ---------- push ----------
 $("#btn-push").addEventListener("click", async () => {
   try {
