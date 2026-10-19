@@ -1,5 +1,5 @@
 name: deploy-web
-# Publica el Worker y la web en Cloudflare cuando cambia algo en worker/ o web/.
+# Publica el Worker y la web en Cloudflare cuando cambia algo en worker/ o web/ (o a mano).
 on:
   push:
     branches: [main]
@@ -9,22 +9,37 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Revisar secretos mínimos
+        run: |
+          for s in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+            [ -n "${!s}" ] || { echo "Falta el secreto $s"; exit 1; }
+          done
+          [ -n "${{ secrets.CF_KV_ID }}" ] || { echo "Falta el secreto CF_KV_ID"; exit 1; }
       - name: Completar id del KV
         run: sed -i "s/REEMPLAZAR_CON_KV_ID/${{ secrets.CF_KV_ID }}/" worker/wrangler.toml
-      - uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: worker
-          secrets: |
-            INGESTA_TOKEN
-            EMAIL_PERMITIDO
-            VAPID_PUBLICA
-            GITHUB_TOKEN
+      - name: Publicar
+        working-directory: worker
+        run: npx --yes wrangler@3 deploy
+      - name: Cargar secretos del Worker (solo los que existen)
+        working-directory: worker
         env:
           INGESTA_TOKEN: ${{ secrets.MESA_INGESTA_TOKEN }}
           EMAIL_PERMITIDO: ${{ secrets.EMAIL_PERMITIDO }}
           VAPID_PUBLICA: ${{ secrets.VAPID_PUBLICA }}
           GITHUB_TOKEN: ${{ secrets.MESA_GITHUB_TOKEN }}
+        run: |
+          for s in INGESTA_TOKEN EMAIL_PERMITIDO VAPID_PUBLICA GITHUB_TOKEN; do
+            if [ -n "${!s}" ]; then
+              printf '%s' "${!s}" | npx --yes wrangler@3 secret put "$s" >/dev/null && echo "secreto $s cargado"
+            else
+              echo "secreto $s sin valor (se omite)"
+            fi
+          done
