@@ -49,6 +49,7 @@ def main():
         mapeo[f"{p['instrumento']}|{p['panel']}"] = [inst, pan]
         print(f"  {p['grupo']:10s} → instrumento={inst!r} panel={pan!r}  (disponibles: {paneles[:12]})")
     a.put("iol/paneles", mapeo)
+    _anotar("notice", "Paneles: " + "; ".join(f"{k} -> {v[0]}/{v[1]}" for k, v in mapeo.items()))
     inst, pan = mapeo[f"{config()['iol']['paneles'][0]['instrumento']}|{config()['iol']['paneles'][0]['panel']}"]
     muestra = iol.panel(inst, pan)
     print(f"\nPanel de muestra {inst}/{pan}: {len(muestra)} títulos")
@@ -57,7 +58,20 @@ def main():
     print("\nGGAL con puntas:", json.dumps({k: cot[k] for k in ("ultimo", "compra", "venta", "variacion", "monto")}, ensure_ascii=False))
     c.guardar()
     print("\nConsumo IOL:", c.resumen())
+    _anotar("notice", f"OK. Muestra {len(muestra)} titulos. GGAL ultimo={cot.get('ultimo')} compra={cot.get('compra')} "
+                      f"venta={cot.get('venta')}. Consumo IOL: {c.resumen()['total']}")
+
+
+def _anotar(tipo: str, texto: str) -> None:
+    """Deja el resultado como anotación de GitHub (visible en el resumen de la ejecución)."""
+    print(f"::{tipo}::" + texto.replace("%", "%25").replace("\r", "").replace("\n", "%0A")[:3000])
 
 
 if __name__ == "__main__":
-    main()
+    import traceback
+    try:
+        main()
+    except Exception as e:
+        tb = traceback.extract_tb(e.__traceback__)[-1]
+        _anotar("error", f"{type(e).__name__}: {e} (en {tb.filename.split('/')[-1]}:{tb.lineno})")
+        raise
