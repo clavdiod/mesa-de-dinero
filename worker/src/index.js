@@ -206,6 +206,8 @@ async function api(req, env, url) {
     return json({ ok: true, modo: r.ok ? "inmediato" : "proxima_ronda",
       mensaje: r.ok ? "Ronda pedida: en 2-3 minutos se actualiza." : "Pedido anotado: corre en la próxima ronda." });
   }
+  if (p === "/api/panel") return json(await leer(env, "ui/panel", { titulos: {} }));
+  if (p === "/api/asistente/estado") return json({ activo: Boolean(env.ANTHROPIC_API_KEY) });
   if (p === "/api/asistente" && req.method === "POST") {
     const r = await asistente(req, env);
     return json(r.cuerpo, r.status);

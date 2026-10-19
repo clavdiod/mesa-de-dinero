@@ -251,6 +251,56 @@ async function pintarRanking() {
     : '<p class="tenue">Sin cambios de nota registrados.</p>';
 }
 
+// ---------- consultor gratis ----------
+let PANEL = null;
+async function panel() { if (!PANEL) PANEL = await api("panel"); return PANEL; }
+const MESES = { E: 1, F: 2, M: 3, A: 4, Y: 5, J: 6, L: 7, G: 8, S: 9, O: 10, N: 11, D: 12 };
+function vtoLetra(tk) { const m = tk.match(/^[STX](\d{2})([EFMAYJLGSOND])(\d)$/); if (!m) return null;
+  const d = new Date(2020 + +m[3], MESES[m[2]] - 1, +m[1]); return isNaN(d) ? null : d; }
+const media = (a, n) => a.length >= n ? a.slice(-n).reduce((x, y) => x + y, 0) / n : null;
+function rsi(c, n = 14) { if (c.length < n + 1) return null; let s = 0, b = 0;
+  for (let i = c.length - n; i < c.length; i++) { const d = c[i] - c[i - 1]; if (d > 0) s += d; else b -= d; }
+  return b === 0 ? 100 : 100 - 100 / (1 + s / b); }
+$("#form-precio").addEventListener("submit", async (ev) => {
+  ev.preventDefault(); const tk = ev.target.ticker.value.trim().toUpperCase(); const box = $("#eval-precio");
+  box.innerHTML = '<p class="tenue">Calculando…</p>';
+  try {
+    const [p, hist] = await Promise.all([panel(), api(`historico?t=${encodeURIComponent(tk)}`)]);
+    const t = p.titulos?.[tk];
+    if (!t) { box.innerHTML = `<p class="tenue">No encontré ${esc(tk)} en la última ronda (${esc(p.fecha)} ${esc(p.hora)}).</p>`; return; }
+    const [ult, varDia, compra, venta] = t;
+    if (!hist.length) { box.innerHTML = `<div class="card"><b>${esc(tk)}</b> ${num(ult)} (${pct(varDia)})<p class="tenue">Todavía no tengo historial de ${esc(tk)} para comparar. Agregalo a Mi lista y en unos días la mesa lo carga.</p></div>`; return; }
+    const c = hist.map((v) => v.cierre).concat([ult]);
+    const m20 = media(c, 20), m50 = media(c, 50), r = rsi(c);
+    const u60 = hist.slice(-60), min60 = Math.min(...u60.map((v) => v.minimo)), max60 = Math.max(...u60.map((v) => v.maximo));
+    const pos = (ult - min60) / (max60 - min60 || 1) * 100;
+    const spread = compra && venta ? (venta / compra - 1) * 100 : null;
+    let veredicto = "Neutral", color = "amar", porque = [];
+    if ((r !== null && r < 35 && pos < 30) || (m20 && ult < m20 * 0.97 && pos < 35)) { veredicto = "Precio bajo: zona de compra"; color = "verde"; }
+    else if ((r !== null && r > 70) || pos > 85) { veredicto = "Precio alto: mejor esperar"; color = "rojo"; }
+    porque.push(`Está en el ${num(pos, 0)}% del rango de 60 ruedas (${num(min60)} a ${num(max60)}).`);
+    if (m20) porque.push(`${ult > m20 ? "Arriba" : "Abajo"} de su media de 20 ruedas (${num(m20)}).`);
+    if (m50) porque.push(`${ult > m50 ? "Arriba" : "Abajo"} de su media de 50 ruedas (${num(m50)}): tendencia ${ult > m50 ? "alcista" : "bajista"}.`);
+    if (r !== null) porque.push(`RSI ${num(r, 0)} (${r < 30 ? "sobrevendido" : r > 70 ? "sobrecomprado" : "normal"}).`);
+    if (spread !== null) porque.push(`Spread compra/venta ${num(spread)}%${spread > 1 ? ": poco líquido, usá orden límite" : ""}.`);
+    box.innerHTML = `<div class="card"><div class="fila"><b style="font-size:17px">${esc(tk)} ${num(ult)}</b><span class="chip ${color}">${veredicto}</span></div>
+      ${porque.map((x) => `<p class="tenue">• ${esc(x)}</p>`).join("")}
+      <p class="tenue">Precio de la ronda ${esc(p.fecha)} ${esc(p.hora)}. Es una lectura técnica, no una recomendación.</p></div>`;
+  } catch (e) { box.innerHTML = `<p class="tenue">No se pudo: ${esc(e.message)}</p>`; }
+});
+$("#form-letras").addEventListener("submit", async (ev) => {
+  ev.preventDefault(); const mes = ev.target.mes.value; const box = $("#lista-letras");
+  const p = await panel(); const hoy = new Date();
+  const limite = mes ? new Date(+mes.slice(0, 4), +mes.slice(5, 7), 0) : null;
+  const filas = Object.entries(p.titulos || {}).filter(([, x]) => x[4] === "letras").map(([tk, x]) => ({ tk, v: vtoLetra(tk), x }))
+    .filter((f) => f.v && f.v > hoy && (!limite || f.v <= limite)).sort((a, b) => a.v - b.v);
+  box.innerHTML = filas.length ? `<div class="tabla-scroll"><table><tr><th>Ticker</th><th>Vence</th><th class="n">Días</th><th class="n">Precio</th><th class="n">Día</th></tr>
+    ${filas.map((f) => `<tr><td>${esc(f.tk)}</td><td>${f.v.toLocaleDateString("es-AR")}</td><td class="n">${Math.round((f.v - hoy) / 864e5)}</td><td class="n">${num(f.x[0], 3)}</td><td class="n">${pct(f.x[1])}</td></tr>`).join("")}</table></div>
+    <p class="tenue">Para saber cuánto cobrás y la tasa de cada una, preguntame en el chat de Claude: lo calculo con IOL en vivo.</p>`
+    : '<p class="tenue">No hay letras con precio que venzan antes de esa fecha.</p>';
+});
+api("asistente/estado").then((r) => { if (r.activo) { $("#asistente-ia").style.display = "block"; $("#asistente-gratis").style.display = "none"; } }).catch(() => {});
+
 // ---------- asistente ----------
 let CHAT = [];
 try { CHAT = JSON.parse(localStorage.getItem("mesa_chat") || "[]"); } catch (_) { CHAT = []; }

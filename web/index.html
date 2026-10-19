@@ -112,14 +112,33 @@
   </section>
 
   <section id="v-asistente" class="vista">
-    <h2>Asistente</h2>
-    <p class="tenue">Preguntá lo que necesites. Ej: "bonos en pesos que paguen mensual o trimestral", "¿está bien el precio de GGAL para entrar?", "armame cobros todos los meses con 2 millones".</p>
-    <div id="chat"></div>
-    <form id="form-chat" class="pila">
-      <textarea name="pregunta" rows="3" placeholder="Escribí tu pregunta" required></textarea>
-      <div class="fila-form"><button class="prim">Preguntar</button><button type="button" id="btn-chat-borrar">Nueva conversación</button></div>
+    <h2>¿Está bien el precio para entrar?</h2>
+    <form id="form-precio" class="fila-form">
+      <input name="ticker" placeholder="Ticker (GGAL, AL30D, AAPL…)" required autocapitalize="characters">
+      <button class="prim">Evaluar</button>
     </form>
-    <p id="chat-info" class="tenue"></p>
+    <div id="eval-precio"></div>
+
+    <h2>Letras en pesos por vencimiento</h2>
+    <p class="tenue">LECAP y BONCAP pagan todo (capital + interés) al vencimiento: elegí las que venzan cuando necesitás la plata.</p>
+    <form id="form-letras" class="fila-form">
+      <label>Necesito la plata antes de <input type="month" name="mes"></label>
+      <button>Buscar</button>
+    </form>
+    <div id="lista-letras"></div>
+
+    <div id="asistente-ia" style="display:none">
+      <h2>Asistente con IA</h2>
+      <div id="chat"></div>
+      <form id="form-chat" class="pila">
+        <textarea name="pregunta" rows="3" placeholder="Escribí tu pregunta" required></textarea>
+        <div class="fila-form"><button class="prim">Preguntar</button><button type="button" id="btn-chat-borrar">Nueva conversación</button></div>
+      </form>
+      <p id="chat-info" class="tenue"></p>
+    </div>
+    <div class="card" id="asistente-gratis">
+      <b>Preguntas abiertas, gratis:</b> escribime en el chat de Claude (por ejemplo "bonos en pesos que paguen mensual o trimestral"). Ahí consulto IOL en vivo: flujos de pago, TIR, vencimientos y simulaciones con tu monto, sin costo extra.
+    </div>
   </section>
 
   <section id="v-ranking" class="vista">
@@ -142,7 +161,7 @@
   <button data-v="propuestas" class="activa">Propuestas</button>
   <button data-v="mercado">Análisis</button>
   <button data-v="lista">Mi lista</button>
-  <button data-v="asistente">Asistente</button>
+  <button data-v="asistente">Consultor</button>
   <button data-v="ons">Cobros</button>
   <button data-v="ranking">Agentes</button>
 </nav>
