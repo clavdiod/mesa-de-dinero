@@ -1,0 +1,80 @@
+# Configuración de la mesa de dinero. Todo lo que se puede ajustar sin tocar código está acá.
+
+mercado:
+  apertura: "10:30"
+  cierre: "17:00"
+  zona: "America/Argentina/Buenos_Aires"
+  plazo: "t1"            # t1 = 24 hs, t0 = contado inmediato
+
+frecuencia:
+  # Cada cuántos minutos corre una ronda según el momento del día.
+  primera_hora_min: 5     # 10:30 a 11:30
+  ultima_hora_min: 5      # 16:00 a 17:00
+  mediodia_min: 10        # el resto
+
+iol:
+  presupuesto_mensual: 25000
+  alerta_pct: 80          # al pasar este % avisa y baja la frecuencia
+  frenar_pct: 95          # al pasar este % solo corre la ronda de cierre
+  # Paneles que se consultan en cada ronda (1 llamada cada uno).
+  # El nombre exacto de cada panel lo descubre scripts/probar_iol.py y queda guardado.
+  paneles:
+    - {instrumento: acciones, panel: "Merval", grupo: acciones}
+    - {instrumento: acciones, panel: "Panel General", grupo: acciones}
+    - {instrumento: cedears, panel: "Todos", grupo: cedears}
+    - {instrumento: titulosPublicos, panel: "Todos", grupo: soberanos}
+    - {instrumento: obligacionesNegociables, panel: "Todos", grupo: ons}
+    - {instrumento: letras, panel: "Todas", grupo: letras}
+    - {instrumento: cauciones, panel: "Todas", grupo: cauciones}
+  # Puntas detalladas (1 llamada por ticker): solo Mi lista y posiciones abiertas.
+  max_puntas_por_ronda: 6
+  historial_dias_inicial: 400   # carga inicial por ticker, una sola vez
+
+capital:
+  monto_ars: 1000000      # capital de referencia para calcular tamaños (editable desde la web)
+  riesgo_por_operacion_pct: 1.0   # 1R = 1% del capital
+  comision_ida_vuelta_pct: 1.2
+
+riesgo:
+  max_propuestas_dia: 3
+  r_minimo_neto: 1.3      # relación ganancia/pérdida mínima después de costos
+  perdida_max_dia_r: 2.0
+  perdida_max_semana_r: 4.0
+  max_por_sector: 2
+  salida_por_tiempo_dias: 10
+  spread_max_pct: 1.0     # punta compradora vs vendedora
+  monto_min_operado_ars: 50000000
+  riesgo_pais_tope_bancos: 670   # arriba de esto no se compran bancos ni soberanos
+  clima_malo_tamano_r: 0.5
+
+ia:
+  modelo_jefe: "claude-sonnet-5-5"
+  modelo_rapido: "claude-haiku-5-5"
+  max_candidatos_debate: 3
+  max_tokens: 1200
+
+ranking:
+  minimo_casos: 20
+  horizonte_dias: [5, 10]
+  niveles:
+    titular: {peso: 2.0}
+    normal: {peso: 1.0}
+    a_prueba: {peso: 0.5}
+    banco: {peso: 0.0}
+  sin_banco: [riesgo, jefe, hechos_emisor, calificadoras]
+
+historiador:
+  ventana: 20
+  correlacion_min: 0.85
+  casos_minimos: 8
+  horizontes: [5, 10, 20]
+
+fuentes:
+  dolares: "https://dolarapi.com/v1/dolares"
+  riesgo_pais: "https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais/ultimo"
+  feriados: "https://api.argentinadatos.com/v1/feriados/{anio}"
+  bcra: "https://api.bcra.gob.ar/estadisticas/v3.0/monetarias"
+  rss_noticias:
+    - "https://www.ambito.com/rss/pages/finanzas.xml"
+    - "https://www.cronista.com/files/rss/finanzas-mercados.xml"
+  google_news: "https://news.google.com/rss/search?q={q}&hl=es-419&gl=AR&ceid=AR:es-419"

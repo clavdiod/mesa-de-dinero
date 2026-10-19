@@ -1,0 +1,6 @@
+# Calendario de eventos. 'fuerte: true' = ese día Riesgo no abre posiciones nuevas.
+# Cargar fechas oficiales (INDEC, BCRA, licitaciones del Tesoro, balances, elecciones).
+# Las fechas se verifican en las agendas oficiales antes de cargarlas; no se inventan.
+# - {fecha: "2026-11-12", nombre: "Inflación de octubre (INDEC)", fuerte: true}
+# - {fecha: "2026-11-05", nombre: "Balance Grupo Galicia 3T", ticker: GGAL, fuerte: false}
+[]

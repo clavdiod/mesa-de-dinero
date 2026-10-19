@@ -1,0 +1,30 @@
+name: deploy-web
+# Publica el Worker y la web en Cloudflare cuando cambia algo en worker/ o web/.
+on:
+  push:
+    branches: [main]
+    paths: ["worker/**", "web/**"]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Completar id del KV
+        run: sed -i "s/REEMPLAZAR_CON_KV_ID/${{ secrets.CF_KV_ID }}/" worker/wrangler.toml
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
+          secrets: |
+            INGESTA_TOKEN
+            EMAIL_PERMITIDO
+            VAPID_PUBLICA
+            GITHUB_TOKEN
+        env:
+          INGESTA_TOKEN: ${{ secrets.MESA_INGESTA_TOKEN }}
+          EMAIL_PERMITIDO: ${{ secrets.EMAIL_PERMITIDO }}
+          VAPID_PUBLICA: ${{ secrets.VAPID_PUBLICA }}
+          GITHUB_TOKEN: ${{ secrets.MESA_GITHUB_TOKEN }}

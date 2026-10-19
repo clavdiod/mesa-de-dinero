@@ -1,0 +1,51 @@
+name: tareas
+# Cierre diario 17:10, calificadoras 10:00, ranking los viernes 17:30, capacitación el día 1-3 de cada mes.
+on:
+  schedule:
+    - cron: "10 20 * * 1-5"   # 17:10 ART cierre diario
+    - cron: "0 13 * * 1-5"    # 10:00 ART calificadoras
+    - cron: "30 20 * * 5"     # viernes 17:30 ART ranking semanal
+    - cron: "0 21 1-3 * *"    # días 1 a 3, 18:00 ART capacitación (corre solo el primer día hábil)
+  workflow_dispatch:
+    inputs:
+      tarea:
+        description: "diario | calificadoras | semanal | mensual"
+        default: "diario"
+
+concurrency:
+  group: mesa
+  cancel-in-progress: false
+
+jobs:
+  tarea:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Elegir tarea
+        id: t
+        run: |
+          case "${{ github.event.schedule }}" in
+            "10 20 * * 1-5") echo "tarea=diario" >> $GITHUB_OUTPUT ;;
+            "0 13 * * 1-5")  echo "tarea=calificadoras" >> $GITHUB_OUTPUT ;;
+            "30 20 * * 5")   echo "tarea=semanal" >> $GITHUB_OUTPUT ;;
+            "0 21 1-3 * *")  echo "tarea=mensual" >> $GITHUB_OUTPUT ;;
+            *)               echo "tarea=${{ inputs.tarea || 'diario' }}" >> $GITHUB_OUTPUT ;;
+          esac
+      - name: Correr
+        env:
+          MESA_WORKER_URL: ${{ secrets.MESA_WORKER_URL }}
+          MESA_INGESTA_TOKEN: ${{ secrets.MESA_INGESTA_TOKEN }}
+          IOL_USUARIO: ${{ secrets.IOL_USUARIO }}
+          IOL_CLAVE: ${{ secrets.IOL_CLAVE }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ "${{ steps.t.outputs.tarea }}" = "mensual" ]; then
+            python -c "from mesa.nucleo.reloj import ahora, es_dia_habil; from datetime import timedelta; d=ahora().date(); import sys; sys.exit(0 if es_dia_habil(d) and not any(es_dia_habil(d.replace(day=x)) for x in range(1, d.day)) else 1)" || { echo "No es el primer día hábil"; exit 0; }
+          fi
+          python -m mesa.cierre ${{ steps.t.outputs.tarea }}

@@ -1,0 +1,18 @@
+name = "mesa-de-dinero"
+main = "src/index.js"
+compatibility_date = "2026-01-15"
+
+[assets]
+directory = "../web"
+binding = "ASSETS"
+
+# El id del espacio KV lo completa el workflow de deploy (secret CF_KV_ID) o lo pegás acá.
+[[kv_namespaces]]
+binding = "MESA"
+id = "REEMPLAZAR_CON_KV_ID"
+
+[vars]
+TOPE_IOL = "25000"
+GITHUB_REPO = "clavdiod/mesa-de-dinero"
+# Secretos (se cargan con `wrangler secret put` o desde el workflow de deploy):
+# INGESTA_TOKEN, EMAIL_PERMITIDO, VAPID_PUBLICA, GITHUB_TOKEN

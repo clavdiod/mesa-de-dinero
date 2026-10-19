@@ -1,0 +1,17 @@
+{
+ "dolares": {
+  "oficial": {
+   "venta": 1535
+  },
+  "bolsa": {
+   "venta": 1539
+  },
+  "contadoconliqui": {
+   "venta": 1620
+  }
+ },
+ "riesgo_pais": {
+  "valor": 675
+ },
+ "riesgo_pais_ayer": 648
+}

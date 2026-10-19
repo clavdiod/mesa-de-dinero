@@ -1,0 +1,79 @@
+"""12. Riesgo: arma el plan (entrada, stop, objetivo) y decide si pasa, con qué tamaño, o lo veta.
+
+Reglas (config/mesa.yaml → riesgo):
+- Relación ganancia/pérdida neta de comisiones ≥ r_minimo_neto.
+- Spread y monto operado mínimos (liquidez).
+- Tope de pérdida diaria/semanal en R: si se alcanzó, no hay propuestas nuevas.
+- Máximo por sector, contando posiciones abiertas y propuestas del día.
+- Clima malo → tamaño reducido; riesgo país sobre el tope → no bancos ni soberanos.
+- Calendario: el día de un evento marcado como 'fuerte', no se abren posiciones nuevas.
+- Un hecho grave del emisor (veto) frena cualquier compra.
+"""
+from __future__ import annotations
+
+from datetime import timedelta
+
+from ..nucleo import calc
+from ..nucleo.config import config, sector
+from ..nucleo.contexto import Contexto
+from ..nucleo.modelos import Plan
+
+
+def armar_plan(ctx: Contexto, ticker: str) -> Plan | None:
+    t = ctx.titulo(ticker)
+    velas = ctx.cache.velas(ticker) if ctx.cache else []
+    if not t or not t.get("ultimo") or len(velas) < 20:
+        return None
+    precio = t.get("venta") or t["ultimo"]
+    a = calc.atr(velas) or precio * 0.02
+    sop = calc.soporte_cercano(velas, precio)
+    res = calc.resistencia_cercana(velas, precio)
+    # entrada: si hay soporte a menos de 1 ATR, esperar ahí; si no, precio actual
+    entrada = sop["hasta"] if sop and precio - sop["hasta"] <= a else precio
+    entrada = round(min(entrada, precio), 4)
+    base_stop = sop["desde"] if sop and entrada - sop["desde"] <= 2 * a else entrada - 1.5 * a
+    stop = round(base_stop - 0.25 * a, 4)
+    riesgo = entrada - stop
+    objetivo = res["nivel"] if res and res["nivel"] - entrada >= 1.5 * riesgo else entrada + 2.5 * riesgo
+    vence = (ctx.fecha + timedelta(days=int(config()["riesgo"]["salida_por_tiempo_dias"]) * 7 // 5)).isoformat()
+    return Plan(ticker, "compra", entrada, stop, round(objetivo, 4), 1.0, vence)
+
+
+def evaluar(ctx: Contexto, plan: Plan, estado: dict, vetos: set[str]) -> dict:
+    """Devuelve {'ok': bool, 'tamano_r': float, 'motivos': [...], 'avisos': [...]}"""
+    c = config()["riesgo"]
+    com = config()["capital"]["comision_ida_vuelta_pct"]
+    t = ctx.titulo(plan.ticker) or {}
+    motivos, avisos = [], []
+    tam = 1.0
+
+    if plan.ticker in vetos:
+        motivos.append("Hecho grave del emisor: compras congeladas.")
+    if estado.get("perdida_dia_r", 0) <= -c["perdida_max_dia_r"]:
+        motivos.append(f"Se alcanzó la pérdida máxima del día ({c['perdida_max_dia_r']}R).")
+    if estado.get("perdida_semana_r", 0) <= -c["perdida_max_semana_r"]:
+        motivos.append(f"Se alcanzó la pérdida máxima de la semana ({c['perdida_max_semana_r']}R).")
+    rn = plan.r_neto(com)
+    if rn < c["r_minimo_neto"]:
+        motivos.append(f"Relación neta {rn:.2f}R, menor al mínimo {c['r_minimo_neto']}R.")
+    compra, venta = t.get("compra"), t.get("venta")
+    if compra and venta:
+        spread = (venta / compra - 1) * 100
+        if spread > c["spread_max_pct"]:
+            motivos.append(f"Spread {spread:.2f}% demasiado abierto.")
+    monto = t.get("monto")
+    if monto is not None and monto < c["monto_min_operado_ars"] and t.get("moneda") in (None, "peso_Argentino", "ARS"):
+        avisos.append(f"Poco volumen operado hoy (${monto:,.0f}".replace(",", ".") + "): usar orden límite y montos chicos.")
+    sec = sector(plan.ticker)
+    en_sector = sum(1 for p in estado.get("abiertas", []) + estado.get("propuestas_hoy", []) if sector(p["ticker"]) == sec)
+    if en_sector >= c["max_por_sector"]:
+        motivos.append(f"Ya hay {en_sector} operaciones en el sector {sec}.")
+    rp = ctx.riesgo_pais.get("valor")
+    if rp and rp > c["riesgo_pais_tope_bancos"] and sec in ("bancos", "soberanos"):
+        motivos.append(f"Riesgo país {rp:.0f} > {c['riesgo_pais_tope_bancos']}: no se compran {sec}.")
+    if any(e.get("fuerte") and e.get("fecha") == ctx.fecha.isoformat() for e in ctx.eventos):
+        motivos.append("Hoy hay un evento fuerte en el calendario: no se abren posiciones nuevas.")
+    if ctx.clima <= -0.3:
+        tam = c["clima_malo_tamano_r"]
+        avisos.append(f"Clima de mercado malo: tamaño reducido a {tam}R.")
+    return {"ok": not motivos, "tamano_r": tam, "r_neto": round(rn, 2), "motivos": motivos, "avisos": avisos}

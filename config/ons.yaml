@@ -1,0 +1,15 @@
+# Flujos de ONs para el calendario de cobros y el simulador.
+# Los datos salen del prospecto / suplemento de cada ON (publicado en la CNV).
+# No se inventan: cargá solo ONs con los datos verificados. Formato:
+#
+# PN35D:
+#   emisor: "Pan American Energy"
+#   moneda: "USD MEP"          # USD MEP, USD cable o ARS
+#   lamina_minima: 1           # en nominales
+#   cupon_anual_pct: 8.5
+#   flujos:                    # fecha, interes % sobre VN original, amortizacion % sobre VN original
+#     - {fecha: "2026-12-15", interes: 4.25, amortizacion: 0}
+#     - {fecha: "2027-06-15", interes: 4.25, amortizacion: 100}
+#
+# Mientras esté vacío, el simulador de la web te deja cargar los flujos a mano.
+{}

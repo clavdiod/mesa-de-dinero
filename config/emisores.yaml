@@ -1,0 +1,33 @@
+# Datos de referencia por ticker: nombre del emisor (para buscar hechos relevantes), palabra clave
+# para reconocerlo en titulares, y sector (para el límite por sector de Riesgo). Ampliable sin tocar código.
+GGAL: {nombre: "Grupo Financiero Galicia", clave: "Galicia", sector: bancos}
+BMA: {nombre: "Banco Macro", clave: "Macro", sector: bancos}
+BBAR: {nombre: "BBVA Argentina", clave: "BBVA", sector: bancos}
+SUPV: {nombre: "Grupo Supervielle", clave: "Supervielle", sector: bancos}
+BYMA: {nombre: "Bolsas y Mercados Argentinos", clave: "BYMA", sector: financiero}
+VALO: {nombre: "Grupo Financiero Valores", clave: "Grupo Valores", sector: financiero}
+YPFD: {nombre: "YPF", clave: "YPF", sector: energia}
+PAMP: {nombre: "Pampa Energía", clave: "Pampa", sector: energia}
+VIST: {nombre: "Vista Energy", clave: "Vista Energy", sector: energia}
+TGSU2: {nombre: "Transportadora de Gas del Sur", clave: "TGS", sector: energia}
+TGNO4: {nombre: "Transportadora de Gas del Norte", clave: "TGN", sector: utilities}
+CEPU: {nombre: "Central Puerto", clave: "Central Puerto", sector: utilities}
+EDN: {nombre: "Edenor", clave: "Edenor", sector: utilities}
+TRAN: {nombre: "Transener", clave: "Transener", sector: utilities}
+CRES: {nombre: "Cresud", clave: "Cresud", sector: agro}
+IRSA: {nombre: "IRSA", clave: "IRSA", sector: inmobiliario}
+TXAR: {nombre: "Ternium Argentina", clave: "Ternium", sector: materiales}
+ALUA: {nombre: "Aluar", clave: "Aluar", sector: materiales}
+LOMA: {nombre: "Loma Negra", clave: "Loma Negra", sector: materiales}
+TECO2: {nombre: "Telecom Argentina", clave: "Telecom", sector: telecom}
+COME: {nombre: "Sociedad Comercial del Plata", clave: "Comercial del Plata", sector: holding}
+METR: {nombre: "Metrogas", clave: "Metrogas", sector: utilities}
+AL30: {nombre: "Bonar 2030", clave: "AL30", sector: soberanos}
+GD30: {nombre: "Global 2030", clave: "GD30", sector: soberanos}
+AL35: {nombre: "Bonar 2035", clave: "AL35", sector: soberanos}
+GD35: {nombre: "Global 2035", clave: "GD35", sector: soberanos}
+AE38: {nombre: "Bonar 2038", clave: "AE38", sector: soberanos}
+GD38: {nombre: "Global 2038", clave: "GD38", sector: soberanos}
+AL41: {nombre: "Bonar 2041", clave: "AL41", sector: soberanos}
+GD41: {nombre: "Global 2041", clave: "GD41", sector: soberanos}
+GD46: {nombre: "Global 2046", clave: "GD46", sector: soberanos}

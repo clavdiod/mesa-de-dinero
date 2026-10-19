@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mesa de dinero</title>
+<meta name="theme-color" content="#0f1720">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icono-192.png">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<header class="barra">
+  <div>
+    <h1>Mesa de dinero</h1>
+    <p id="sub" class="tenue">Cargando…</p>
+  </div>
+  <button id="btn-analizar" class="chico" title="Correr una ronda ahora">Analizar ahora</button>
+</header>
+
+<main>
+  <section id="v-propuestas" class="vista activa">
+    <div id="clima" class="tiras"></div>
+    <div id="alertas"></div>
+    <h2>Propuestas</h2>
+    <div id="lista-propuestas"></div>
+    <h2>Registro</h2>
+    <div id="esperanza" class="tiras"></div>
+    <div id="registro"></div>
+  </section>
+
+  <section id="v-mercado" class="vista">
+    <h2>Indicadores</h2>
+    <div id="indicadores" class="grilla"></div>
+    <h2>Lo que dice cada agente</h2>
+    <div class="filtros"><input id="filtro-senales" placeholder="Filtrar por ticker o agente"></div>
+    <div id="senales"></div>
+    <h2>Evaluados por Riesgo</h2>
+    <div id="evaluados"></div>
+  </section>
+
+  <section id="v-lista" class="vista">
+    <h2>Mi lista</h2>
+    <p class="tenue">La mesa analiza primero estos tickers y te avisa si tocan tu precio.</p>
+    <form id="form-lista" class="fila-form">
+      <input name="ticker" placeholder="GGAL" required maxlength="12" autocapitalize="characters">
+      <input name="precio" placeholder="Precio que te interesa" inputmode="decimal">
+      <input name="nota" placeholder="Nota (opcional)">
+      <button>Agregar</button>
+    </form>
+    <div id="mi-lista"></div>
+    <h2>Cartera</h2>
+    <p class="tenue">Lo que ya tenés. Sirve para el riesgo por sector y el calendario de cobros.</p>
+    <form id="form-cartera" class="fila-form">
+      <input name="ticker" placeholder="PN35D" required maxlength="12" autocapitalize="characters">
+      <input name="cantidad" placeholder="Cantidad / nominales" inputmode="decimal" required>
+      <input name="precio" placeholder="Precio de compra" inputmode="decimal">
+      <button>Agregar</button>
+    </form>
+    <div id="cartera"></div>
+    <h2>Capital de referencia</h2>
+    <form id="form-capital" class="fila-form">
+      <input name="monto_ars" placeholder="Capital en pesos" inputmode="decimal">
+      <input name="riesgo_pct" placeholder="Riesgo por operación %" inputmode="decimal">
+      <button>Guardar</button>
+    </form>
+    <p id="capital-info" class="tenue"></p>
+  </section>
+
+  <section id="v-ons" class="vista">
+    <h2>Calendario de cobros</h2>
+    <div id="calendario"></div>
+    <h2>Simulador de ONs</h2>
+    <form id="form-sim" class="pila">
+      <label>ON <select name="on" id="sim-on"></select></label>
+      <label>Precio cada 100 nominales <input name="precio" inputmode="decimal" required></label>
+      <div class="fila-form">
+        <label>Capital <input name="capital" inputmode="decimal" placeholder="o completá nominales"></label>
+        <label>Nominales <input name="nominales" inputmode="decimal"></label>
+      </div>
+      <button>Simular</button>
+    </form>
+    <div id="sim-resultado"></div>
+    <details>
+      <summary>Cargar o editar flujos de una ON</summary>
+      <p class="tenue">Datos del prospecto (CNV). Una línea por pago: fecha, interés % y amortización % sobre el valor nominal original.</p>
+      <form id="form-on" class="pila">
+        <div class="fila-form">
+          <input name="ticker" placeholder="PN35D" required>
+          <input name="emisor" placeholder="Emisor">
+          <input name="moneda" placeholder="USD MEP / USD cable / ARS">
+          <input name="lamina" placeholder="Lámina mínima" inputmode="decimal">
+        </div>
+        <textarea name="flujos" rows="6" placeholder="2026-12-15, 4.25, 0&#10;2027-06-15, 4.25, 100"></textarea>
+        <button>Guardar ON</button>
+      </form>
+    </details>
+  </section>
+
+  <section id="v-ranking" class="vista">
+    <h2>Ranking de agentes</h2>
+    <p class="tenue">Titular: su voto vale doble. A prueba: la mitad. Banco: no vota hasta mejorar. Se mide con al menos 20 casos.</p>
+    <div id="ranking"></div>
+    <h2>Capacitación pendiente</h2>
+    <div id="capacitacion"></div>
+    <h2>Consumo de IOL</h2>
+    <div id="consumo"></div>
+    <h2>Calificadoras</h2>
+    <div id="calificadoras"></div>
+    <h2>Avisos</h2>
+    <button id="btn-push">Activar avisos en este celular</button>
+    <p class="tenue">En iPhone primero agregá la web a la pantalla de inicio (Compartir → Agregar a inicio).</p>
+  </section>
+</main>
+
+<nav class="tabs">
+  <button data-v="propuestas" class="activa">Propuestas</button>
+  <button data-v="mercado">Mercado</button>
+  <button data-v="lista">Mi lista</button>
+  <button data-v="ons">Cobros</button>
+  <button data-v="ranking">Agentes</button>
+</nav>
+<div id="toast" role="status"></div>
+<script src="app.js"></script>
+</body>
+</html>
