@@ -39,6 +39,7 @@ def main():
     iol = IOL(c, almacen=a)
     insts = _nombres(iol.instrumentos())
     print("Instrumentos:", insts)
+    _anotar("notice", "Instrumentos IOL: " + json.dumps(iol.instrumentos(), ensure_ascii=False)[:1500])
     mapeo = {}
     for p in config()["iol"]["paneles"]:
         inst = next((i for i in insts if _n(i) == _n(p["instrumento"])), None) or \
@@ -47,6 +48,7 @@ def main():
         pan = next((x for x in paneles if _n(x) == _n(p["panel"])), None) or \
             next((x for x in paneles if _n(p["panel"]) in _n(x)), paneles[0] if paneles else p["panel"])
         mapeo[f"{p['instrumento']}|{p['panel']}"] = [inst, pan]
+        _anotar("notice", f"{p['grupo']}: instrumento={inst} paneles={json.dumps(paneles, ensure_ascii=False)[:600]}")
         print(f"  {p['grupo']:10s} → instrumento={inst!r} panel={pan!r}  (disponibles: {paneles[:12]})")
     a.put("iol/paneles", mapeo)
     _anotar("notice", "Paneles: " + "; ".join(f"{k} -> {v[0]}/{v[1]}" for k, v in mapeo.items()))
