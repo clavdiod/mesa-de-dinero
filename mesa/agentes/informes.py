@@ -168,10 +168,29 @@ def tecnico_historiador(ctx: Contexto) -> dict:
             "nota": "Gráficos parecidos: de los casos históricos con forma similar, en cuántos subió a 10 ruedas y cuánto en promedio. Menos de 8 casos es evidencia débil."}
 
 
+def licitaciones(ctx: Contexto) -> dict:
+    d = ctx.extra.get("licitaciones") or {}
+    if not d:
+        return {}
+    prox, ult = d.get("proxima") or {}, d.get("ultima") or {}
+    filas = []
+    if prox:
+        filas.append(["Próxima", prox.get("fecha") or "—", ", ".join(prox.get("instrumentos") or []) or "—",
+                      prox.get("vencimientos_a_cubrir") or "—"])
+    if ult:
+        filas.append(["Última", ult.get("fecha") or "—", ult.get("tasas") or "—",
+                      f"rollover {ult['rollover_pct']}%" if ult.get("rollover_pct") else "—"])
+    for t in (d.get("titulares") or [])[:6]:
+        filas.append(["Noticia", (t.get("fecha") or "")[:10], t.get("titulo", "")[:90], ""])
+    return {"titulo": "Licitaciones del Tesoro", "columnas": ["", "Fecha", "Detalle", ""], "filas": filas,
+            "resumen": d.get("lectura") or "Últimas noticias sobre licitaciones del Tesoro (se actualiza cada mañana).",
+            "nota": f"Actualizado {d.get('actualizado', '—')}. Fuente: noticias; verificá el llamado oficial en argentina.gob.ar/economia/finanzas."}
+
+
 def todos(ctx: Contexto, ia=None) -> dict:
     out = {}
     for nombre, fn in (("acciones", acciones), ("cedears", cedears), ("bonos", bonos), ("ons", ons),
-                       ("letras", letras), ("pesos", pesos), ("tecnico", tecnico_historiador)):
+                       ("letras", letras), ("licitaciones", licitaciones), ("pesos", pesos), ("tecnico", tecnico_historiador)):
         try:
             r = fn(ctx)
         except Exception as e:  # un informe roto no frena la ronda

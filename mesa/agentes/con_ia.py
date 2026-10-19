@@ -188,3 +188,21 @@ def jefe(ia: IA, candidatos: list[dict], cupo: int, contexto_txt: str) -> list[d
         return out
     elegidos = sorted(candidatos, key=lambda c: c["puntaje"], reverse=True)[:cupo]
     return [{**c, "confianza": "media", "resumen_jefe": "Elegida por puntaje (Jefe sin IA disponible)."} for c in elegidos]
+
+
+# Licitaciones del Tesoro (1 vez por día) --------------------------------------------------------
+def licitaciones(ia: IA, almacen, fecha) -> dict:
+    """Busca el llamado/resultado de la próxima licitación del Tesoro (LECAP, BONCAP, duales, CER)."""
+    items = gratis.buscar_noticias("licitación Tesoro Finanzas LECAP BONCAP", horas=168, max_items=15)
+    items += gratis.buscar_noticias("licitación del Tesoro llamado instrumentos vencimientos", horas=168, max_items=10)
+    res = ia.json(
+        "Sos el analista de pesos y tasas de una mesa argentina. Con estos titulares, identificá la PRÓXIMA licitación "
+        "del Tesoro (y si hay, el resultado de la última). Formato: {\"proxima\":{\"fecha\":\"AAAA-MM-DD o null\","
+        "\"liquidacion\":\"AAAA-MM-DD o null\",\"instrumentos\":[\"...\"],\"vencimientos_a_cubrir\":\"...\"},"
+        "\"ultima\":{\"fecha\":\"...\",\"rollover_pct\":null,\"tasas\":\"...\"},\"lectura\":\"2 oraciones\"}",
+        "\n".join(f"- {i['titulo']} ({i['fecha']})" for i in items[:25])) if items else None
+    if res is None:
+        res = {"titulares": [{"titulo": i["titulo"], "link": i["link"], "fecha": i["fecha"]} for i in items[:8]]}
+    res["actualizado"] = fecha.isoformat()
+    almacen.put("licitaciones/ultimo", res)
+    return res

@@ -118,7 +118,7 @@ document.querySelectorAll("#ops-plazo button").forEach((b) => b.addEventListener
 
 function pintarInformes() {
   const inf = ESTADO.estado?.informes || {};
-  const orden = ["acciones", "cedears", "bonos", "ons", "letras", "pesos", "tecnico"];
+  const orden = ["acciones", "cedears", "bonos", "ons", "letras", "licitaciones", "pesos", "tecnico"];
   const html = orden.filter((k) => inf[k]).map((k, i) => { const x = inf[k];
     const lectura = x.lectura_ia || x.lectura_ia_previa;
     return `<details class="card" ${i === 0 ? "open" : ""}><summary><b>${esc(x.titulo)}</b></summary>
@@ -264,7 +264,7 @@ $("#btn-push").addEventListener("click", async () => {
   } catch (e) { toast(`No se pudo: ${e.message}`); }
 });
 $("#btn-analizar").addEventListener("click", async () => {
-  try { await post("analizar", {}); toast("Ronda pedida: en 2-3 minutos se actualiza"); } catch (e) { toast(`No se pudo: ${e.message}`); }
+  try { const r = await post("analizar", {}); toast(r.mensaje || "Ronda pedida"); } catch (e) { toast(`No se pudo: ${e.message}`); }
 });
 
 // ---------- carga ----------

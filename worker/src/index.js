@@ -193,13 +193,17 @@ async function api(req, env, url) {
     return json(await leer(env, `cache/diario/${t}`, []));
   }
   if (p === "/api/analizar" && req.method === "POST") {
-    if (!env.GITHUB_TOKEN || !env.GITHUB_REPO) return nope("falta configurar GITHUB_TOKEN/GITHUB_REPO", 501);
+    // Sin token de GitHub: se anota el pedido y la próxima ronda (≤5 min en horario de mercado) lo corre completo.
+    await guardar(env, "ui/pedido_analisis", { pedido: `${hoyBA()} ${horaBA()}` });
+    if (!env.GITHUB_TOKEN || !env.GITHUB_REPO)
+      return json({ ok: true, modo: "proxima_ronda", mensaje: "Pedido anotado: corre en la próxima ronda (hasta 5 minutos, en horario de mercado)." });
     const r = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/actions/workflows/ronda.yml/dispatches`, {
       method: "POST",
       headers: { authorization: `Bearer ${env.GITHUB_TOKEN}`, accept: "application/vnd.github+json", "user-agent": "mesa-de-dinero" },
       body: JSON.stringify({ ref: "main", inputs: { forzar: "true" } }),
     });
-    return r.ok ? json({ ok: true }) : nope(`GitHub respondió ${r.status}`, 502);
+    return json({ ok: true, modo: r.ok ? "inmediato" : "proxima_ronda",
+      mensaje: r.ok ? "Ronda pedida: en 2-3 minutos se actualiza." : "Pedido anotado: corre en la próxima ronda." });
   }
   if (p === "/api/push/clave") return json({ clave: env.VAPID_PUBLICA || null });
   if (p === "/api/push/suscribir" && req.method === "POST") {

@@ -46,6 +46,22 @@ def diario(simular: bool = False) -> dict:
             if cache.velas(s):
                 v = cache.vela_del_dia(t, hoy)
                 agregadas += cache.agregar(s, [v]) if v else 0
+    # historial nuevo para los CEDEARs y acciones más operados (máx. 12 por día, cuida el cupo):
+    # así Técnico, Historiador y Oportunidades también los analizan
+    if iol is not None:
+        import re as _re
+        candidatos = [t for g in ("cedears", "acciones") for t in paneles.get(g, [])
+                      if t.get("simbolo") and t.get("monto") and not _re.search(r"[A-Z0-9][DC]$", t["simbolo"])
+                      and not cache.velas(t["simbolo"])]
+        candidatos.sort(key=lambda t: t["monto"], reverse=True)
+        nuevos = 0
+        for t in candidatos[:12]:
+            if not consumo.puede_consultar(1):
+                break
+            cache.asegurar(t["simbolo"], 1)
+            nuevos += 1 if cache.velas(t["simbolo"]) else 0
+        print(f"[cierre] historial nuevo: {nuevos} (más operados)")
+
     # huecos (p. ej. un cierre que falló): se completan pidiendo SOLO las fechas faltantes, máx. 10 por día
     if iol is not None:
         from datetime import date, timedelta
@@ -82,8 +98,10 @@ def diario(simular: bool = False) -> dict:
 
 def calificadoras() -> dict:
     a = almacen_por_defecto()
-    res = con_ia.calificadoras(IA(), a, ahora().date())
-    return {"cambios": len(res.get("cambios", []))}
+    ia = IA()
+    res = con_ia.calificadoras(ia, a, ahora().date())
+    lic = con_ia.licitaciones(ia, a, ahora().date())
+    return {"cambios": len(res.get("cambios", [])), "licitacion": (lic.get("proxima") or {}).get("fecha")}
 
 
 def semanal() -> list[dict]:

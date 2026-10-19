@@ -24,7 +24,7 @@ from .nucleo.contexto import Contexto
 from .nucleo.ia import IA
 from .nucleo.modelos import Senal
 from .nucleo.registro import Registro
-from .nucleo.reloj import ahora, es_dia_habil, toca_correr
+from .nucleo.reloj import ahora, en_horario, es_dia_habil, toca_correr
 
 
 def _eventos() -> list[dict]:
@@ -82,6 +82,10 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     hoy = ya.date()
     consumo = Consumo(almacen)
 
+    pedido = None if simular else almacen.get("ui/pedido_analisis")
+    if pedido and not forzar and es_dia_habil(hoy, almacen) and en_horario(ya):
+        forzar = True  # botón "Analizar ahora" de la web
+        almacen.put("ui/pedido_analisis", None)
     if not simular and not forzar:
         if not es_dia_habil(hoy, almacen):
             return {"corrio": False, "motivo": "día no hábil"}
@@ -118,6 +122,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         ctx.dolares, ctx.riesgo_pais, ctx.riesgo_pais_ayer = fx["dolares"], fx["riesgo_pais"], fx["riesgo_pais_ayer"]
 
     ctx.extra["ons_usuario"] = almacen.get("usuario/ons") or {}
+    ctx.extra["licitaciones"] = almacen.get("licitaciones/ultimo") or {}
     abiertas = [p["ticker"] for p in reg.abiertas()]
     foco = list(dict.fromkeys(ctx.tickers_lista() + abiertas))
     if iol is not None:
