@@ -19,13 +19,13 @@ iol:
   # Paneles que se consultan en cada ronda (1 llamada cada uno).
   # El nombre exacto de cada panel lo descubre scripts/probar_iol.py y queda guardado.
   paneles:
-    - {instrumento: acciones, panel: "Merval", grupo: acciones}
-    - {instrumento: acciones, panel: "Panel General", grupo: acciones}
-    - {instrumento: cedears, panel: "Todos", grupo: cedears}
-    - {instrumento: titulosPublicos, panel: "Todos", grupo: soberanos}
-    - {instrumento: obligacionesNegociables, panel: "Todos", grupo: ons}
-    - {instrumento: letras, panel: "Todas", grupo: letras}
-    - {instrumento: cauciones, panel: "Todas", grupo: cauciones}
+    - {instrumento: Acciones, panel: "Merval", grupo: acciones}
+    - {instrumento: Acciones, panel: "Panel General", grupo: acciones}
+    - {instrumento: Acciones, panel: "CEDEARs", grupo: cedears}
+    - {instrumento: Bonos, panel: "Soberanos", grupo: soberanos}
+    - {instrumento: Bonos, panel: "Obligaciones Negociables", grupo: ons}
+    - {instrumento: Bonos, panel: "Letras", grupo: letras}
+    - {instrumento: Cauciones, panel: "Todas", grupo: cauciones}
   # Puntas detalladas (1 llamada por ticker): solo Mi lista y posiciones abiertas.
   max_puntas_por_ronda: 6
   historial_dias_inicial: 400   # carga inicial por ticker, una sola vez
