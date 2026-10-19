@@ -51,7 +51,10 @@ class AlmacenWorker(Almacen):
     """Habla con el Worker de Cloudflare usando un secreto compartido (MESA_INGESTA_TOKEN)."""
 
     def __init__(self, url: str, token: str, access_id: str | None = None, access_secret: str | None = None):
-        self.url = url.rstrip("/")
+        url = url.strip().rstrip("/")
+        if not url.startswith(("http://", "https://")):
+            url = "https://" + url  # tolera que el secreto se haya cargado sin https://
+        self.url = url
         self.s = requests.Session()
         self.s.headers["Authorization"] = f"Bearer {token}"
         if access_id and access_secret:  # token de servicio de Cloudflare Access
