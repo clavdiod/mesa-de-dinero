@@ -39,7 +39,7 @@ jobs:
           esac
       - name: Correr
         env:
-          MESA_WORKER_URL: ${{ secrets.MESA_WORKER_URL }}
+          MESA_WORKER_URL: ${{ secrets.MESA_WORKER_URL || 'https://mesa-de-dinero.clavdio81.workers.dev' }}
           MESA_INGESTA_TOKEN: ${{ secrets.MESA_INGESTA_TOKEN }}
           IOL_USUARIO: ${{ secrets.IOL_USUARIO }}
           IOL_CLAVE: ${{ secrets.IOL_CLAVE }}

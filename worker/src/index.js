@@ -29,7 +29,7 @@ function esActions(req, env) {
 const DIAS_SESION = 30;
 const enc = new TextEncoder();
 async function firmar(env, texto) {
-  const k = await crypto.subtle.importKey("raw", enc.encode(`${env.INGESTA_TOKEN}|${env.WEB_CLAVE}`),
+  const k = await crypto.subtle.importKey("raw", enc.encode(`${env.INGESTA_TOKEN}|${claveWeb(env)}`),
     { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const sig = await crypto.subtle.sign("HMAC", k, enc.encode(texto));
   return btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/[+/=]/g, (c) => ({ "+": "-", "/": "_", "=": "" }[c]));
@@ -38,8 +38,11 @@ function leerCookie(req, nombre) {
   const m = (req.headers.get("cookie") || "").match(new RegExp(`(?:^|; )${nombre}=([^;]+)`));
   return m ? m[1] : null;
 }
+// Clave de la web: WEB_CLAVE si existe; si no, la misma MESA_INGESTA_TOKEN del archivo de claves.
+const claveWeb = (env) => env.WEB_CLAVE || env.INGESTA_TOKEN;
+
 async function sesionValida(req, env) {
-  if (!env.WEB_CLAVE || !env.INGESTA_TOKEN) return false;
+  if (!claveWeb(env) || !env.INGESTA_TOKEN) return false;
   const c = leerCookie(req, "mesa_sesion");
   if (!c) return false;
   const [vence, sig] = c.split(".");
@@ -63,7 +66,7 @@ async function login(req, env) {
   const fallos = Number((await env.MESA.get(clave)) || 0);
   if (fallos >= 5) return nope("Demasiados intentos. Probá en 15 minutos.", 429);
   const { clave: intento } = await req.json().catch(() => ({}));
-  if (!env.WEB_CLAVE || !intento || !iguales(String(intento), env.WEB_CLAVE)) {
+  if (!claveWeb(env) || !intento || !iguales(String(intento).trim(), claveWeb(env))) {
     await env.MESA.put(clave, String(fallos + 1), { expirationTtl: 900 });
     return nope("Clave incorrecta", 401);
   }
