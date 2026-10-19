@@ -238,8 +238,19 @@ async function cargar() {
     [ESTADO, PROPS, USUARIO.lista, USUARIO.cartera, USUARIO.ons, USUARIO.capital] = await Promise.all([
       api("estado"), api("propuestas"), api("usuario/lista"), api("usuario/cartera"), api("usuario/ons"), api("usuario/capital")]);
     pintarEstado(); pintarPropuestas(); pintarUsuario();
-  } catch (e) { $("#sub").textContent = `No se pudo cargar: ${e.message}`; }
+    $("#login").style.display = "none"; document.querySelector("main").style.display = "";
+  } catch (e) {
+    if (String(e.message).includes("sin acceso")) {
+      $("#login").style.display = "block"; document.querySelector("main").style.display = "none";
+      $("#sub").textContent = "Ingresá tu clave";
+    } else $("#sub").textContent = `No se pudo cargar: ${e.message}`;
+  }
 }
+$("#form-login").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  try { await post("login", { clave: ev.target.clave.value }); ev.target.reset(); await cargar(); pintarRanking().catch(() => {}); }
+  catch (e) { toast(e.message); }
+});
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
 cargar(); pintarRanking().catch(() => {});
 setInterval(() => { if (!document.hidden) cargar(); }, 60000);

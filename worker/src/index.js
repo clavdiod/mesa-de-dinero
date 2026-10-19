@@ -1,9 +1,10 @@
 // Worker de la mesa: sirve la web y guarda los datos privados en Cloudflare KV.
 //
-// Seguridad (doble cerrojo):
-// 1) Cloudflare Access protege todo el dominio: solo entra tu email.
-// 2) Además el Worker revisa la identidad que manda Access (EMAIL_PERMITIDO) en cada /api/*,
-//    y las rutas /api/kv/* (que usa GitHub Actions) exigen el token secreto INGESTA_TOKEN.
+// Seguridad:
+// - Navegador: clave propia (secreto WEB_CLAVE) → cookie firmada por 30 días, con bloqueo tras 5 intentos.
+//   (Si se activa Cloudflare Access, también acepta el email de EMAIL_PERMITIDO.)
+// - /api/kv/* (GitHub Actions) exige el token secreto INGESTA_TOKEN.
+// - Sin sesión, la API no devuelve ningún dato.
 
 const JSON_H = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
 const json = (d, s = 200) => new Response(JSON.stringify(d), { status: s, headers: JSON_H });
@@ -24,11 +25,53 @@ function esActions(req, env) {
   return iguales(h, `Bearer ${env.INGESTA_TOKEN}`);
 }
 
-function esUsuario(req, env) {
+// ---- sesión propia (sin Cloudflare Access): clave WEB_CLAVE + cookie firmada ----
+const DIAS_SESION = 30;
+const enc = new TextEncoder();
+async function firmar(env, texto) {
+  const k = await crypto.subtle.importKey("raw", enc.encode(`${env.INGESTA_TOKEN}|${env.WEB_CLAVE}`),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = await crypto.subtle.sign("HMAC", k, enc.encode(texto));
+  return btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/[+/=]/g, (c) => ({ "+": "-", "/": "_", "=": "" }[c]));
+}
+function leerCookie(req, nombre) {
+  const m = (req.headers.get("cookie") || "").match(new RegExp(`(?:^|; )${nombre}=([^;]+)`));
+  return m ? m[1] : null;
+}
+async function sesionValida(req, env) {
+  if (!env.WEB_CLAVE || !env.INGESTA_TOKEN) return false;
+  const c = leerCookie(req, "mesa_sesion");
+  if (!c) return false;
+  const [vence, sig] = c.split(".");
+  if (!vence || !sig || Number(vence) < Date.now()) return false;
+  return iguales(sig, await firmar(env, vence));
+}
+
+async function esUsuario(req, env) {
   if (env.MODO_LOCAL === "1") return true; // solo para probar con `wrangler dev`
+  // Opción A: Cloudflare Access (si algún día se activa)
   const email = (req.headers.get("cf-access-authenticated-user-email") || "").toLowerCase();
   const permitidos = (env.EMAIL_PERMITIDO || "").toLowerCase().split(",").map((s) => s.trim()).filter(Boolean);
-  return permitidos.length > 0 && permitidos.includes(email);
+  if (email && permitidos.includes(email)) return true;
+  // Opción B: clave propia
+  return sesionValida(req, env);
+}
+
+async function login(req, env) {
+  const ip = req.headers.get("cf-connecting-ip") || "x";
+  const clave = `seg/fallos/${ip}`;
+  const fallos = Number((await env.MESA.get(clave)) || 0);
+  if (fallos >= 5) return nope("Demasiados intentos. Probá en 15 minutos.", 429);
+  const { clave: intento } = await req.json().catch(() => ({}));
+  if (!env.WEB_CLAVE || !intento || !iguales(String(intento), env.WEB_CLAVE)) {
+    await env.MESA.put(clave, String(fallos + 1), { expirationTtl: 900 });
+    return nope("Clave incorrecta", 401);
+  }
+  await env.MESA.delete(clave);
+  const vence = String(Date.now() + DIAS_SESION * 864e5);
+  const valor = `${vence}.${await firmar(env, vence)}`;
+  return new Response(JSON.stringify({ ok: true }), { headers: { ...JSON_H,
+    "set-cookie": `mesa_sesion=${valor}; Path=/; Max-Age=${DIAS_SESION * 86400}; HttpOnly; Secure; SameSite=Strict` } });
 }
 
 const leer = async (env, k, d = null) => (await env.MESA.get(k, "json")) ?? d;
@@ -70,8 +113,11 @@ async function api(req, env, url) {
     return nope("método no permitido", 405);
   }
 
-  // ---- Navegador (Cloudflare Access + email permitido) ----
-  if (!esUsuario(req, env)) return nope("sin acceso", 403);
+  // ---- Navegador ----
+  if (p === "/api/login" && req.method === "POST") return login(req, env);
+  if (p === "/api/salir" && req.method === "POST")
+    return new Response("{}", { headers: { ...JSON_H, "set-cookie": "mesa_sesion=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict" } });
+  if (!(await esUsuario(req, env))) return nope("sin acceso", 403);
 
   if (p === "/api/estado") {
     const [estado, cierre, alertas, consumo] = await Promise.all([

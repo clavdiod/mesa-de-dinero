@@ -35,8 +35,9 @@ jobs:
           EMAIL_PERMITIDO: ${{ secrets.EMAIL_PERMITIDO }}
           VAPID_PUBLICA: ${{ secrets.VAPID_PUBLICA }}
           GITHUB_TOKEN: ${{ secrets.MESA_GITHUB_TOKEN }}
+          WEB_CLAVE: ${{ secrets.WEB_CLAVE }}
         run: |
-          for s in INGESTA_TOKEN EMAIL_PERMITIDO VAPID_PUBLICA GITHUB_TOKEN; do
+          for s in INGESTA_TOKEN EMAIL_PERMITIDO VAPID_PUBLICA GITHUB_TOKEN WEB_CLAVE; do
             if [ -n "${!s}" ]; then
               printf '%s' "${!s}" | npx --yes wrangler@3 secret put "$s" >/dev/null && echo "secreto $s cargado"
             else

@@ -30,13 +30,14 @@ En el repo: **Settings → Secrets and variables → Actions → New repository 
 1. En el repo: **Actions → deploy-web → Run workflow**.
 2. Al terminar, la web queda en `https://mesa-de-dinero.<tu-subdominio>.workers.dev`. Cargá esa dirección como secreto `MESA_WORKER_URL`.
 
-## 4. Proteger la web (Cloudflare Access)
+## 4. Proteger la web (clave propia, gratis)
 
-1. En Cloudflare: **Zero Trust** (plan Free) → **Access → Applications → Add → Self-hosted**.
-2. Dominio: el de tu web. Política **Allow** → *Emails* → tu email. Método de ingreso: código por email.
-3. Segunda aplicación para la ruta de la mesa automática: mismo dominio con ruta `api/kv`, política **Bypass → Everyone**. (Esa ruta igual exige el `MESA_INGESTA_TOKEN`; sin él responde 401.)
+1. Elegí una clave larga (por ejemplo 4-5 palabras: `mesa-cafe-merval-lunes-2026`).
+2. Cargala como secreto **`WEB_CLAVE`** en GitHub.
+3. **Actions → deploy-web → Run workflow** para que el Worker la tome.
+4. Al abrir la web te pide la clave; la sesión dura 30 días en ese dispositivo. Tras 5 intentos fallidos se bloquea 15 minutos.
 
-Resultado: solo vos entrás a la web, y GitHub Actions puede guardar datos con su token.
+Sin clave, la web no muestra ningún dato. (Alternativa: Cloudflare Access con tu email, que puede pedir tarjeta aunque sea gratis.)
 
 ## 5. Probar y arrancar
 
