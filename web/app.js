@@ -140,14 +140,21 @@ $("#filtro-senales").addEventListener("input", pintarSenales);
 // ---------- Mi lista, cartera, capital ----------
 function pintarUsuario() {
   const precios = ESTADO.estado?.precios || {};
-  $("#mi-lista").innerHTML = USUARIO.lista.length ? `<div class="tabla-scroll"><table><tr><th>Ticker</th><th class="n">Último</th><th class="n">Día</th><th class="n">Tu precio</th><th></th></tr>
-    ${USUARIO.lista.map((x, i) => `<tr><td>${esc(x.ticker)}<div class="tenue">${esc(x.nota || "")}</div></td><td class="n">${num(precios[x.ticker]?.ultimo)}</td>
-    <td class="n">${pct(precios[x.ticker]?.variacion)}</td><td class="n">${num(x.precio)}</td><td><button class="chico" data-quitar-lista="${i}">Quitar</button></td></tr>`).join("")}</table></div>`
-    : '<p class="tenue">Agregá tickers para que la mesa los siga.</p>';
-  $("#cartera").innerHTML = USUARIO.cartera.length ? `<div class="tabla-scroll"><table><tr><th>Ticker</th><th class="n">Cantidad</th><th class="n">Compra</th><th class="n">Último</th><th class="n">Resultado</th><th></th></tr>
-    ${USUARIO.cartera.map((x, i) => { const u = precios[x.ticker]?.ultimo; const r = u && x.precio ? (u / x.precio - 1) * 100 : null;
-      return `<tr><td>${esc(x.ticker)}</td><td class="n">${num(x.cantidad, 0)}</td><td class="n">${num(x.precio)}</td><td class="n">${num(u)}</td><td class="n">${pct(r)}</td>
-      <td><button class="chico" data-quitar-cartera="${i}">Quitar</button></td></tr>`; }).join("")}</table></div>` : '<p class="tenue">Sin posiciones cargadas.</p>';
+  const color = (v) => (v > 0 ? "verde" : v < 0 ? "rojo" : "");
+  $("#mi-lista").innerHTML = USUARIO.lista.length ? USUARIO.lista.map((x, i) => {
+    const q = precios[x.ticker] || {}, dist = q.ultimo && x.precio ? (q.ultimo / x.precio - 1) * 100 : null;
+    return `<div class="item"><div class="item-cab"><b>${esc(x.ticker)}</b>
+        <span class="item-precio">${num(q.ultimo)} <span class="chip ${color(q.variacion)}">${pct(q.variacion)}</span></span>
+        <button class="quitar" data-quitar-lista="${i}" aria-label="Quitar ${esc(x.ticker)}">✕</button></div>
+      <div class="item-det">${x.precio ? `Tu precio ${num(x.precio)} · ${dist === null ? "sin cotización" : Math.abs(dist) < 0.3 ? "<b>¡en tu precio!</b>" : `está ${num(Math.abs(dist), 1)}% ${dist > 0 ? "arriba" : "abajo"}`}` : "Sin precio objetivo"}${x.nota ? ` · ${esc(x.nota)}` : ""}</div></div>`;
+  }).join("") : '<p class="tenue">Agregá tickers para que la mesa los siga.</p>';
+  $("#cartera").innerHTML = USUARIO.cartera.length ? USUARIO.cartera.map((x, i) => {
+    const u = precios[x.ticker]?.ultimo, r = u && x.precio ? (u / x.precio - 1) * 100 : null;
+    return `<div class="item"><div class="item-cab"><b>${esc(x.ticker)}</b>
+        <span class="item-precio">${num(u)}${r === null ? "" : ` <span class="chip ${color(r)}">${pct(r)}</span>`}</span>
+        <button class="quitar" data-quitar-cartera="${i}" aria-label="Quitar ${esc(x.ticker)}">✕</button></div>
+      <div class="item-det">${num(x.cantidad, 0)} nominales · compra ${num(x.precio)}${u ? "" : " · sin cotización en la ronda"}</div></div>`;
+  }).join("") : '<p class="tenue">Sin posiciones cargadas.</p>';
   const cap = USUARIO.capital || {};
   $("#capital-info").textContent = cap.monto_ars ? `1R = ${num(cap.monto_ars * (cap.riesgo_pct || 1) / 100, 0)} pesos de pérdida máxima por operación.` : "Si no lo cargás, se usa el de la configuración.";
   document.querySelectorAll("[data-quitar-lista]").forEach((b) => b.onclick = async () => { USUARIO.lista.splice(+b.dataset.quitarLista, 1); await put("usuario/lista", USUARIO.lista); pintarUsuario(); });

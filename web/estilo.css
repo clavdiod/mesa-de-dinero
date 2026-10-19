@@ -12,6 +12,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--txt); font-size: 15px; line-height: 1.5;
   padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
+.barra h1 { white-space: nowrap; }
 .barra { position: sticky; top: 0; z-index: 5; display: flex; justify-content: space-between; align-items: center;
   gap: 12px; padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--borde); }
 h1 { font-size: 18px; margin: 0; } h2 { font-size: 15px; margin: 22px 0 8px; }
@@ -46,8 +47,12 @@ th { font-size: 12px; color: var(--tenue); font-weight: 500; } td.n, th.n { text
 .tabla-scroll { overflow-x: auto; }
 .tabs { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: var(--card);
   border-top: 1px solid var(--borde); padding-bottom: env(safe-area-inset-bottom); }
-.tabs button { flex: 1; border: 0; border-radius: 0; background: none; font-size: 12px; color: var(--tenue); min-height: 56px; }
+.tabs button { flex: 1 1 0; min-width: 0; border: 0; border-radius: 0; background: none; color: var(--tenue);
+  min-height: 58px; padding: 6px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+.tabs button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tabs button span { font-size: 11px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .tabs button.activa { color: var(--azul); font-weight: 600; }
+.tabs button.activa svg { stroke-width: 2.3; }
 .barra-uso { height: 8px; border-radius: 99px; background: var(--borde); overflow: hidden; }
 .barra-uso i { display: block; height: 100%; background: var(--azul); }
 #toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--txt); color: var(--bg);
@@ -61,3 +66,11 @@ details { margin: 14px 0; } summary { cursor: pointer; color: var(--azul); }
 .msg.ia { background: var(--card); border: 1px solid var(--borde); }
 .msg table { white-space: normal; }
 .msg a { color: var(--azul); }
+
+.item { background: var(--card); border: 1px solid var(--borde); border-radius: var(--r); padding: 10px 12px; margin: 8px 0; }
+.item-cab { display: flex; align-items: center; gap: 8px; }
+.item-cab b { font-size: 16px; }
+.item-precio { margin-left: auto; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.item-det { color: var(--tenue); font-size: 13px; margin-top: 4px; }
+button.quitar { min-height: 32px; width: 32px; padding: 0; border-radius: 99px; color: var(--tenue); flex: none; }
+.fila-form > button { flex: 0 1 120px; }
