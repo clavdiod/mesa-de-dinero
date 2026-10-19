@@ -248,7 +248,14 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         res = push.enviar(subs)
         if res["vencidas"]:
             almacen.put("push/suscripciones", [s for s in subs if s.get("endpoint") not in res["vencidas"]])
-    return {"corrio": True, "nuevas": len(nuevas), "senales": len(senales), "consumo": consumo.resumen()}
+    return {"corrio": True, "nuevas": len(nuevas), "senales": len(senales), "consumo": consumo.resumen(),
+            "diagnostico": {"paneles": {g: len(t) for g, t in paneles.items()},
+                            "riesgo_pais": ctx.riesgo_pais.get("valor"), "rp_ayer": ctx.riesgo_pais_ayer,
+                            "dolares": sorted(k for k in ctx.dolares if not k.startswith("_")),
+                            "noticias": len(ctx.noticias), "con_historial": len(cache.indice),
+                            "ia": ia.disponible, "agentes": sorted({s.agente for s in senales}),
+                            "ejemplo_soberanos": [t["simbolo"] for t in paneles.get("soberanos", [])[:8]],
+                            "ejemplo_cedears": [t["simbolo"] for t in paneles.get("cedears", [])[:8]]}}
 
 
 def _ar(x: float) -> str:
@@ -279,7 +286,7 @@ if __name__ == "__main__":
         r = correr(a.forzar, a.simular)
         print(json.dumps(r, ensure_ascii=False, indent=1, default=str))
         if r.get("corrio"):
-            print(f"::notice::Ronda OK: {r['nuevas']} propuestas, {r['senales']} señales, IOL {r['consumo']['total']}/{r['consumo']['tope']}")
+            print(f"::notice::Ronda OK: {r['nuevas']} propuestas, {r['senales']} señales, IOL {r['consumo']['total']}/{r['consumo']['tope']} | {json.dumps(r['diagnostico'], ensure_ascii=False)}")
     except Exception as e:
         tb = traceback.extract_tb(e.__traceback__)[-1]
         print(f"::error::{type(e).__name__}: {str(e)[:400]} (en {tb.filename.split('/')[-1]}:{tb.lineno})")
