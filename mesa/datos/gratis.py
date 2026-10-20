@@ -13,8 +13,13 @@ from ..nucleo.config import config
 _UA = {"User-Agent": "mesa-de-dinero/1.0 (+uso personal)"}
 
 
+from ..nucleo.http import sesion as _sesion
+
+_S = _sesion()
+
+
 def _json(url: str):
-    r = requests.get(url, timeout=20, headers=_UA)
+    r = _S.get(url, timeout=20, headers=_UA)
     r.raise_for_status()
     return r.json()
 
@@ -63,7 +68,7 @@ def noticias(urls: list[str] | None = None, horas: int = 24, max_items: int = 60
     items = []
     for url in urls:
         try:
-            r = requests.get(url, timeout=20, headers=_UA)
+            r = _S.get(url, timeout=20, headers=_UA)
             feed = feedparser.parse(r.content)
         except Exception:
             continue

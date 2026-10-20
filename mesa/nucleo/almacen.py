@@ -55,7 +55,8 @@ class AlmacenWorker(Almacen):
         if not url.startswith(("http://", "https://")):
             url = "https://" + url  # tolera que el secreto se haya cargado sin https://
         self.url = url
-        self.s = requests.Session()
+        from .http import sesion
+        self.s = sesion()
         self.s.headers["Authorization"] = f"Bearer {token}"
         if access_id and access_secret:  # token de servicio de Cloudflare Access
             self.s.headers["CF-Access-Client-Id"] = access_id

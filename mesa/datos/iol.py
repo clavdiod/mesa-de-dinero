@@ -25,7 +25,8 @@ class IOL:
         self.usuario = usuario or env("IOL_USUARIO")
         self.clave = clave or env("IOL_CLAVE")
         self.almacen = almacen
-        self.s = requests.Session()
+        from ..nucleo.http import sesion
+        self.s = sesion(metodos=("GET",))  # el POST del token no se reintenta solo
         self._token: str | None = None
         self._refresh: str | None = None
         self._vence = 0.0

@@ -22,4 +22,6 @@ jobs:
           MESA_INGESTA_TOKEN: ${{ secrets.MESA_INGESTA_TOKEN }}
           IOL_USUARIO: ${{ secrets.IOL_USUARIO }}
           IOL_CLAVE: ${{ secrets.IOL_CLAVE }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: PYTHONPATH=. python scripts/${{ inputs.script || 'probar_iol' }}.py

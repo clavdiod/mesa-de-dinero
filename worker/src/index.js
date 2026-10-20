@@ -250,16 +250,27 @@ async function api(req, env, url) {
 // ---- Reloj propio (Cloudflare Cron): dispara los procesos de GitHub Actions ----
 // Respaldo más confiable que el cron de GitHub. Requiere GITHUB_TOKEN (permiso Actions: read/write).
 async function disparar(env, workflow, inputs) {
-  if (!env.GITHUB_TOKEN || !env.GITHUB_REPO) return;
-  await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/actions/workflows/${workflow}/dispatches`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${env.GITHUB_TOKEN}`, accept: "application/vnd.github+json", "user-agent": "mesa-de-dinero" },
-    body: JSON.stringify({ ref: "main", inputs }),
-  });
+  let estado = "sin_token";
+  if (env.GITHUB_TOKEN && env.GITHUB_REPO) {
+    try {
+      const r = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/actions/workflows/${workflow}/dispatches`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${env.GITHUB_TOKEN}`, accept: "application/vnd.github+json", "user-agent": "mesa-de-dinero" },
+        body: JSON.stringify({ ref: "main", inputs }),
+      });
+      estado = r.ok ? "ok" : `${r.status} ${(await r.text()).slice(0, 160)}`;
+    } catch (e) { estado = `error ${e.message}`; }
+  }
+  // bitácora corta para diagnosticar el reloj (sin secretos)
+  const log = (await env.MESA.get("reloj/log", "json")) || [];
+  log.unshift({ t: new Date().toISOString(), wf: workflow, estado });
+  await env.MESA.put("reloj/log", JSON.stringify(log.slice(0, 30)));
+  return estado;
 }
 
 async function reloj(evento, env) {
   const d = new Date(evento.scheduledTime);
+  await env.MESA.put("reloj/latido", JSON.stringify({ t: d.toISOString(), cron: evento.cron }));
   const hm = d.getUTCHours() * 60 + d.getUTCMinutes(), dia = d.getUTCDay();
   if (dia >= 1 && dia <= 5) {
     if (hm >= 13 * 60 + 30 && hm <= 20 * 60) await disparar(env, "ronda.yml", { forzar: "false" }); // 10:30-17:00 ART
