@@ -73,7 +73,11 @@ def detectar(ctx: Contexto, estado: dict, vetos: set[str]) -> dict:
                           "semaforo": _semaforo(ev), "riesgo": ev, "puntaje": round(plan.r_neto(com) * prob, 3)})
 
         # ---------- MEDIANO (1-3 meses) ----------
-        if m50 and m200 and precio > m50 > m200 and precio <= m50 * 1.04:
+        m50_antes = calc.sma(cierres[:-20], 50) if len(cierres) >= 70 else None
+        # tendencia de verdad: la media de 50 tiene que venir subiendo (≥1% en 20 ruedas), no un lateral
+        # (lección del 20/10: METR estaba encima de sus medias pero lateral entre 2.255 y 2.442 hacía dos meses)
+        sube = bool(m50_antes and m50 and m50 >= m50_antes * 1.01)
+        if m50 and m200 and sube and precio > m50 > m200 and precio <= m50 * 1.04:
             stop = min(m50 - 1.0 * a, (sop["desde"] if sop else m50 - 1.5 * a))
             obj = precio + 3 * (precio - stop)
             if stop < precio:
@@ -100,15 +104,14 @@ def detectar(ctx: Contexto, estado: dict, vetos: set[str]) -> dict:
     oc = {"cedear_desvio_min_pct": 3.0, "cedear_monto_min_ars": 20_000_000, "cedear_max": 3,
           **(config().get("oportunidades") or {})}
     med = ctx.extra.get("ccl_cedears_mediana")
+    validos = ctx.extra.get("ccl_cedears") or {}  # solo CEDEARs con las dos líneas operadas hoy y desvío creíble
     baratos = []
     if med:
-        for t in ctx.grupo("cedears"):
-            s, c = t.get("simbolo"), ctx.titulo((t.get("simbolo") or "") + "C")
-            if not s or not c or not t.get("ultimo") or not c.get("ultimo"):
+        for s, v in validos.items():
+            t = ctx.titulo(s)
+            if not t or (t.get("monto") or 0) < oc["cedear_monto_min_ars"]:
                 continue
-            if (t.get("monto") or 0) < oc["cedear_monto_min_ars"]:
-                continue
-            desvio = (t["ultimo"] / c["ultimo"] / med - 1) * 100
+            desvio = (v / med - 1) * 100
             if desvio <= -oc["cedear_desvio_min_pct"]:
                 baratos.append((desvio, t, s))
     for desvio, t, s in sorted(baratos, key=lambda x: x[0])[: oc["cedear_max"]]:

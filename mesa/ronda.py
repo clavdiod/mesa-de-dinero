@@ -69,6 +69,13 @@ def refrescar_puntas(ctx: Contexto, iol, consumo: Consumo, tickers: list[str]) -
             print(f"[puntas] {tk}: {e}")
 
 
+def _aprendizajes() -> list[dict]:
+    try:
+        return yaml.safe_load((RAIZ / "config" / "aprendizajes.yaml").read_text(encoding="utf-8")) or []
+    except Exception:
+        return []
+
+
 def puntaje_ticker(senales: list[Senal], reg: Registro) -> float:
     tot = 0.0
     for s in senales:
@@ -191,6 +198,25 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
               "perdida_dia_r": reg.resultado_periodo(hoy.isoformat()),
               "perdida_semana_r": reg.resultado_periodo(date.fromordinal(hoy.toordinal() - hoy.weekday()).isoformat())}
     ya_propuestos = {p["ticker"] for p in propuestas_hoy} | set(abiertas)
+
+    # --- oportunidades de corto y mediano (ANTES del Jefe, para que sus señales cuenten en la decisión;
+    #     lección del 20/10: TXAR apareció como oportunidad a 690,5 y el Jefe recién lo vio a 715) ---
+    ops = oportunidades.detectar(ctx, estado, vetos)
+    sen_ops = oportunidades.como_senales(ops)
+    senales += sen_ops
+    nuevos_pre = []
+    for s_ in sen_ops:
+        por_ticker.setdefault(s_.ticker, []).append(s_)
+    for tk in {s_.ticker for s_ in sen_ops}:
+        if ctx.titulo(tk):
+            puntajes[tk] = puntaje_ticker(por_ticker[tk], reg)
+            if puntajes[tk] >= 0.6 and tk not in preseleccion:
+                preseleccion.append(tk)
+                nuevos_pre.append(tk)
+    if nuevos_pre and not simular:
+        hechos2 = con_ia.hechos_emisor(ctx, ia, nuevos_pre, almacen)
+        senales += hechos2
+        vetos |= {s_.ticker for s_ in hechos2 if s_.veto}
     evaluados = []
     for tk in preseleccion:
         if tk in ya_propuestos:
@@ -260,10 +286,6 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                        "cantidad_sugerida": cantidad, "seguimiento": {"estado": "pendiente"}})
     reg.nuevas(nuevas)
 
-    # --- oportunidades de corto y mediano plazo (con semáforo de Riesgo) ---
-    ops = oportunidades.detectar(ctx, estado, vetos)
-    senales += oportunidades.como_senales(ops)
-
     # --- simulación en papel: 1.000 nominales de cada oportunidad/propuesta, medida en pesos ---
     try:
         sim = Simulador(almacen)
@@ -307,6 +329,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "esperanza": reg.esperanza_mesa(),
         "informes": informes,
         "oportunidades": ops,
+        "aprendizajes": _aprendizajes(),
     }
     almacen.put("ui/estado", {**estado_ui, **resumen})
     # foto compacta de TODOS los paneles para el Asistente (sin gastar consultas extra)

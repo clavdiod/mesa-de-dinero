@@ -30,6 +30,10 @@ def armar_plan(ctx: Contexto, ticker: str) -> Plan | None:
     res = calc.resistencia_cercana(velas, precio)
     # entrada: si hay soporte a menos de 1 ATR, esperar ahí; si no, precio actual
     entrada = sop["hasta"] if sop and precio - sop["hasta"] <= a else precio
+    # no perseguir: si hoy ya subió fuerte, la entrada va con límite medio ATR abajo
+    # (lección del 20/10: TXAR se vio a 690,5 y el Jefe lo propuso a 715 tras subir 3%)
+    if (t.get("variacion") or 0) >= float(config()["riesgo"].get("no_perseguir_suba_pct", 2.5)):
+        entrada = min(entrada, precio - 0.5 * a)
     entrada = round(min(entrada, precio), 4)
     base_stop = sop["desde"] if sop and entrada - sop["desde"] <= 2 * a else entrada - 1.5 * a
     stop = round(base_stop - 0.25 * a, 4)

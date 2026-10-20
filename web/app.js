@@ -241,6 +241,14 @@ $("#form-on").addEventListener("submit", async (ev) => {
   await put("usuario/ons", USUARIO.ons); ev.target.reset(); pintarCalendario(); toast("ON guardada");
 });
 
+// ---------- aprendizajes ----------
+function pintarAprendizajes() {
+  const xs = ESTADO.estado?.aprendizajes || [];
+  $("#aprendizajes").innerHTML = xs.length ? xs.map((a) => `<div class="card"><div class="fila"><b>${esc(a.caso)}</b><span class="tenue">${esc(a.fecha)}</span></div>
+    <p class="tenue">${esc(a.que_paso)}</p><p><b>Lección:</b> ${esc(a.leccion)}</p><p><b>Cambio:</b> ${esc(a.cambio)}</p></div>`).join("")
+    : '<p class="tenue">Todavía no hay aprendizajes registrados.</p>';
+}
+
 // ---------- simulación en papel ----------
 const ORIGEN = { corto: "Corto", mediano: "Mediano", jefe: "Jefe" };
 const ESTADO_SIM = { abierta: "Abierta", pendiente: "Esperando precio", objetivo: "Llegó al objetivo", stop: "Tocó el stop", plazo: "Venció el plazo", no_se_dio: "No se dio" };
@@ -470,7 +478,7 @@ async function cargar() {
   try {
     [ESTADO, PROPS, USUARIO.lista, USUARIO.cartera, USUARIO.ons, USUARIO.capital] = await Promise.all([
       api("estado"), api("propuestas"), api("usuario/lista"), api("usuario/cartera"), api("usuario/ons"), api("usuario/capital")]);
-    pintarEstado(); pintarPropuestas(); pintarUsuario();
+    pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes();
     $("#login").style.display = "none"; document.querySelector("main").style.display = "";
   } catch (e) {
     if (String(e.message).includes("sin acceso")) {

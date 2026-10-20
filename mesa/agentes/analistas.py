@@ -49,15 +49,22 @@ def cedears(ctx: Contexto) -> list[Senal]:
     ccls = {}
     for s, t in titulos.items():
         c = titulos.get(s + "C")
-        if c and c["ultimo"] and not s.endswith(("C", "D")):
+        # las dos líneas tienen que haber operado hoy: si la de dólares no operó, su precio es viejo
+        # y el "dólar implícito" sale cualquier cosa (lección del 20/10: desvíos de 11% a 78% eran datos viejos)
+        es_linea_usd = s.endswith(("C", "D")) and s[:-1] in titulos  # AAPLC/AAPLD son líneas en dólares; PLD o AMD no
+        if c and c["ultimo"] and not es_linea_usd and (c.get("volumen") or 0) > 0 and (t.get("volumen") or 0) > 0:
             ccls[s] = t["ultimo"] / c["ultimo"]
     if len(ccls) < 5:
         return []
     med = st.median(ccls.values())
     ctx.extra["ccl_cedears_mediana"] = round(med, 2)
+    tope = float((config().get("oportunidades") or {}).get("cedear_desvio_max_pct", 6.0))
+    ctx.extra["ccl_cedears"] = {s: v for s, v in ccls.items() if abs((v / med - 1) * 100) <= tope}
     out = []
     for s, v in ccls.items():
         desvio = (v / med - 1) * 100
+        if abs(desvio) > tope:
+            continue  # desvío imposible de arbitrar: dato inconsistente, no señal
         if desvio <= -1.5:
             out.append(Senal("cedears", s, +1, _clip(abs(desvio) / 5),
                              f"Su dólar implícito ({_ar(v, 0)}) está {abs(desvio):.1f}% por debajo de la mediana de CEDEARs ({_ar(med, 0)}): relativamente barato.",
