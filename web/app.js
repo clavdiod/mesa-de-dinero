@@ -241,12 +241,57 @@ $("#form-on").addEventListener("submit", async (ev) => {
   await put("usuario/ons", USUARIO.ons); ev.target.reset(); pintarCalendario(); toast("ON guardada");
 });
 
+// ---------- simulación en papel ----------
+const ORIGEN = { corto: "Corto", mediano: "Mediano", jefe: "Jefe" };
+const ESTADO_SIM = { abierta: "Abierta", pendiente: "Esperando precio", objetivo: "Llegó al objetivo", stop: "Tocó el stop", plazo: "Venció el plazo", no_se_dio: "No se dio" };
+const plata = (x) => (x === null || x === undefined ? "—" : `${x < 0 ? "-" : ""}$${num(Math.abs(x), 0)}`);
+let SIM_VISTA = "abiertas";
+function tablaStats(obj, nombres = {}) {
+  const filas = Object.entries(obj || {}).filter(([, v]) => v.cerradas);
+  if (!filas.length) return '<p class="tenue">Todavía no hay operaciones cerradas.</p>';
+  return `<div class="tabla-scroll"><table><tr><th></th><th class="n">Cerradas</th><th class="n">Ganadoras</th><th class="n">Prom.</th><th class="n">Resultado</th></tr>
+    ${filas.sort((a, b) => b[1].ganancia - a[1].ganancia).map(([k, v]) => `<tr><td>${esc(nombres[k] || k)}</td><td class="n">${v.cerradas}</td><td class="n">${num(v.ganadoras_pct, 0)}%</td>
+    <td class="n">${pct(v.promedio_pct, 1)}</td><td class="n" style="color:var(--${v.ganancia >= 0 ? "verde" : "rojo"})">${plata(v.ganancia)}</td></tr>`).join("")}</table></div>`;
+}
+async function pintarSimulacion() {
+  const box = $("#simulacion");
+  let d; try { d = await api("simulacion"); } catch (_) { box.innerHTML = '<p class="tenue">Sin datos de simulación.</p>'; return; }
+  const r = d.resumen || {}, t = r.total || {};
+  const col = (x) => `color:var(--${(x || 0) >= 0 ? "verde" : "rojo"})`;
+  const lista = d.posiciones.filter((p) => SIM_VISTA === "abiertas" ? ["abierta", "pendiente"].includes(p.estado) : !["abierta", "pendiente"].includes(p.estado));
+  const item = (p) => {
+    const abierta = p.estado === "abierta", g = abierta ? p.ganancia_actual : p.ganancia, gp = abierta ? p.ganancia_pct_actual : p.ganancia_pct;
+    const ref = abierta ? `ahora ${num(p.ultimo)}` : p.salida ? `salió ${num(p.salida)}` : `límite ${num(p.entrada)}`;
+    return `<div class="item"><div class="item-cab"><b class="link" data-abrir-debate="${esc(p.ticker)}">${esc(p.ticker)}</b>
+        <span class="chip ${p.origen === "jefe" ? "" : p.semaforo === "verde" ? "verde" : p.semaforo === "rojo" ? "rojo" : "amar"}">${esc(ORIGEN[p.origen] || p.origen)}</span>
+        <span class="item-precio">${g === undefined ? "" : `<b style="${col(g)}">${plata(g)}</b> <span class="tenue">${pct(gp, 1)}</span>`}</span></div>
+      <div class="item-det">${esc(ESTADO_SIM[p.estado] || p.estado)} · ${num(p.nominales, 0)} nom. · compra ${p.moneda === "USD" ? "US$" : ""}${num(p.entrada)} → ${ref} · objetivo ${num(p.objetivo)} / stop ${num(p.stop)}</div>
+      <div class="item-det">${esc(p.setup)} · desde ${esc(p.fecha)}${p.fecha_cierre ? ` hasta ${esc(p.fecha_cierre)}` : ""}</div></div>`;
+  };
+  box.innerHTML = `<div class="grilla">
+      <div class="met"><span>Resultado cerradas</span><b style="${col(t.ganancia)}">${t.cerradas ? plata(t.ganancia) : "—"}</b></div>
+      <div class="met"><span>Ganadoras</span><b>${t.cerradas ? num(t.ganadoras_pct, 0) + "%" : "—"}</b></div>
+      <div class="met"><span>Promedio por operación</span><b>${t.cerradas ? pct(t.promedio_pct, 1) : "—"}</b></div>
+      <div class="met"><span>Abiertas (${r.abiertas || 0})</span><b style="${col(r.latente)}">${plata(r.latente || 0)}</b></div></div>
+    <p class="tenue">${t.cerradas || 0} cerradas (sin contar las de semáforo rojo) · ${r.pendientes || 0} esperando precio · ${r.no_se_dieron || 0} no se dieron.</p>
+    <div class="tiras"><button class="chico ${SIM_VISTA === "abiertas" ? "prim" : ""}" data-simv="abiertas">Abiertas</button><button class="chico ${SIM_VISTA === "cerradas" ? "prim" : ""}" data-simv="cerradas">Cerradas</button></div>
+    ${lista.slice(0, 40).map(item).join("") || `<p class="tenue">${SIM_VISTA === "abiertas" ? "No hay operaciones simuladas abiertas: se abren solas cuando aparece una oportunidad." : "Todavía no cerró ninguna."}</p>`}
+    <details><summary>Resultado por plazo, semáforo y agente</summary>
+      <h2>Por plazo</h2>${tablaStats(r.por_origen, ORIGEN)}
+      <h2>Por semáforo</h2>${tablaStats(r.por_semaforo, { verde: "Verde", amarillo: "Amarillo", rojo: "Rojo (no recomendadas)" })}
+      <h2>Por tipo de oportunidad</h2>${tablaStats(r.por_setup)}
+      <h2>Por agente</h2>${tablaStats(r.por_agente, Object.fromEntries(Object.keys(r.por_agente || {}).map((k) => [k, nombreAg(k)])))}
+      <p class="tenue">Lo que cotiza en dólares (ej. AL30D) se pasa a pesos con el MEP del día de compra. Ojo: 1.000 nominales de una acción cara invierten mucho más que 1.000 de una barata. Para comparar, mirá el promedio en %.</p>
+    </details>`;
+  document.querySelectorAll("[data-simv]").forEach((b) => b.onclick = () => { SIM_VISTA = b.dataset.simv; pintarSimulacion(); });
+}
+
 // ---------- ranking ----------
 async function pintarRanking() {
   const r = await api("ranking");
-  $("#ranking").innerHTML = r.tabla.length ? `<div class="tabla-scroll"><table><tr><th>Agente</th><th>Nivel</th><th class="n">Casos</th><th class="n">Aciertos</th><th class="n">Esperanza</th><th class="n">Peso</th></tr>
+  $("#ranking").innerHTML = r.tabla.length ? `<div class="tabla-scroll"><table><tr><th>Agente</th><th>Nivel</th><th class="n">Casos</th><th class="n">Aciertos</th><th class="n">Esperanza</th><th class="n">Plata sim.</th><th class="n">Peso</th></tr>
     ${r.tabla.map((f) => `<tr><td>${esc(NOMBRES[f.agente] || f.agente)}</td><td><span class="chip ${f.nivel === "titular" ? "verde" : f.nivel === "banco" ? "rojo" : f.nivel === "a_prueba" ? "amar" : ""}">${esc(f.nivel.replace("_", " "))}</span></td>
-    <td class="n">${f.casos}</td><td class="n">${num(f.aciertos_pct, 0)}%</td><td class="n">${pct(f.esperanza_pct)}</td><td class="n">${num(f.peso, 1)}</td></tr>`).join("")}</table></div>`
+    <td class="n">${f.casos}</td><td class="n">${num(f.aciertos_pct, 0)}%</td><td class="n">${pct(f.esperanza_pct)}</td><td class="n">${f.sim_cerradas ? plata(f.sim_ganancia) : "—"}</td><td class="n">${num(f.peso, 1)}</td></tr>`).join("")}</table></div>`
     : '<p class="tenue">El ranking arranca cuando los agentes juntan casos (se arma cada viernes).</p>';
   const pend = r.pendientes.filter((p) => p.estado === "pendiente");
   $("#capacitacion").innerHTML = pend.length ? pend.map((p) => `<div class="card"><b>${esc(NOMBRES[p.agente])}</b>
@@ -435,10 +480,10 @@ async function cargar() {
 }
 $("#form-login").addEventListener("submit", async (ev) => {
   ev.preventDefault();
-  try { await post("login", { clave: ev.target.clave.value }); ev.target.reset(); await cargar().then(cargarDisponibles); pintarRanking().catch(() => {}); }
+  try { await post("login", { clave: ev.target.clave.value }); ev.target.reset(); await cargar().then(cargarDisponibles); pintarRanking().catch(() => {}); pintarSimulacion(); }
   catch (e) { toast(e.message); }
 });
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
-cargar().then(cargarDisponibles); pintarRanking().catch(() => {});
-setInterval(() => { if (!document.hidden) cargar(); }, 60000);
+cargar().then(cargarDisponibles); pintarRanking().catch(() => {}); pintarSimulacion();
+setInterval(() => { if (!document.hidden) { cargar(); pintarSimulacion(); } }, 60000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) cargar(); });

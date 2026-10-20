@@ -167,6 +167,15 @@ class Registro:
         for f in filas:
             f.setdefault("nivel", "sin_datos")
             f.setdefault("peso", 1.0)
+        # incentivo en plata: con 10+ simulaciones cerradas, quien pierde dinero no puede ser titular
+        sim = (self.a.get("sim/resumen") or {}).get("por_agente", {})
+        minimo = config().get("simulacion", {}).get("minimo_cerradas_ranking", 10)
+        for f in filas:
+            d = sim.get(f["agente"]) or {}
+            f["sim_cerradas"], f["sim_ganancia"] = d.get("cerradas", 0), d.get("ganancia")
+            if f["nivel"] == "titular" and f["sim_cerradas"] >= minimo and (f["sim_ganancia"] or 0) < 0:
+                f["nivel"], f["peso"] = "normal", cfg["niveles"]["normal"]["peso"]
+                f["motivo"] = "Pierde plata en la simulación"
         return sorted(filas, key=lambda f: f["peso"], reverse=True)
 
     def cerrar_ranking_semanal(self) -> list[dict]:

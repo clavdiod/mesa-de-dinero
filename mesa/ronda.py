@@ -24,6 +24,7 @@ from .nucleo.contexto import Contexto
 from .nucleo.ia import IA
 from .nucleo.modelos import Senal
 from .nucleo.registro import Registro
+from .nucleo.simulacion import Simulador
 from .nucleo.reloj import ahora, en_horario, es_dia_habil, toca_correr
 
 
@@ -262,6 +263,15 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     # --- oportunidades de corto y mediano plazo (con semáforo de Riesgo) ---
     ops = oportunidades.detectar(ctx, estado, vetos)
     senales += oportunidades.como_senales(ops)
+
+    # --- simulación en papel: 1.000 nominales de cada oportunidad/propuesta, medida en pesos ---
+    try:
+        sim = Simulador(almacen)
+        sim.actualizar(ctx.por_simbolo, hoy)
+        sim.abrir(ops, nuevas, ctx, por_ticker, hoy, ctx.hora)
+        sim.guardar()
+    except Exception as ex:  # nunca frena la ronda
+        print(f"[simulacion] {ex}")
 
     # --- seguimiento de propuestas y señales ---
     reg.actualizar_seguimiento({k: v for k, v in ctx.por_simbolo.items()}, hoy)

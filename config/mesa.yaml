@@ -12,6 +12,12 @@ frecuencia:
   ultima_hora_min: 5      # 16:00 a 17:00
   mediodia_min: 10        # el resto
 
+simulacion:
+  # "¿Qué hubiera pasado?": cada oportunidad y propuesta se compra en papel con estos nominales
+  nominales: 1000
+  dias_limite: 5               # una orden límite del Jefe que no se da en 5 días hábiles se descarta
+  minimo_cerradas_ranking: 10  # con 10+ cerradas, el que pierde plata no puede ser titular
+
 iol:
   presupuesto_mensual: 25000
   alerta_pct: 80          # al pasar este % avisa y baja la frecuencia

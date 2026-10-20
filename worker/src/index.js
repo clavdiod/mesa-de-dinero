@@ -229,6 +229,10 @@ async function api(req, env, url) {
     }
     return json({ ok: true, mensaje: inmediato ? `Debate de ${t} pedido: en 2-3 minutos está listo.` : `Debate de ${t} anotado: sale en la próxima ronda.` });
   }
+  if (p === "/api/simulacion") {
+    const [resumen, pos] = await Promise.all([leer(env, "sim/resumen", {}), leer(env, "sim/posiciones", [])]);
+    return json({ resumen, posiciones: pos.slice(0, 150) });
+  }
   if (p === "/api/panel") return json(await leer(env, "ui/panel", { titulos: {} }));
   if (p === "/api/asistente/estado") return json({ activo: Boolean(env.ANTHROPIC_API_KEY) });
   if (p === "/api/asistente" && req.method === "POST") {
