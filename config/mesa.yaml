@@ -12,6 +12,12 @@ frecuencia:
   ultima_hora_min: 5      # 16:00 a 17:00
   mediodia_min: 10        # el resto
 
+oportunidades:
+  # CEDEAR "barato" por dólar implícito: solo líquidos y con desvío que pague la comisión
+  cedear_desvio_min_pct: 3.0
+  cedear_monto_min_ars: 20000000
+  cedear_max: 3
+
 simulacion:
   # "¿Qué hubiera pasado?": cada oportunidad y propuesta se compra en papel con estos nominales
   nominales: 1000

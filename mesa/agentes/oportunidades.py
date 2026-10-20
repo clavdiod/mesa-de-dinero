@@ -94,23 +94,32 @@ def detectar(ctx: Contexto, estado: dict, vetos: set[str]) -> dict:
                                 "historia": hist_txt, "plan": plan.dict(), "r_neto": round(plan.r_neto(com), 2),
                                 "semaforo": _semaforo(ev), "riesgo": ev, "puntaje": round(plan.r_neto(com) * h20["subas"] / casos, 3)})
 
-    # CEDEARs relativamente baratos por dólar implícito (no necesitan historial)
+    # CEDEARs relativamente baratos por dólar implícito (no necesitan historial).
+    # Filtrado: solo líquidos, con un desvío que pague la comisión, y como máximo unos pocos por día
+    # (la primera simulación mostró que los poco operados "baratos" no se corrigen solos).
+    oc = {"cedear_desvio_min_pct": 3.0, "cedear_monto_min_ars": 20_000_000, "cedear_max": 3,
+          **(config().get("oportunidades") or {})}
     med = ctx.extra.get("ccl_cedears_mediana")
+    baratos = []
     if med:
         for t in ctx.grupo("cedears"):
             s, c = t.get("simbolo"), ctx.titulo((t.get("simbolo") or "") + "C")
-            if not s or not c or not t.get("ultimo") or not c.get("ultimo") or not (t.get("monto") or 0):
+            if not s or not c or not t.get("ultimo") or not c.get("ultimo"):
+                continue
+            if (t.get("monto") or 0) < oc["cedear_monto_min_ars"]:
                 continue
             desvio = (t["ultimo"] / c["ultimo"] / med - 1) * 100
-            if desvio <= -2:
-                precio = t.get("venta") or t["ultimo"]
-                plan = _plan(ctx, s, precio, precio * 0.95, precio * (1 + abs(desvio) / 100 + 0.075), 10)
-                ev = riesgo.evaluar(ctx, plan, estado, vetos)
-                corto.append({"ticker": s, "sector": "cedears", "plazo": "corto", "setup": "CEDEAR barato por dólar implícito",
-                              "motivo": f"Su dólar implícito está {abs(desvio):.1f}% debajo de la mediana: si se normaliza, gana esa diferencia además del subyacente.",
-                              "historia": "Sin historial propio (se compara contra el resto de los CEDEARs).", "plan": plan.dict(),
-                              "r_neto": round(plan.r_neto(com), 2), "semaforo": _semaforo(ev), "riesgo": ev,
-                              "puntaje": round(plan.r_neto(com) * 0.5, 3)})
+            if desvio <= -oc["cedear_desvio_min_pct"]:
+                baratos.append((desvio, t, s))
+    for desvio, t, s in sorted(baratos, key=lambda x: x[0])[: oc["cedear_max"]]:
+        precio = t.get("venta") or t["ultimo"]
+        plan = _plan(ctx, s, precio, precio * 0.95, precio * (1 + abs(desvio) / 100 + 0.075), 10)
+        ev = riesgo.evaluar(ctx, plan, estado, vetos)
+        corto.append({"ticker": s, "sector": "cedears", "plazo": "corto", "setup": "CEDEAR barato por dólar implícito",
+                      "motivo": f"Su dólar implícito está {abs(desvio):.1f}% debajo de la mediana: si se normaliza, gana esa diferencia además del subyacente.",
+                      "historia": "Sin historial propio (se compara contra el resto de los CEDEARs).", "plan": plan.dict(),
+                      "r_neto": round(plan.r_neto(com), 2), "semaforo": _semaforo(ev), "riesgo": ev,
+                      "puntaje": round(plan.r_neto(com) * 0.5, 3)})
 
     orden = {"verde": 0, "amarillo": 1, "rojo": 2}
     for lista in (corto, mediano):

@@ -265,6 +265,7 @@ async function pintarSimulacion() {
     return `<div class="item"><div class="item-cab"><b class="link" data-abrir-debate="${esc(p.ticker)}">${esc(p.ticker)}</b>
         <span class="chip ${p.origen === "jefe" ? "" : p.semaforo === "verde" ? "verde" : p.semaforo === "rojo" ? "rojo" : "amar"}">${esc(ORIGEN[p.origen] || p.origen)}</span>
         <span class="item-precio">${g === undefined ? "" : `<b style="${col(g)}">${plata(g)}</b> <span class="tenue">${pct(gp, 1)}</span>`}</span></div>
+      ${p.estado === "abierta" && p.ultimo ? `<div class="item-det">Precio ${pct((p.ultimo / p.entrada - 1) * 100, 1)} · con comisión ${pct(gp, 1)} (necesita +1,2% para empatar)</div>` : ""}
       <div class="item-det">${esc(ESTADO_SIM[p.estado] || p.estado)} · ${num(p.nominales, 0)} nom. · compra ${p.moneda === "USD" ? "US$" : ""}${num(p.entrada)} → ${ref} · objetivo ${num(p.objetivo)} / stop ${num(p.stop)}</div>
       <div class="item-det">${esc(p.setup)} · desde ${esc(p.fecha)}${p.fecha_cierre ? ` hasta ${esc(p.fecha_cierre)}` : ""}</div></div>`;
   };
