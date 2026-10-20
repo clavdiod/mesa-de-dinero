@@ -105,13 +105,14 @@ function pintarOportunidades() {
     <div class="fila"><div><b style="font-size:17px">${esc(o.ticker)}</b> <span class="tenue">${esc(o.setup)}</span></div>
     <span class="chip ${col[o.semaforo]}">${o.semaforo === "verde" ? "Pasa Riesgo" : o.semaforo === "amarillo" ? "Con cuidado" : "Riesgo la frena"}</span></div>
     <p style="margin:6px 0">${esc(o.motivo)}</p>
+    ${o.mesa ? `<p class="tenue">✔ La confirman: ${esc(o.mesa.a_favor.map(nombreAg).join(", "))}</p>` : ""}
     <div class="grilla"><div class="met"><span>Compra límite</span><b>${num(o.plan.entrada)}</b></div>
       <div class="met"><span>Objetivo</span><b style="color:var(--verde)">${num(o.plan.objetivo)} (${pct(o.plan.recompensa_pct, 1)})</b></div>
       <div class="met"><span>Stop</span><b style="color:var(--rojo)">${num(o.plan.stop)} (−${num(o.plan.riesgo_pct, 1)}%)</b></div>
       <div class="met"><span>Gana/arriesga neto</span><b>${num(o.r_neto, 2)}R</b></div></div>
     <p class="tenue">${esc(o.historia)}. Vence ${esc(o.plan.vence)}.</p>
     ${[...(o.riesgo.motivos || []), ...(o.riesgo.avisos || [])].map((m) => `<p class="tenue">• ${esc(m)}</p>`).join("")}
-  </div>`).join("") : '<div class="vacio">Nada cerca de una entrada en este plazo por ahora.</div>';
+  </div>`).join("") : `<div class="vacio">Ninguna oportunidad confirmada por la mesa en este plazo.${ESTADO.estado?.oportunidades_observadas ? `<br>${ESTADO.estado.oportunidades_observadas} en observación: otros analistas no las confirman, no se muestran.` : ""}</div>`;
 }
 document.querySelectorAll("#ops-plazo button").forEach((b) => b.addEventListener("click", () => {
   PLAZO = b.dataset.plazo; document.querySelectorAll("#ops-plazo button").forEach((x) => x.classList.toggle("prim", x === b)); pintarOportunidades();
@@ -266,7 +267,11 @@ async function pintarSimulacion() {
   let d; try { d = await api("simulacion"); } catch (_) { box.innerHTML = '<p class="tenue">Sin datos de simulación.</p>'; return; }
   const r = d.resumen || {}, t = r.total || {};
   const col = (x) => `color:var(--${(x || 0) >= 0 ? "verde" : "rojo"})`;
-  const lista = d.posiciones.filter((p) => SIM_VISTA === "abiertas" ? ["abierta", "pendiente"].includes(p.estado) : !["abierta", "pendiente"].includes(p.estado));
+  const activa = (p) => ["abierta", "pendiente"].includes(p.estado);
+  const ok = (p) => p.aprobada || p.origen === "jefe";
+  const lista = d.posiciones.filter((p) => SIM_VISTA === "observacion" ? !ok(p)
+    : ok(p) && (SIM_VISTA === "abiertas" ? activa(p) : !activa(p)));
+  const obs = r.observacion || {};
   const item = (p) => {
     const abierta = p.estado === "abierta", g = abierta ? p.ganancia_actual : p.ganancia, gp = abierta ? p.ganancia_pct_actual : p.ganancia_pct;
     const ref = abierta ? `ahora ${num(p.ultimo)}` : p.salida ? `salió ${num(p.salida)}` : `límite ${num(p.entrada)}`;
@@ -282,8 +287,9 @@ async function pintarSimulacion() {
       <div class="met"><span>Ganadoras</span><b>${t.cerradas ? num(t.ganadoras_pct, 0) + "%" : "—"}</b></div>
       <div class="met"><span>Promedio por operación</span><b>${t.cerradas ? pct(t.promedio_pct, 1) : "—"}</b></div>
       <div class="met"><span>Abiertas (${r.abiertas || 0})</span><b style="${col(r.latente)}">${plata(r.latente || 0)}</b></div></div>
-    <p class="tenue">${t.cerradas || 0} cerradas (sin contar las de semáforo rojo) · ${r.pendientes || 0} esperando precio · ${r.no_se_dieron || 0} no se dieron.</p>
-    <div class="tiras"><button class="chico ${SIM_VISTA === "abiertas" ? "prim" : ""}" data-simv="abiertas">Abiertas</button><button class="chico ${SIM_VISTA === "cerradas" ? "prim" : ""}" data-simv="cerradas">Cerradas</button></div>
+    <p class="tenue">Solo lo que la mesa te mostró: ${t.cerradas || 0} cerradas · ${r.pendientes || 0} esperando precio · ${r.no_se_dieron || 0} no se dieron.</p>
+    <div class="tiras"><button class="chico ${SIM_VISTA === "abiertas" ? "prim" : ""}" data-simv="abiertas">Abiertas</button><button class="chico ${SIM_VISTA === "cerradas" ? "prim" : ""}" data-simv="cerradas">Cerradas</button><button class="chico ${SIM_VISTA === "observacion" ? "prim" : ""}" data-simv="observacion">En observación</button></div>
+    ${SIM_VISTA === "observacion" ? `<p class="tenue">Las que la mesa NO te mostró (sin confirmación de otros analistas, o de antes del comité). Se siguen midiendo para saber si el filtro acierta${obs.cerradas ? `: ${obs.cerradas} cerradas, ${plata(obs.ganancia)} (${pct(obs.promedio_pct, 1)} prom.)` : ""}.</p>` : ""}
     ${lista.slice(0, 40).map(item).join("") || `<p class="tenue">${SIM_VISTA === "abiertas" ? "No hay operaciones simuladas abiertas: se abren solas cuando aparece una oportunidad." : "Todavía no cerró ninguna."}</p>`}
     <details><summary>Resultado por plazo, semáforo y agente</summary>
       <h2>Por plazo</h2>${tablaStats(r.por_origen, ORIGEN)}

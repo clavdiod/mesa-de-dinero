@@ -79,6 +79,7 @@ class Simulador:
                     "moneda": mon, "tc": _tc(ctx, mon),
                     "id": f"{hoy}|{clave}", "clave": clave, "origen": plazo, "setup": o["setup"],
                     "semaforo": o["semaforo"], "ticker": o["ticker"], "grupo": t.get("grupo"),
+                    "aprobada": bool((o.get("mesa") or {}).get("aprobada")),
                     "fecha": hoy, "hora": hora, "nominales": cfg["nominales"], "entrada": pl["entrada"],
                     "objetivo": pl["objetivo"], "stop": pl["stop"], "vence": pl.get("vence"),
                     "estado": "abierta", "fecha_entrada": hoy, "ultimo": pl["entrada"],
@@ -93,7 +94,7 @@ class Simulador:
             lim = (fecha + timedelta(days=cfg["dias_limite"] * 7 // 5)).isoformat()
             self.pos.insert(0, {
                 "moneda": mon, "tc": _tc(ctx, mon), "id": f"{hoy}|{clave}|{e.get('id')}", "clave": clave, "origen": "jefe", "setup": "Propuesta del Jefe",
-                "semaforo": "verde", "ticker": e["ticker"], "grupo": t.get("grupo"), "fecha": hoy, "hora": hora,
+                "semaforo": "verde", "aprobada": True, "ticker": e["ticker"], "grupo": t.get("grupo"), "fecha": hoy, "hora": hora,
                 "nominales": cfg["nominales"], "entrada": pl["entrada"], "objetivo": pl["objetivo"], "stop": pl["stop"],
                 "vence": pl.get("vence"), "limite_hasta": lim, "estado": "pendiente",
                 "agentes": agentes(e["ticker"], "jefe")})
@@ -155,9 +156,14 @@ class Simulador:
         for p in cerr:
             for a in p.get("agentes", []):
                 ag.setdefault(a, []).append(p)
-        seguidas = [p for p in cerr if p.get("semaforo") != "rojo"]
+        # "aprobada" = lo que la mesa te mostró (comité + Jefe). Las de antes del comité (sin la marca) cuentan aparte.
+        ok = lambda p: p.get("aprobada") or p.get("origen") == "jefe"
+        seguidas = [p for p in cerr if ok(p)]
         return {"total": stats(seguidas), "todas": stats(cerr),
-                "abiertas": len(abiertas), "latente": round(sum(p.get("ganancia_actual", 0) for p in abiertas), 2),
+                "observacion": stats([p for p in cerr if not ok(p)]),
+                "abiertas": sum(1 for p in abiertas if ok(p)),
+                "latente": round(sum(p.get("ganancia_actual", 0) for p in abiertas if ok(p)), 2),
+                "abiertas_observacion": sum(1 for p in abiertas if not ok(p)),
                 "pendientes": sum(1 for p in self.pos if p["estado"] == "pendiente"),
                 "no_se_dieron": sum(1 for p in self.pos if p["estado"] == "no_se_dio"),
                 "por_origen": por("origen"), "por_setup": por("setup"), "por_semaforo": por("semaforo"),

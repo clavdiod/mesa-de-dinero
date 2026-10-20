@@ -19,6 +19,12 @@ oportunidades:
   cedear_max: 3
   cedear_desvio_max_pct: 6.0   # más que esto no es oportunidad: es un precio viejo o un dato inconsistente
 
+comite:
+  # una oportunidad solo se muestra si otros analistas la confirman y nadie la ataca en serio
+  confirmacion_min: 0.5   # puntaje de los otros analistas (sin contar al de oportunidades)
+  confirman_min: 1        # analistas distintos a favor, además del de oportunidades
+  contra_max: 0.4         # un analista en contra con esta fuerza o más la frena
+
 simulacion:
   # "¿Qué hubiera pasado?": cada oportunidad y propuesta se compra en papel con estos nominales
   nominales: 1000

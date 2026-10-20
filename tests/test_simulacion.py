@@ -15,7 +15,7 @@ class Ctx:
 
 
 def op(tk="GGAL", entrada=100.0, stop=95.0, obj=110.0, semaforo="verde"):
-    return {"ticker": tk, "setup": "Rebote en soporte", "semaforo": semaforo,
+    return {"ticker": tk, "setup": "Rebote en soporte", "semaforo": semaforo, "mesa": {"aprobada": True},
             "plan": {"entrada": entrada, "stop": stop, "objetivo": obj, "vence": "2026-11-03"}}
 
 

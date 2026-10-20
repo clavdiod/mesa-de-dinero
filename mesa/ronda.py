@@ -203,11 +203,16 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     #     lección del 20/10: TXAR apareció como oportunidad a 690,5 y el Jefe recién lo vio a 715) ---
     ops = oportunidades.detectar(ctx, estado, vetos)
     sen_ops = oportunidades.como_senales(ops)
-    senales += sen_ops
+    # que el Técnico y el Historiador también opinen sobre cada oportunidad (usan el historial guardado, sin IOL)
+    extra_tk = [tk for tk in dict.fromkeys(o["ticker"] for l in ops.values() for o in l) if tk not in candidatos]
+    sen_extra = analistas.tecnico(ctx, extra_tk) + analistas.historiador(ctx, extra_tk) if extra_tk else []
+    senales += sen_ops + sen_extra
     nuevos_pre = []
-    for s_ in sen_ops:
+    for s_ in sen_ops + sen_extra:
         por_ticker.setdefault(s_.ticker, []).append(s_)
-    for tk in {s_.ticker for s_ in sen_ops}:
+    ops = oportunidades.filtrar_por_mesa(ops, por_ticker, vetos, reg.peso)
+    aprobadas_tk = {o["ticker"] for l in ops.values() for o in l if o["mesa"]["aprobada"]}
+    for tk in {s_.ticker for s_ in sen_ops} & aprobadas_tk:  # solo las que el comité confirma llegan al Jefe
         if ctx.titulo(tk):
             puntajes[tk] = puntaje_ticker(por_ticker[tk], reg)
             if puntajes[tk] >= 0.6 and tk not in preseleccion:
@@ -328,7 +333,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "consumo_iol": consumo.resumen(), "ia_llamadas": ia.llamadas,
         "esperanza": reg.esperanza_mesa(),
         "informes": informes,
-        "oportunidades": ops,
+        "oportunidades": {k: [o for o in v if o["mesa"]["aprobada"]] for k, v in ops.items()},
+        "oportunidades_observadas": sum(1 for v in ops.values() for o in v if not o["mesa"]["aprobada"]),
         "aprendizajes": _aprendizajes(),
     }
     almacen.put("ui/estado", {**estado_ui, **resumen})

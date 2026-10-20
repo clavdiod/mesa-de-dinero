@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: "2026-10-20"
+  caso: "Comité para las oportunidades"
+  que_paso: "Las oportunidades salían de un solo agente, sin que el resto de la mesa opinara. De 13 simuladas, 12 eran de un agente solo y casi todas perdían."
+  leccion: "Con tantos analistas, una idea que nadie más confirma no se muestra."
+  cambio: "Una oportunidad solo aparece si otro analista con un método distinto la confirma, nadie la ataca con fuerza y pasa Riesgo. Técnico e Historiador ahora opinan sobre cada una. Las demás quedan 'en observación': se miden en papel pero no se muestran."
+- fecha: "2026-10-20"
   caso: "TXAR (ganadora)"
   que_paso: "El agente de Oportunidades (mediano) la marcó a las 11:51 a 690,50: tendencia alcista y retroceso a su media de 50. Subió con volumen 3 veces el normal y a las 16:41 el Jefe recién la propuso, a 715 (3,5% más cara), porque las oportunidades se calculaban después de que él decidía y por sí sola no llegaba al puntaje."
   leccion: "La señal buena estaba temprano; el Jefe llegó tarde y persiguiendo la suba."

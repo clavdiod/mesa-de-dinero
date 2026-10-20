@@ -32,3 +32,15 @@ def test_desvio_imposible_se_descarta():
     t += _par("PLD", 1540 * 5, 5)                   # 3,75% abajo: sí es señal
     out = {s.ticker for s in analistas.cedears(Ctx(t))}
     assert "NG" not in out and "PLD" in out
+
+
+def test_oportunidad_sin_confirmacion_de_otros_no_se_muestra():
+    from mesa.agentes.oportunidades import filtrar_por_mesa
+    from mesa.nucleo.modelos import Senal
+    ops = {"corto": [{"ticker": "SE", "semaforo": "amarillo"}, {"ticker": "TXAR", "semaforo": "amarillo"},
+                     {"ticker": "METR", "semaforo": "verde"}]}
+    por = {"SE": [Senal("oportunidades_corto", "SE", 1, 1.0, "barato")],
+           "TXAR": [Senal("oportunidades_mediano", "TXAR", 1, 0.58, "retroceso"), Senal("acciones", "TXAR", 1, 1.0, "volumen 3x")],
+           "METR": [Senal("tecnico", "METR", 1, 0.8, "ok"), Senal("macro_dolar", "METR", -1, 0.5, "clima malo")]}
+    r = {o["ticker"]: o["mesa"] for o in filtrar_por_mesa(ops, por, set(), lambda a: 1.0)["corto"]}
+    assert not r["SE"]["aprobada"] and r["TXAR"]["aprobada"] and not r["METR"]["aprobada"]

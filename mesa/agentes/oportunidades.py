@@ -139,3 +139,43 @@ def como_senales(ops: dict) -> list[Senal]:
                 out.append(Senal(f"oportunidades_{plazo}", o["ticker"], +1, min(1.0, max(0.1, o["puntaje"] / 2)),
                                  f"{o['setup']}: {o['motivo']}", {"setup": o["setup"]}))
     return out
+
+
+MISMO_CALCULO = {
+    "CEDEAR barato por dólar implícito": {"cedears"},
+    "Rebote en soporte": {"tecnico"},
+    "Quiebre con volumen": {"tecnico"},
+    "Tendencia alcista, retroceso a la media": {"tecnico"},
+}
+
+
+def filtrar_por_mesa(ops: dict, por_ticker: dict, vetos: set[str], peso) -> dict:
+    """Comité: una oportunidad solo se muestra si OTROS analistas la confirman y nadie la ataca en serio.
+
+    - puntaje de los demás agentes (sin contar al de oportunidades) ≥ confirmacion_min
+    - al menos `confirman_min` analistas distintos a favor
+    - ningún analista en contra con fuerza ≥ contra_max, sin veto, y semáforo de Riesgo no rojo
+    Las que no pasan quedan "en observación": se simulan en papel para medir, pero no se muestran.
+    """
+    c = {"confirmacion_min": 0.5, "confirman_min": 1, "contra_max": 0.4, **(config().get("comite") or {})}
+    for lista in ops.values():
+        for o in lista:
+            # confirmar tiene que ser OTRO tipo de análisis: el que usa el mismo cálculo no cuenta
+            mismo = MISMO_CALCULO.get(o.get("setup"), set())
+            otras = [s for s in por_ticker.get(o["ticker"], [])
+                     if not s.agente.startswith("oportunidades_") and s.agente not in mismo]
+            favor = sorted({s.agente for s in otras if s.direccion > 0 and s.fuerza >= 0.2})
+            contra = sorted({s.agente for s in otras if (s.direccion < 0 and s.fuerza >= c["contra_max"]) or s.veto})
+            puntaje = sum(s.direccion * s.fuerza * peso(s.agente) for s in otras if s.direccion)
+            motivos = []
+            if o["semaforo"] == "rojo":
+                motivos.append("no pasa Riesgo")
+            if o["ticker"] in vetos:
+                motivos.append("hecho grave del emisor")
+            if contra:
+                motivos.append("en contra: " + ", ".join(contra))
+            if len(favor) < c["confirman_min"] or puntaje < c["confirmacion_min"]:
+                motivos.append("ningún otro analista la confirma" if not favor else "confirmación débil")
+            o["mesa"] = {"aprobada": not motivos, "a_favor": favor, "en_contra": contra,
+                         "puntaje_otros": round(puntaje, 2), "motivo": "; ".join(motivos)}
+    return ops
