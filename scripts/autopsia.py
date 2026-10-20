@@ -45,6 +45,7 @@ for tk in tks:
         u = c[-25:]
         out.append(f"HIST {tk} n={len(c)} cierres25=" + ",".join(f"{v['cierre']:g}" for v in u) +
                    f" vol5=" + ",".join(f"{(v.get('volumen') or 0):.0f}" for v in u[-5:]))
-for o in out:
-    for i in range(0, len(o), 3500):
-        print("::notice::" + o[i:i + 3500])
+# GitHub muestra hasta 10 anotaciones por paso: se agrupa todo en bloques grandes
+texto = " ##### ".join(out).replace("\n", " ")
+for i in range(0, len(texto), 15000):
+    print("::notice::" + texto[i:i + 15000])
