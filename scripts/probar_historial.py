@@ -1,5 +1,6 @@
-"""Prueba variantes de historial de IOL para un CEDEAR (pocas consultas). No imprime secretos."""
+"""Muestra la forma cruda del historial sin ajustar de un CEDEAR (1 consulta). No imprime secretos."""
 from datetime import timedelta
+import json
 
 from mesa.datos.consumo import Consumo
 from mesa.datos.iol import IOL
@@ -10,12 +11,7 @@ a = almacen_por_defecto()
 consumo = Consumo(a)
 iol = IOL(consumo, almacen=a)
 hasta = ahora().date() - timedelta(days=1)
-out = []
-for tk, merc, aj, dias in (("AAPL", "bCBA", False, 400), ("AAPL", "bCBA", True, 60), ("KO", "bCBA", False, 400), ("AAPL", "BCBA", True, 400)):
-    try:
-        v = iol.historial(tk, hasta - timedelta(days=dias), hasta, mercado=merc, ajustada=aj)
-        out.append(f"{tk}/{merc}/{'aj' if aj else 'sin'}/{dias}d: {len(v)}")
-    except Exception as e:
-        out.append(f"{tk}/{merc}/{aj}: ERROR {type(e).__name__}: {str(e)[:120]}")
+data = iol._get(f"/api/v2/bCBA/Titulos/AAPL/Cotizacion/seriehistorica/{(hasta - timedelta(days=6)).isoformat()}/{hasta.isoformat()}/sinAjustar", "historial")
 consumo.guardar()
-print("::notice::" + " | ".join(out))
+campos = ("fechaHora", "ultimoPrecio", "apertura", "maximo", "minimo", "volumenNominal", "montoOperado", "cantidadOperaciones", "cierreAnterior")
+print("::notice::n=" + str(len(data)) + " " + json.dumps([{k: d.get(k) for k in campos} for d in data[:12]], ensure_ascii=False)[:3800])
