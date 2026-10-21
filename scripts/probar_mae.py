@@ -1,28 +1,21 @@
-"""Prueba el calendario de licitaciones de MAE Market Data y busca su fuente de datos."""
+"""Busca en el código de MAE Market Data la ruta de la API del calendario de licitaciones y la prueba."""
 import re
 
 import requests
 
-UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64)", "Accept": "text/html,application/json"}
-out = []
-url = "https://marketdata.mae.com.ar/calendario-licitaciones"
-try:
-    r = requests.get(url, headers=UA, timeout=30)
-    html = r.text
-    t = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", re.sub(r"<script.*?</script>|<style.*?</style>", " ", html, flags=re.S)))
-    eps = sorted(set(re.findall(r'["\']((?:https?://[^"\']*)?/(?:api|Api|API|servicios|ws|data)[^"\'\s]{0,120})["\']', html)))
-    js = sorted(set(re.findall(r'src="([^"]+\.js[^"]*)"', html)))[:8]
-    out.append(f"{r.status_code} {len(html)}b eps={eps[:12]} js={js} texto={t[:1500]}")
-    # buscar endpoints dentro de los JS
-    for j in js[:6]:
-        u = j if j.startswith("http") else "https://marketdata.mae.com.ar" + ("" if j.startswith("/") else "/") + j
-        try:
-            c = requests.get(u, headers=UA, timeout=30).text
-            found = sorted(set(re.findall(r'["\`]((?:https?://[^"\`]*)?/(?:api|Api|API)[^"\`\s]{0,100})["\`]', c)))[:15]
-            if found:
-                out.append(f"JS {j}: {found}")
-        except Exception as e:
-            out.append(f"JS {j}: ERROR {e}")
-except Exception as e:
-    out.append(f"ERROR {type(e).__name__}: {e}")
+UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64)", "Accept": "application/json"}
+c = requests.get("https://marketdata.mae.com.ar/assets/index-DseC26QM.js", headers=UA, timeout=40).text
+frag = []
+for m in re.finditer(r"licitac|calendario|Licitac", c):
+    frag.append(c[max(0, m.start() - 120): m.start() + 160].replace("\n", " "))
+rutas = sorted(set(re.findall(r'["\'`](/?[a-zA-Z0-9/_-]*(?:licitac|calendari|colocac|primari)[a-zA-Z0-9/_?=&${}.-]*)["\'`]', c, re.I)))
+out = [f"rutas={rutas[:30]}", "frag=" + " ## ".join(frag[:8])[:2000]]
+base = "https://api.marketdata.mae.com.ar/api/"
+for ruta in [r for r in rutas if "/" in r or r.islower()][:12]:
+    u = base + ruta.lstrip("/").split("${")[0]
+    try:
+        rr = requests.get(u, headers=UA, timeout=20)
+        out.append(f"GET {u} -> {rr.status_code} {rr.text[:300]!r}")
+    except Exception as e:
+        out.append(f"GET {u} -> ERROR {type(e).__name__}")
 print("::notice::" + " || ".join(out)[:3900])
