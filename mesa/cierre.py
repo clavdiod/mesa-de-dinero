@@ -181,6 +181,8 @@ def entrenar() -> dict:
     a.put("ranking/ensenanza_ws", ws["ensenanza"])
     ens["wallstreet"] = {k: f"{v['aciertos'] / v['casos'] * 100:.1f}% de {v['casos']} ({v['suma_ret'] / v['casos']:+.2f}% prom.)"
                          for k, v in ws["ensenanza"].items() if v.get("casos")}
+    ens["wallstreet_por_plazo"] = {h: f"{v['aciertos'] / v['casos'] * 100:.1f}% de {v['casos']} ({v['suma_ret'] / v['casos']:+.2f}% prom.)"
+                                   for h, v in ws["wallstreet"]["por_horizonte"].items() if v.get("casos")}
     reg = Registro(a)
     cal = reg.recalibrar()
     a.put("ranking/tabla", reg.ranking())

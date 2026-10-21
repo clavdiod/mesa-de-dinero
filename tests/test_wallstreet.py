@@ -23,3 +23,11 @@ def test_entrenar_mide_y_no_mira_el_futuro():
     precios = {f"T{k}": _serie(500, lambda i, k=k: 100 * (1 + (k - 5) / 1000) ** i) for k in range(12)}
     r = wallstreet.entrenar({"indices": idx, "precios": precios})
     assert r["wallstreet"]["total"]["casos"] > 0 and r["ensenanza"]["clima_comprador"]["casos"] > 0
+
+
+def test_ensenanza_contraria_si_el_miedo_rinde_mas():
+    ens = {"clima_comprador": {"casos": 5000, "suma_ret": 5000.0}, "clima_defensivo": {"casos": 900, "suma_ret": 3300.0}}
+    modo, _ = wallstreet.ensenanza_activa(ens)
+    assert modo == "contrario"
+    cl = {"riesgo": -0.5, "ensenanza_activa": modo}
+    assert wallstreet.multiplicador(cl, "cedears", 1) == 1.1 and wallstreet.multiplicador(cl, "acciones", 1) == 1.0

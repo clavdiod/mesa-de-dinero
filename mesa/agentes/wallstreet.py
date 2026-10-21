@@ -121,22 +121,25 @@ def senales_en(precios: dict[str, list[list]], cl: dict, fecha: str, tickers: li
 
 def multiplicador(cl: dict | None, grupo: str | None, direccion: int) -> float:
     """Ajuste sobre las señales de otros agentes en CEDEARs (×0,8 a ×1,2), solo si la historia lo valida."""
-    if not cl or grupo != "cedears" or not direccion or not cl.get("ensenanza_activa"):
+    modo = cl.get("ensenanza_activa") if cl else None
+    if not modo or grupo != "cedears" or not direccion:
         return 1.0
-    return round(1 + 0.2 * cl.get("riesgo", 0) * direccion, 3)
+    signo = 1 if modo == "a_favor" else -1  # 'contrario': con miedo (riesgo < 0) se les cree más a las compras
+    return round(1 + 0.2 * cl.get("riesgo", 0) * direccion * signo, 3)
 
 
-def entrenar(datos: dict, horizonte: int = 10, paso: int = 5) -> dict:
+def entrenar(datos: dict, horizonte: int = 60, paso: int = 5, horizonte_clima: int = 10) -> dict:
     """Rebobina 5 años: en cada fecha opina como si fuera ese día y mide qué pasó `horizonte` ruedas después (en dólares).
+    Tendencia y momentum son estrategias de meses: se miden a 60 ruedas (~3 meses), el plazo "mediano" de la mesa.
     También prueba si el clima de Wall Street sirve para "enseñar": ¿rinden más las compras de CEDEARs cuando
     el clima es comprador que cuando es defensivo?"""
     from ..nucleo.calibracion import _sumar, banda
     idx, precios = datos.get("indices") or {}, datos.get("precios") or {}
     fechas = [f for f, _ in idx.get("SPY", [])]
     pos = {tk: {f: i for i, (f, _) in enumerate(s)} for tk, s in precios.items()}
-    stats = {"total": {}, "bandas": {}}
+    stats = {"total": {}, "bandas": {}, "por_horizonte": {"10": {}, "20": {}, "60": {}}}
     ens = {"clima_comprador": {}, "clima_mixto": {}, "clima_defensivo": {}}
-    for f in fechas[260:-horizonte:paso]:
+    for f in fechas[260:-max(horizonte, horizonte_clima):paso]:
         cl = clima(idx, f)
         for s in senales_en(precios, cl, f):
             i = pos[s.ticker].get(f)
@@ -145,22 +148,30 @@ def entrenar(datos: dict, horizonte: int = 10, paso: int = 5) -> dict:
             ret = (precios[s.ticker][i + horizonte][1] / precios[s.ticker][i][1] - 1) * 100 * s.direccion
             _sumar(stats["total"], ret, s.fuerza)
             _sumar(stats["bandas"].setdefault(banda(s.fuerza), {}), ret, s.fuerza)
+            for h in (10, 20, 60):
+                if i + h < len(precios[s.ticker]):
+                    _sumar(stats["por_horizonte"][str(h)], (precios[s.ticker][i + h][1] / precios[s.ticker][i][1] - 1) * 100 * s.direccion, s.fuerza)
         # el "enseñar": rendimiento de comprar cualquier CEDEAR según el clima del día
         lado = "clima_comprador" if cl["riesgo"] >= 0.5 else "clima_defensivo" if cl["riesgo"] <= -0.4 else "clima_mixto"
         for tk, s in precios.items():
             i = pos[tk].get(f)
-            if i is not None and i + horizonte < len(s) and i >= 1:
-                _sumar(ens[lado], (s[i + horizonte][1] / s[i][1] - 1) * 100, 0.6)
+            if i is not None and i + horizonte_clima < len(s) and i >= 1:
+                _sumar(ens[lado], (s[i + horizonte_clima][1] / s[i][1] - 1) * 100, 0.6)
     return {"wallstreet": stats, "ensenanza": ens}
 
 
-def ensenanza_activa(ens: dict) -> tuple[bool, str]:
+def ensenanza_activa(ens: dict) -> tuple[str | None, str]:
+    """Qué enseñar según la evidencia: 'a_favor' (comprar con clima comprador), 'contrario' (comprar el miedo) o None."""
     a, c = ens.get("clima_comprador") or {}, ens.get("clima_defensivo") or {}
     if a.get("casos", 0) < 200 or c.get("casos", 0) < 200:
-        return False, "Todavía no hay suficientes casos de clima comprador y defensivo para probar si su lectura mejora a los demás."
+        return None, "Todavía no hay suficientes casos de clima comprador y defensivo para probar si su lectura mejora a los demás."
     pa, pc = a["suma_ret"] / a["casos"], c["suma_ret"] / c["casos"]
     if pa - pc >= 0.5:
-        return True, (f"En 5 años, comprar CEDEARs con clima comprador rindió {pa:+.1f}% a 10 ruedas contra {pc:+.1f}% con clima defensivo: "
-                      "su lectura se aplica sobre las señales de CEDEARs del resto.")
-    return False, (f"En 5 años, el clima de Wall Street no separó bien ({pa:+.1f}% comprador contra {pc:+.1f}% defensivo, a 10 ruedas): "
-                   "su ajuste sobre los demás está en pausa.")
+        return "a_favor", (f"En 5 años, comprar CEDEARs con clima comprador rindió {pa:+.1f}% a 10 ruedas contra {pc:+.1f}% con clima defensivo: "
+                           "a las compras de CEDEARs del resto se les cree más cuando Wall Street está comprador.")
+    if pc - pa >= 0.5:
+        return "contrario", (f"En 5 años, comprar CEDEARs con clima DEFENSIVO (miedo) rindió {pc:+.1f}% a 10 ruedas contra {pa:+.1f}% con clima comprador: "
+                             "\"ser codicioso cuando los demás tienen miedo\". A las compras de CEDEARs del resto se les cree más cuando hay miedo "
+                             "y un poco menos cuando todo es euforia.")
+    return None, (f"En 5 años, el clima de Wall Street no separó bien ({pa:+.1f}% comprador contra {pc:+.1f}% defensivo, a 10 ruedas): "
+                  "su ajuste sobre los demás está en pausa.")

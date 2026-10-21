@@ -109,7 +109,8 @@ def calibrar(vivo: dict, historico: dict) -> dict:
     for ag in (set(vivo) | set(historico)) - {"_ensenanza"}:
         v = (vivo.get(ag) or {}).get(str(HORIZONTE)) or {}
         h = (historico.get(ag) or {}).get("total") or {}
-        if v.get("casos", 0) >= minimo:
+        # Wall Street se mide a 3 meses en la historia; lo vivo (a 10 ruedas) solo manda con muchos casos
+        if v.get("casos", 0) >= (200 if ag == "wallstreet" else minimo):
             d, fuente, bandas = v, "en vivo", (vivo.get(ag) or {}).get("bandas", {}).get(str(HORIZONTE), {})
         elif h.get("casos", 0) >= 30:
             d, fuente, bandas = h, "historia", (historico.get(ag) or {}).get("bandas", {})
