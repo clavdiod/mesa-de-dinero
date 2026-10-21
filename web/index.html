@@ -16,7 +16,10 @@
     <h1>Mesa de dinero</h1>
     <p id="sub" class="tenue">Cargando…</p>
   </div>
-  <button id="btn-analizar" class="chico" title="Correr una ronda ahora">Analizar ahora</button>
+  <div class="acciones-barra">
+    <button id="btn-analizar" class="chico" title="Correr una ronda ahora">Analizar</button>
+    <button id="btn-ajustes" class="chico icono" title="Ajustes" aria-label="Ajustes"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button>
+  </div>
 </header>
 
 <div id="login" class="card" style="display:none;max-width:420px;margin:40px auto">
@@ -28,37 +31,57 @@
   <p class="tenue">Queda abierta en este dispositivo: no tenés que volver a ponerla.</p>
 </div>
 <main>
+  <!-- HOY: lo que hay que mirar y decidir -->
   <section id="v-propuestas" class="vista activa">
-    <div id="clima" class="tiras"></div>
+    <div id="resumen-hoy"></div>
     <div id="alertas"></div>
-    <h2>Oportunidades de hoy</h2>
+    <h2>Para decidir</h2>
+    <div id="lista-propuestas"></div>
+    <h2>Oportunidades confirmadas</h2>
     <div class="tiras" id="ops-plazo"><button class="chico prim" data-plazo="corto">Corto (1-10 ruedas)</button><button class="chico" data-plazo="mediano">Mediano (1-3 meses)</button></div>
     <div id="oportunidades"></div>
-    <h2>Propuestas del Jefe</h2>
-    <div id="lista-propuestas"></div>
-    <h2>Simulación: ¿qué hubiera pasado?</h2>
-    <p class="tenue">Cada oportunidad y propuesta se "compra" en papel (1.000 nominales) y se sigue hasta el objetivo, el stop o el plazo, con comisiones. Así se mide en plata si las propuestas sirven.</p>
-    <div id="simulacion"></div>
-    <h2>Registro</h2>
-    <div id="esperanza" class="tiras"></div>
-    <div id="registro"></div>
   </section>
 
+  <!-- MERCADO: cómo está el mercado y qué dice cada analista -->
   <section id="v-mercado" class="vista">
-    <h2>Análisis por mercado</h2>
-    <div id="informes"></div>
+    <div id="clima" class="tiras"></div>
     <h2>Indicadores</h2>
     <div id="indicadores" class="grilla"></div>
-    <h2>Lo que dice cada agente</h2>
-    <div class="filtros"><input id="filtro-senales" placeholder="Filtrar por ticker o agente"></div>
+    <h2>Informe por mercado</h2>
+    <div id="informes"></div>
+    <h2>Señales de los analistas</h2>
+    <input id="filtro-senales" placeholder="Filtrar por ticker o analista">
     <div id="senales"></div>
-    <h2>Evaluados por Riesgo</h2>
-    <div id="evaluados"></div>
+    <details><summary>Evaluados por Riesgo en la última ronda</summary><div id="evaluados"></div></details>
+    <details><summary>Cambios de calificación</summary><div id="calificadoras"></div></details>
   </section>
 
+  <!-- DEBATE: un activo a fondo -->
+  <section id="v-asistente" class="vista">
+    <h2>Debate</h2>
+    <p class="tenue">Elegí un activo: ves qué dice cada analista a favor y en contra, el debate y la opinión del supervisor.</p>
+    <form id="form-debate" class="fila-form">
+      <input name="ticker" placeholder="Ticker (GGAL, AL30D, AAPL…)" required autocapitalize="characters" list="debates-disp">
+      <button class="prim">Ver debate</button>
+    </form>
+    <datalist id="debates-disp"></datalist>
+    <div id="debate-chips" class="tiras"></div>
+    <div id="debate"></div>
+    <div id="asistente-ia" style="display:none">
+      <h2>Asistente con IA</h2>
+      <div id="chat"></div>
+      <form id="form-chat" class="pila">
+        <textarea name="pregunta" rows="3" placeholder="Escribí tu pregunta" required></textarea>
+        <div class="fila-form"><button class="prim">Preguntar</button><button type="button" id="btn-chat-borrar">Nueva conversación</button></div>
+      </form>
+      <p id="chat-info" class="tenue"></p>
+    </div>
+  </section>
+
+  <!-- MI CARTERA: lo que sigo, lo que tengo y lo que voy a cobrar -->
   <section id="v-lista" class="vista">
     <h2>Mi lista</h2>
-    <p class="tenue">La mesa analiza primero estos tickers y te avisa si tocan tu precio.</p>
+    <p class="tenue">La mesa analiza primero estos tickers y te avisa si tocan tu precio. Tocá un ticker para ver su debate.</p>
     <form id="form-lista" class="fila-form">
       <input name="ticker" placeholder="GGAL" required maxlength="12" autocapitalize="characters">
       <input name="precio" placeholder="Precio que te interesa" inputmode="decimal">
@@ -66,8 +89,7 @@
       <button>Agregar</button>
     </form>
     <div id="mi-lista"></div>
-    <h2>Cartera</h2>
-    <p class="tenue">Lo que ya tenés. Sirve para el riesgo por sector y el calendario de cobros.</p>
+    <h2>Lo que tengo</h2>
     <form id="form-cartera" class="fila-form">
       <input name="ticker" placeholder="PN35D" required maxlength="12" autocapitalize="characters">
       <input name="cantidad" placeholder="Cantidad / nominales" inputmode="decimal" required>
@@ -75,29 +97,21 @@
       <button>Agregar</button>
     </form>
     <div id="cartera"></div>
-    <h2>Capital de referencia</h2>
-    <form id="form-capital" class="fila-form">
-      <input name="monto_ars" placeholder="Capital en pesos" inputmode="decimal">
-      <input name="riesgo_pct" placeholder="Riesgo por operación %" inputmode="decimal">
-      <button>Guardar</button>
-    </form>
-    <p id="capital-info" class="tenue"></p>
-  </section>
-
-  <section id="v-ons" class="vista">
-    <h2>Calendario de cobros</h2>
+    <h2>Próximos cobros</h2>
     <div id="calendario"></div>
-    <h2>Simulador de ONs</h2>
-    <form id="form-sim" class="pila">
-      <label>ON <select name="on" id="sim-on"></select></label>
-      <label>Precio cada 100 nominales <input name="precio" inputmode="decimal" required></label>
-      <div class="fila-form">
-        <label>Capital <input name="capital" inputmode="decimal" placeholder="o completá nominales"></label>
-        <label>Nominales <input name="nominales" inputmode="decimal"></label>
-      </div>
-      <button>Simular</button>
-    </form>
-    <div id="sim-resultado"></div>
+    <details>
+      <summary>Simular una ON (capital o nominales)</summary>
+      <form id="form-sim" class="pila">
+        <label>ON <select name="on" id="sim-on"></select></label>
+        <label>Precio cada 100 nominales <input name="precio" inputmode="decimal" required></label>
+        <div class="fila-form">
+          <label>Capital <input name="capital" inputmode="decimal" placeholder="o completá nominales"></label>
+          <label>Nominales <input name="nominales" inputmode="decimal"></label>
+        </div>
+        <button>Simular</button>
+      </form>
+      <div id="sim-resultado"></div>
+    </details>
     <details>
       <summary>Cargar o editar flujos de una ON</summary>
       <p class="tenue">Datos del prospecto (CNV). Una línea por pago: fecha, interés % y amortización % sobre el valor nominal original.</p>
@@ -112,68 +126,62 @@
         <button>Guardar ON</button>
       </form>
     </details>
-  </section>
-
-  <section id="v-asistente" class="vista">
-    <h2>Debate</h2>
-    <p class="tenue">Elegí un activo: ves qué dice cada analista a favor y en contra, el debate y la opinión del supervisor.</p>
-    <form id="form-debate" class="fila-form">
-      <input name="ticker" placeholder="Ticker (GGAL, AL30D, AAPL…)" required autocapitalize="characters" list="debates-disp">
-      <button class="prim">Ver debate</button>
-    </form>
-    <datalist id="debates-disp"></datalist>
-    <div id="debate-chips" class="tiras"></div>
-    <div id="debate"></div>
-
-    <h2>Letras en pesos por vencimiento</h2>
-    <p class="tenue">LECAP y BONCAP pagan todo (capital + interés) al vencimiento: elegí las que venzan cuando necesitás la plata.</p>
-    <form id="form-letras" class="fila-form">
-      <label>Necesito la plata antes de <input type="month" name="mes"></label>
-      <button>Buscar</button>
-    </form>
-    <div id="lista-letras"></div>
-
-    <div id="asistente-ia" style="display:none">
-      <h2>Asistente con IA</h2>
-      <div id="chat"></div>
-      <form id="form-chat" class="pila">
-        <textarea name="pregunta" rows="3" placeholder="Escribí tu pregunta" required></textarea>
-        <div class="fila-form"><button class="prim">Preguntar</button><button type="button" id="btn-chat-borrar">Nueva conversación</button></div>
+    <details>
+      <summary>Letras en pesos por vencimiento</summary>
+      <p class="tenue">LECAP y BONCAP pagan todo (capital + interés) al vencimiento: elegí las que venzan cuando necesitás la plata.</p>
+      <form id="form-letras" class="fila-form">
+        <label>Necesito la plata antes de <input type="month" name="mes"></label>
+        <button>Buscar</button>
       </form>
-      <p id="chat-info" class="tenue"></p>
-    </div>
+      <div id="lista-letras"></div>
+    </details>
     <div class="card" id="asistente-gratis">
-      <b>Preguntas abiertas, gratis:</b> escribime en el chat de Claude (por ejemplo "bonos en pesos que paguen mensual o trimestral"). Ahí consulto IOL en vivo: flujos de pago, TIR, vencimientos y simulaciones con tu monto, sin costo extra.
+      <b>Preguntas abiertas, gratis:</b> escribime en el chat de Claude (por ejemplo "bonos en pesos que paguen mensual"). Ahí consulto IOL en vivo: flujos, TIR, vencimientos y simulaciones con tu monto.
     </div>
   </section>
 
+  <!-- RESULTADOS: cómo le va a la mesa y qué aprendió -->
   <section id="v-ranking" class="vista">
+    <h2>Simulación: ¿qué hubiera pasado?</h2>
+    <p class="tenue">Cada propuesta y oportunidad confirmada se "compra" en papel (1.000 nominales) y se sigue hasta el objetivo, el stop o el plazo, con comisiones.</p>
+    <div id="simulacion"></div>
+    <h2>Propuestas cerradas</h2>
+    <div id="esperanza" class="tiras"></div>
+    <div id="registro"></div>
     <h2>Ranking de agentes</h2>
-    <p class="tenue">Titular: su voto vale doble. A prueba: la mitad. Banco: no vota hasta mejorar. Se mide con al menos 20 casos. Con 10 o más simulaciones cerradas, el que pierde plata no puede ser titular.</p>
+    <p class="tenue">Titular: su voto vale doble. A prueba: la mitad. Banco: no vota hasta mejorar. Con 10 o más simulaciones cerradas, el que pierde plata no puede ser titular.</p>
     <div id="ranking"></div>
     <h2>Aprendizajes</h2>
-    <p class="tenue">Qué pasó en casos reales, qué se aprendió y qué regla cambió.</p>
     <div id="aprendizajes"></div>
     <h2>Capacitación pendiente</h2>
     <div id="capacitacion"></div>
-    <h2>Consumo de IOL</h2>
-    <div id="consumo"></div>
-    <h2>Calificadoras</h2>
-    <div id="calificadoras"></div>
-    <h2>Avisos</h2>
+  </section>
+
+  <!-- AJUSTES (engranaje de arriba) -->
+  <section id="v-ajustes" class="vista">
+    <h2>Capital de referencia</h2>
+    <form id="form-capital" class="fila-form">
+      <input name="monto_ars" placeholder="Capital en pesos" inputmode="decimal">
+      <input name="riesgo_pct" placeholder="Riesgo por operación %" inputmode="decimal">
+      <button>Guardar</button>
+    </form>
+    <p id="capital-info" class="tenue"></p>
+    <h2>Avisos en el celular</h2>
     <button id="btn-push">Activar avisos en este celular</button>
     <p class="tenue">En iPhone primero agregá la web a la pantalla de inicio (Compartir → Agregar a inicio).</p>
+    <h2>Consumo de IOL</h2>
+    <div id="consumo"></div>
   </section>
 </main>
 
 <nav class="tabs">
-  <button data-v="propuestas" class="activa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><span>Propuestas</span></button>
-  <button data-v="mercado"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg><span>Análisis</span></button>
-  <button data-v="lista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg><span>Mi lista</span></button>
+  <button data-v="propuestas" class="activa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><span>Hoy</span></button>
+  <button data-v="mercado"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="7" width="4" height="14"/><rect x="17" y="3" width="4" height="18"/></svg><span>Mercado</span></button>
   <button data-v="asistente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 9a6 6 0 0 0-11.4-2.6A6 6 0 0 0 3.5 13L2.5 16l3-1A6 6 0 0 0 14 9z"/><path d="M10 15.5a6 6 0 0 0 8.5 3.5l3 1-1-3A6 6 0 0 0 16 8.3"/></svg><span>Debate</span></button>
-  <button data-v="ons"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Cobros</span></button>
-  <button data-v="ranking"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 5.5 5.5"/></svg><span>Agentes</span></button>
+  <button data-v="lista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg><span>Mi cartera</span></button>
+  <button data-v="ranking"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 5.5 5.5"/></svg><span>Resultados</span></button>
 </nav>
+
 <div id="toast" role="status"></div>
 <script src="app.js"></script>
 </body>

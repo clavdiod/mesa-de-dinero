@@ -17,10 +17,21 @@ const put = (ruta, data) => api(ruta, { method: "PUT", body: JSON.stringify(data
 const post = (ruta, data) => api(ruta, { method: "POST", body: JSON.stringify(data) });
 
 // ---------- navegación ----------
-document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => {
+function irA(v) {
   document.querySelectorAll(".tabs button, .vista").forEach((x) => x.classList.remove("activa"));
-  b.classList.add("activa"); $(`#v-${b.dataset.v}`).classList.add("activa"); window.scrollTo(0, 0);
-}));
+  document.querySelector(`.tabs button[data-v="${v}"]`)?.classList.add("activa");
+  $(`#v-${v}`).classList.add("activa"); window.scrollTo(0, 0);
+}
+document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => irA(b.dataset.v)));
+$("#btn-ajustes").addEventListener("click", () => irA("ajustes"));
+const fecha = (f) => (f ? `${f.slice(8, 10)}/${f.slice(5, 7)}` : "");
+const fechaLarga = (f) => (f ? `${f.slice(8, 10)}/${f.slice(5, 7)}/${f.slice(2, 4)}` : "");
+const MESES_TXT = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+function mercadoAbierto() {
+  const ba = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" }));
+  const m = ba.getHours() * 60 + ba.getMinutes(), d = ba.getDay();
+  return d >= 1 && d <= 5 && m >= 630 && m <= 1020;
+}
 
 let ESTADO = {}, PROPS = [], USUARIO = { lista: [], cartera: [], ons: {}, capital: {} };
 
@@ -33,7 +44,7 @@ function tarjeta(p) {
   const estadoSeg = seg.estado === "pendiente" ? "Esperando entrada" : seg.estado === "abierta" ? `Abierta · ${num(seg.r_actual, 2)}R`
     : seg.r !== undefined ? `Cerrada (${seg.estado}) · ${num(seg.r_neto, 2)}R neto` : seg.estado;
   return `<div class="card">
-    <div class="fila"><div><span class="tenue">${esc(p.fecha)} ${esc(p.hora)} · ${esc(p.sector || "")}</span>
+    <div class="fila"><div><span class="tenue">${esc(fecha(p.fecha))} ${esc(p.hora)} · ${esc(p.sector || "")}</span>
       <div style="font-size:18px;font-weight:600">${esc(p.ticker)}</div></div>
       <span class="chip ${p.decision === "aprobada" ? "verde" : p.decision === "rechazada" ? "rojo" : ""}">${esc(p.decision)}</span></div>
     <p>${esc(p.resumen_jefe || "")} <span class="chip ${p.confianza === "alta" ? "verde" : "amar"}">confianza ${esc(p.confianza)}</span></p>
@@ -57,10 +68,10 @@ function tarjeta(p) {
 function pintarPropuestas() {
   const hoy = ESTADO.estado?.fecha;
   const activas = PROPS.filter((p) => p.fecha === hoy || p.seguimiento?.estado === "pendiente" || p.seguimiento?.estado === "abierta");
-  $("#lista-propuestas").innerHTML = activas.length ? activas.map(tarjeta).join("") : '<div class="vacio">Sin propuestas por ahora. Elegir no operar también es una decisión de la mesa.</div>';
+  $("#lista-propuestas").innerHTML = activas.length ? activas.map(tarjeta).join("") : '<div class="vacio">Nada para decidir ahora. Elegir no operar también es una decisión de la mesa.</div>';
   const cerradas = PROPS.filter((p) => !activas.includes(p)).slice(0, 40);
   $("#registro").innerHTML = cerradas.length ? `<div class="tabla-scroll"><table><tr><th>Fecha</th><th>Ticker</th><th>Decisión</th><th>Resultado</th><th class="n">R neto</th></tr>
-    ${cerradas.map((p) => `<tr><td>${esc(p.fecha)}</td><td>${esc(p.ticker)}</td><td>${esc(p.decision)}</td><td>${esc(p.seguimiento?.estado)}</td><td class="n">${num(p.seguimiento?.r_neto, 2)}</td></tr>`).join("")}</table></div>`
+    ${cerradas.map((p) => `<tr><td>${esc(fecha(p.fecha))}</td><td>${esc(p.ticker)}</td><td>${esc(p.decision)}</td><td>${esc(p.seguimiento?.estado)}</td><td class="n">${num(p.seguimiento?.r_neto, 2)}</td></tr>`).join("")}</table></div>`
     : '<p class="tenue">Todavía no hay operaciones cerradas.</p>';
   const e = ESTADO.estado?.esperanza || {};
   $("#esperanza").innerHTML = e.casos ? `<span class="chip">${e.casos} cerradas</span><span class="chip">${num(e.aciertos_pct, 0)}% aciertos</span>
@@ -72,11 +83,10 @@ function pintarPropuestas() {
 
 function pintarEstado() {
   const est = ESTADO.estado || {}, ind = est.indicadores || {}, rp = est.riesgo_pais || {};
-  $("#sub").textContent = est.fecha ? `Última ronda ${est.fecha} ${est.hora}` : "Todavía no corrió ninguna ronda";
+  $("#sub").textContent = est.fecha ? `${mercadoAbierto() ? "● Abierto" : "Cerrado"} · ronda ${fecha(est.fecha)} ${est.hora}` : "Todavía no corrió ninguna ronda";
   const clima = est.clima || "—";
   $("#clima").innerHTML = `<span class="chip ${clima === "malo" ? "rojo" : clima === "bueno" ? "verde" : "amar"}">Clima ${esc(clima)}</span>
-    <span class="chip">Riesgo país ${num(rp.valor, 0)}${est.riesgo_pais_ayer ? ` (ayer ${num(est.riesgo_pais_ayer, 0)})` : ""}</span>
-    <span class="chip">MEP ${num(ind.mep_al30)}</span><span class="chip">CCL ${num(ind.ccl_al30)}</span>`;
+    <span class="chip">Riesgo país ${num(rp.valor, 0)}${est.riesgo_pais_ayer ? ` (ayer ${num(est.riesgo_pais_ayer, 0)})` : ""}</span>`;
   $("#alertas").innerHTML = (ESTADO.alertas || []).filter((a) => a.fecha === est.fecha)
     .map((a) => `<div class="card" style="border-color:var(--amar)">🔔 ${esc(a.hora)} — ${esc(a.texto)}</div>`).join("");
   const d = est.dolares || {};
@@ -87,6 +97,7 @@ function pintarEstado() {
   pintarSenales();
   pintarInformes();
   pintarOportunidades();
+  pintarResumenHoy();
   $("#evaluados").innerHTML = (est.evaluados || []).map((e) => `<div class="card"><div class="fila"><b>${esc(e.ticker)}</b>
     <span class="chip ${e.riesgo.ok ? "verde" : "rojo"}">${e.riesgo.ok ? "Pasa" : "Rechazada"}</span></div>
     <p class="tenue">Entrada ${num(e.plan.entrada)} · stop ${num(e.plan.stop)} · objetivo ${num(e.plan.objetivo)} · ${num(e.riesgo.r_neto, 2)}R neto</p>
@@ -95,6 +106,23 @@ function pintarEstado() {
   $("#consumo").innerHTML = `<div class="card"><div class="fila"><b>${num(c.total, 0)} de ${num(tope, 0)}</b><span class="chip ${u >= 80 ? "rojo" : ""}">${num(u, 1)}%</span></div>
     <div class="barra-uso"><i style="width:${Math.min(100, u)}%"></i></div>
     <p class="tenue">Por tipo: ${Object.entries(c.por_tipo || {}).map(([k, v]) => `${esc(k)} ${v}`).join(" · ") || "—"}. Al 80% la mesa baja la frecuencia sola.</p></div>`;
+}
+
+let SIM_RES = null;
+function pintarResumenHoy() {
+  const est = ESTADO.estado || {}, rp = est.riesgo_pais || {}, ind = est.indicadores || {};
+  const pend = PROPS.filter((p) => p.decision === "pendiente" && (p.fecha === est.fecha || ["pendiente", "abierta"].includes(p.seguimiento?.estado))).length;
+  const ops = Object.values(est.oportunidades || {}).reduce((n, l) => n + l.length, 0);
+  const clima = est.clima || "—", t = SIM_RES?.total || {};
+  $("#resumen-hoy").innerHTML = `<div class="card resumen">
+    <div class="tiras" style="margin-top:0"><span class="chip ${clima === "malo" ? "rojo" : clima === "bueno" ? "verde" : "amar"}">Clima ${esc(clima)}</span>
+      <span class="chip">Riesgo país ${num(rp.valor, 0)}</span><span class="chip">MEP ${num(ind.mep_al30, 0)}</span></div>
+    <div class="grilla" style="margin-top:10px">
+      <div class="met"><span>Para decidir</span><b>${pend}</b></div>
+      <div class="met"><span>Oportunidades</span><b>${ops}</b></div>
+      <div class="met"><span>Simulación (cerradas)</span><b style="color:var(--${(t.ganancia || 0) >= 0 ? "verde" : "rojo"})">${t.cerradas ? plata(t.ganancia) : "—"}</b></div>
+      <div class="met"><span>Abiertas en papel</span><b>${SIM_RES ? SIM_RES.abiertas || 0 : "—"}</b></div>
+    </div></div>`;
 }
 
 let PLAZO = "corto";
@@ -133,9 +161,16 @@ function pintarInformes() {
 
 function pintarSenales() {
   const f = ($("#filtro-senales").value || "").toLowerCase();
-  const ss = (ESTADO.estado?.senales || []).filter((s) => !f || s.ticker.toLowerCase().includes(f) || (NOMBRES[s.agente] || "").toLowerCase().includes(f));
-  $("#senales").innerHTML = ss.length ? ss.map((s) => `<div class="agente"><b>${esc(NOMBRES[s.agente] || s.agente)}</b>
-    <span><span class="chip ${s.direccion > 0 ? "verde" : s.direccion < 0 ? "rojo" : ""}">${esc(s.ticker)}</span> ${esc(s.texto)}</span></div>`).join("") : '<p class="tenue">Sin señales.</p>';
+  const ss = (ESTADO.estado?.senales || []).filter((s) => !f || s.ticker.toLowerCase().includes(f) || nombreAg(s.agente).toLowerCase().includes(f));
+  const por = {};
+  for (const x of ss) (por[x.agente] ||= []).push(x);
+  $("#senales").innerHTML = ss.length ? Object.entries(por).map(([ag, xs]) => {
+    const up = xs.filter((x) => x.direccion > 0).length, dn = xs.filter((x) => x.direccion < 0).length;
+    return `<details class="grupo" ${f ? "open" : ""}><summary><b>${esc(nombreAg(ag))}</b>
+      <span class="tenue">${xs.length} ${xs.length === 1 ? "señal" : "señales"}</span>
+      ${up ? `<span class="chip verde">▲ ${up}</span>` : ""}${dn ? `<span class="chip rojo">▼ ${dn}</span>` : ""}</summary>
+      ${xs.map((x) => `<div class="agente"><span class="chip ${x.direccion > 0 ? "verde" : x.direccion < 0 ? "rojo" : ""} link" data-abrir-debate="${esc(x.ticker)}">${esc(x.ticker)}</span><span>${esc(x.texto)}</span></div>`).join("")}</details>`;
+  }).join("") : '<p class="tenue">Sin señales.</p>';
 }
 $("#filtro-senales").addEventListener("input", pintarSenales);
 
@@ -209,9 +244,9 @@ function pintarCalendario() {
   filas.sort((a, b) => a.fecha.localeCompare(b.fecha));
   const porMes = {}; for (const f of filas) { const m = f.fecha.slice(0, 7); porMes[m] = (porMes[m] || 0) + f.total; }
   const dias = (f) => Math.round((new Date(f) - new Date(HOY())) / 864e5);
-  $("#calendario").innerHTML = filas.length ? `<div class="tiras">${Object.entries(porMes).slice(0, 6).map(([m, v]) => `<span class="chip">${m}: ${num(v)}</span>`).join("")}</div>
+  $("#calendario").innerHTML = filas.length ? `<div class="tiras">${Object.entries(porMes).slice(0, 6).map(([m, v]) => `<span class="chip">${MESES_TXT[+m.slice(5, 7) - 1]} ${m.slice(2, 4)}: ${num(v)}</span>`).join("")}</div>
     <div class="tabla-scroll"><table><tr><th>Fecha</th><th>ON</th><th class="n">Interés</th><th class="n">Amort.</th><th class="n">Total</th><th class="n">Faltan</th></tr>
-    ${filas.slice(0, 40).map((f) => `<tr><td>${f.fecha}</td><td>${esc(f.ticker)} <span class="tenue">${esc(f.moneda || "")}</span></td><td class="n">${num(f.interes)}</td><td class="n">${num(f.amortizacion)}</td><td class="n"><b>${num(f.total)}</b></td><td class="n">${dias(f.fecha)} d</td></tr>`).join("")}</table></div>`
+    ${filas.slice(0, 40).map((f) => `<tr><td>${fechaLarga(f.fecha)}</td><td>${esc(f.ticker)} <span class="tenue">${esc(f.moneda || "")}</span></td><td class="n">${num(f.interes)}</td><td class="n">${num(f.amortizacion)}</td><td class="n"><b>${num(f.total)}</b></td><td class="n">${dias(f.fecha)} d</td></tr>`).join("")}</table></div>`
     : '<p class="tenue">Cargá en Cartera las ONs que tenés y sus flujos abajo para ver el calendario.</p>';
   $("#sim-on").innerHTML = Object.keys(USUARIO.ons).map((k) => `<option>${esc(k)}</option>`).join("") || "<option value=''>Primero cargá una ON abajo</option>";
   const sel = $("#sim-on").value; const p = ESTADO.estado?.precios?.[sel]?.ultimo; if (p && !$("#form-sim").precio.value) $("#form-sim").precio.value = p;
@@ -226,7 +261,7 @@ $("#form-sim").addEventListener("submit", (ev) => {
     <div class="met"><span>Nominales</span><b>${num(nom, 0)}</b></div><div class="met"><span>Invertís</span><b>${num(costo)}</b></div>
     <div class="met"><span>Cobrás en total</span><b>${num(total)}</b></div><div class="met"><span>Ganancia · TIR</span><b>${num(total - costo)} · ${t === null ? "—" : num(t) + "%"}</b></div></div>
     <div class="tabla-scroll"><table><tr><th>Fecha</th><th class="n">Interés</th><th class="n">Amortización</th><th class="n">Total</th></tr>
-    ${fl.map((f) => `<tr><td>${f.fecha}</td><td class="n">${num(f.interes)}</td><td class="n">${num(f.amortizacion)}</td><td class="n"><b>${num(f.total)}</b></td></tr>`).join("")}</table></div>
+    ${fl.map((f) => `<tr><td>${fechaLarga(f.fecha)}</td><td class="n">${num(f.interes)}</td><td class="n">${num(f.amortizacion)}</td><td class="n"><b>${num(f.total)}</b></td></tr>`).join("")}</table></div>
     <p class="tenue">En ${esc(on.moneda || "la moneda de la ON")}. Lámina mínima ${num(lam, 0)}. No incluye comisiones ni impuestos.</p></div>`;
 });
 $("#form-on").addEventListener("submit", async (ev) => {
@@ -266,6 +301,7 @@ async function pintarSimulacion() {
   const box = $("#simulacion");
   let d; try { d = await api("simulacion"); } catch (_) { box.innerHTML = '<p class="tenue">Sin datos de simulación.</p>'; return; }
   const r = d.resumen || {}, t = r.total || {};
+  SIM_RES = r; pintarResumenHoy();
   const col = (x) => `color:var(--${(x || 0) >= 0 ? "verde" : "rojo"})`;
   const activa = (p) => ["abierta", "pendiente"].includes(p.estado);
   const ok = (p) => p.aprobada || p.origen === "jefe";
@@ -379,7 +415,7 @@ async function verDebate(tk) {
     const ult = e?.precio?.ultimo ?? t?.[0], vari = e?.precio?.variacion ?? t?.[1];
     const tec = t ? lecturaTecnica(t, hist) : null;
     let html = `<div class="card"><div class="fila"><div><div style="font-size:20px;font-weight:700">${esc(tk)}</div>
-      <span class="tenue">${e ? `Debate de la ronda ${esc(e.fecha)} ${esc(e.hora)}` : `Precio de la ronda ${esc(p.fecha)} ${esc(p.hora)}`}</span></div>
+      <span class="tenue">${e ? `Debate de la ronda ${esc(fecha(e.fecha))} ${esc(e.hora)}` : `Precio de la ronda ${esc(fecha(p.fecha))} ${esc(p.hora)}`}</span></div>
       <div style="text-align:right"><b style="font-size:18px">${num(ult)}</b><br><span class="chip ${vari > 0 ? "verde" : vari < 0 ? "rojo" : ""}">${pct(vari)}</span></div></div></div>`;
     if (e) {
       const [col, eti] = VEREDICTO[e.supervisor.veredicto] || VEREDICTO.neutral;

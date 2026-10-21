@@ -77,3 +77,17 @@ button.quitar { min-height: 32px; width: 32px; padding: 0; border-radius: 99px; 
 .sup { border-left: 4px solid var(--borde); } .sup.verde { border-left-color: var(--verde); }
 .sup.amar { border-left-color: var(--amar); } .sup.rojo { border-left-color: var(--rojo); }
 .link { color: var(--azul); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.acciones-barra { display: flex; gap: 6px; flex: none; }
+button.icono { width: 40px; padding: 0; display: grid; place-items: center; }
+button.icono svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+#sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barra > div:first-child { min-width: 0; }
+details.grupo { background: var(--card); border: 1px solid var(--borde); border-radius: var(--r); padding: 4px 12px; margin: 8px 0; }
+details.grupo > summary { display: flex; align-items: center; gap: 8px; padding: 8px 0; list-style: none; color: var(--txt); }
+details.grupo > summary::-webkit-details-marker { display: none; }
+details.grupo > summary::after { content: "▾"; margin-left: auto; color: var(--tenue); }
+details.grupo[open] > summary::after { content: "▴"; }
+.agente .chip.link { text-decoration: none; flex: none; align-self: flex-start; }
+#filtro-senales { margin-bottom: 4px; }
+.resumen .met b { font-size: 18px; }
+td.n { white-space: nowrap; }
