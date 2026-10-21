@@ -150,6 +150,8 @@ def _radar_detectar(ctx, almacen, hoy, ya) -> list[dict]:
         vivo_us = gratis.yahoo_varios(universo, prepost=True)
         atr = anticipo.atrasos(ctx, vivo_us, ccl_now, ccl_ay, minuto)
         ctx.extra["anticipos"] = atr
+        ctx.extra["anticipo_diag"] = {"universo": len(universo), "con_precio_ny": len(vivo_us),
+                                      "mayor_atraso": max((abs(x["atraso"]) for x in anticipo.atrasos(ctx, vivo_us, ccl_now, ccl_ay, minuto, 0)), default=None)}
         ya_alertados = {a["ticker"] for a in alertas}
         for a in atr:
             if a["ticker"] in ya_alertados:
@@ -693,7 +695,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         if res["vencidas"]:
             almacen.put("push/suscripciones", [s for s in subs if s.get("endpoint") not in res["vencidas"]])
     return {"corrio": True, "nuevas": len(nuevas), "senales": len(senales), "consumo": consumo.resumen(),
-            "diagnostico": {"kv_escrituras": getattr(almacen, "escrituras", None), "kv_omitidas": getattr(almacen, "omitidas", None),
+            "diagnostico": {"anticipo": ctx.extra.get("anticipo_diag"), "kv_escrituras": getattr(almacen, "escrituras", None), "kv_omitidas": getattr(almacen, "omitidas", None),
                             "kv_claves": [k.split("/")[0] + "/" + k.split("/")[1][:12] for k in getattr(almacen, "escritas", [])],
                             "paneles": {g: len(t) for g, t in paneles.items()},
                             "riesgo_pais": ctx.riesgo_pais.get("valor"), "rp_ayer": ctx.riesgo_pais_ayer,
