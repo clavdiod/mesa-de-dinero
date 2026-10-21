@@ -4,7 +4,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const num = (x, d = 2) => (x === null || x === undefined || isNaN(x) ? "—" : Number(x).toLocaleString("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d }));
 const pct = (x, d = 2) => (x === null || x === undefined ? "—" : `${x > 0 ? "+" : ""}${num(x, d)}%`);
 const NOMBRES = { acciones: "Acciones", cedears: "CEDEARs", ons: "ONs", soberanos: "Soberanos", pesos_tasas: "Pesos y tasas",
-  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
+  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", wallstreet: "Wall Street", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
   hechos_emisor: "Hechos del emisor", calificadoras: "Calificadoras", riesgo: "Riesgo", jefe: "Jefe" };
 
 function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("ver"); setTimeout(() => e.classList.remove("ver"), 2500); }
@@ -108,6 +108,7 @@ function pintarEstado() {
     document.querySelectorAll("[data-hora]").forEach((x) => (x.textContent = `· ${est.hora}`));
   }
   pintarEconomista();
+  pintarWallStreet();
   pintarSenales();
   pintarInformes();
   pintarOportunidades();
@@ -308,6 +309,17 @@ function pintarEconomista() {
     <p class="tenue">${r.ensenanza_activa ? "Así ajusta a la mesa: a las señales de los demás que van con este contexto se les cree hasta 25% más, y a las que van en contra, hasta 25% menos." : "⏸ " + esc(r.ensenanza_motivo || "Su enseñanza está en pausa hasta que la historia muestre que sirve.")}</p></div>`;
 }
 
+function pintarWallStreet() {
+  const r = ESTADO.estado?.wallstreet;
+  if (!r || !r.clase?.length) { $("#wallstreet").innerHTML = ""; return; }
+  const col = r.riesgo >= 0.5 ? "verde" : r.riesgo <= -0.4 ? "rojo" : "amar";
+  $("#wallstreet").innerHTML = `<div class="card eco"><div class="fila"><b>🗽 La clase de Wall Street (CEDEARs)</b><span class="chip ${col}">${esc(r.titulo)}</span></div>
+    ${r.clase.map((x) => `<p>${esc(x)}</p>`).join("")}
+    ${(r.ensena || []).length ? `<p class="tenue"><b>Lo que les enseña hoy al resto:</b></p>${r.ensena.map((x) => `<p class="tenue">• ${esc(x)}</p>`).join("")}` : ""}
+    <p class="tenue">Opina en los CEDEARs con tendencia (promedio de 200 ruedas) y momentum de 12 meses en dólares. ${r.ensenanza_activa ? esc(r.ensenanza_motivo) : "⏸ " + esc(r.ensenanza_motivo || "")}</p>
+    <p class="tenue">Datos de Wall Street al cierre del ${esc(fecha(r.fecha))}.</p></div>`;
+}
+
 // ---------- calendario de eventos ----------
 const ICONO_EV = { cobro: "💵", balance: "📊", dividendo: "💰", macro: "🏛️", licitacion: "🏦" };
 const DIAS_TXT = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
@@ -418,6 +430,11 @@ async function pintarRanking() {
     <div class="tabla-scroll"><table><tr><th></th><th class="n">Acierta</th><th class="n">Promedio</th><th class="n">Casos</th></tr>
     ${fila("a_favor_del_contexto", "A favor del contexto")}${fila("contexto_neutro", "Contexto neutro")}${fila("contra_el_contexto", "En contra del contexto")}</table></div>
     <p class="tenue">Si "a favor" gana más que "en contra", su enseñanza sirve y se mantiene. Se vuelve a medir en cada entrenamiento.</p></div>` : "";
+  const ew = r.ensenanza_ws || {}, filaW = (k, t) => { const x = ew[k]; return x?.casos ? `<tr><td>${t}</td><td class="n">${num(x.aciertos / x.casos * 100, 0)}%</td><td class="n">${pct(x.suma_ret / x.casos, 1)}</td><td class="n">${num(x.casos, 0)}</td></tr>` : ""; };
+  $("#ensenanza-ws").innerHTML = Object.keys(ew).length ? `<h2>¿Sirve el clima de Wall Street?</h2><div class="card">
+    <p class="tenue">Comprar cualquier CEDEAR según el clima de Wall Street de ese día, en 5 años (a 10 ruedas, en dólares):</p>
+    <div class="tabla-scroll"><table><tr><th></th><th class="n">Sube</th><th class="n">Promedio</th><th class="n">Casos</th></tr>
+    ${filaW("clima_comprador", "Clima comprador")}${filaW("clima_mixto", "Clima mixto")}${filaW("clima_defensivo", "Clima defensivo")}</table></div></div>` : "";
   const pend = r.pendientes.filter((p) => p.estado === "pendiente");
   $("#capacitacion").innerHTML = pend.length ? pend.map((p) => `<div class="card"><b>${esc(NOMBRES[p.agente])}</b>
     <p class="tenue">Antes: ${esc(JSON.stringify(p.antes))}<br>Después: ${esc(JSON.stringify(p.despues))}</p>

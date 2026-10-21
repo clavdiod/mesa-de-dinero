@@ -9,11 +9,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from datetime import date
+from datetime import date, timedelta
 
 import yaml
 
-from .agentes import analistas, con_ia, economista, informes as informes_mod, oportunidades, riesgo, seguimiento, supervisor
+from .agentes import analistas, con_ia, economista, informes as informes_mod, oportunidades, riesgo, seguimiento, supervisor, wallstreet
 from .datos import gratis
 from .datos import eventos as eventos_mod
 from .datos.cache import CacheHistorico
@@ -103,8 +103,25 @@ def puntaje_ticker(senales: list[Senal], reg: Registro, ctx: Contexto | None = N
     for s in senales:
         if s.direccion:
             m = economista.multiplicador(reg_eco, ctx, s.ticker, s.direccion) if s.agente != "economista" else 1.0
+            if ctx and s.agente != "wallstreet":
+                m *= wallstreet.multiplicador(ctx.extra.get("wallstreet"), (ctx.titulo(s.ticker) or {}).get("grupo"), s.direccion)
             tot += s.direccion * s.fuerza * reg.peso(s.agente, s.fuerza) * m
     return round(tot, 3)
+
+
+def _senales_ws(ctx, ws_datos: dict, tickers: list[str]) -> list[Senal]:
+    """Opinión del Estratega de Wall Street sobre los CEDEARs que la mesa está mirando."""
+    cl = ctx.extra.get("wallstreet")
+    if not cl or not ws_datos.get("precios"):
+        return []
+    ced = [t for t in dict.fromkeys(tickers) if (ctx.titulo(t) or {}).get("grupo") == "cedears"]
+    lim = (ctx.fecha + timedelta(days=4)).isoformat()
+    bal = {e.get("ticker") for e in ctx.eventos if e.get("tipo") == "balance" and ctx.fecha.isoformat() <= e.get("fecha", "") <= lim}
+    try:
+        return wallstreet.senales_en(ws_datos["precios"], cl, ctx.fecha.isoformat(), ced, bal)
+    except Exception as ex:
+        print(f"[wallstreet] {ex}")
+        return []
 
 
 def _series_macro(almacen, hoy) -> dict:
@@ -194,6 +211,16 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         ctx.extra["regimen"].update(ensenanza_activa=activa, ensenanza_motivo=motivo)
     except Exception as ex:
         print(f"[economista] {ex}")
+    # --- Estratega de Wall Street (CEDEARs): clima de EE.UU. con los datos que guarda el cierre ---
+    ws_datos = {} if simular else (almacen.get("wallstreet/datos") or {})
+    if ws_datos.get("indices"):
+        try:
+            cl = wallstreet.clima(ws_datos["indices"], hoy.isoformat())
+            activa, motivo = wallstreet.ensenanza_activa(almacen.get("ranking/ensenanza_ws") or {})
+            cl.update(ensenanza_activa=activa, ensenanza_motivo=motivo, datos_al=ws_datos.get("fecha"))
+            ctx.extra["wallstreet"] = cl
+        except Exception as ex:
+            print(f"[wallstreet] {ex}")
     senales += analistas.acciones(ctx)
     senales += analistas.cedears(ctx)
     senales += analistas.ons(ctx)
@@ -229,6 +256,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
 
     if ctx.extra.get("regimen"):
         senales += economista.senales(ctx, ctx.extra["regimen"], candidatos)
+    senales += _senales_ws(ctx, ws_datos, candidatos + [t for t in ctx.tickers_lista()])
     por_ticker: dict[str, list[Senal]] = {}
     for s in senales:
         por_ticker.setdefault(s.ticker, []).append(s)
@@ -258,6 +286,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     sen_extra = analistas.tecnico(ctx, extra_tk) + analistas.historiador(ctx, extra_tk) if extra_tk else []
     if extra_tk and ctx.extra.get("regimen"):
         sen_extra += economista.senales(ctx, ctx.extra["regimen"], extra_tk)
+    sen_extra += _senales_ws(ctx, ws_datos, extra_tk)
     senales += sen_ops + sen_extra
     nuevos_pre = []
     for s_ in sen_ops + sen_extra:
@@ -400,6 +429,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "aprendizajes": _aprendizajes(),
         "opinion_cartera": opinion_cartera,
         "economista": ctx.extra.get("regimen"),
+        "wallstreet": ctx.extra.get("wallstreet"),
         "eventos": _calendario(almacen, ctx, hoy, ops, abiertas, cartera),
         "flujos_bonos": {k: v for k, v in eventos_mod.flujos_bonos().items()
                          if k in {c.get("ticker", "").upper() for c in cartera}},

@@ -220,3 +220,31 @@ def series_macro(anios: int = 3) -> dict:
             print(f"[macro] {nombre}: {e}")
             out[nombre] = {}
     return out
+
+
+def yahoo(simbolo: str, rango: str = "2y") -> list[list]:
+    """[[fecha, cierre], ...] diario de Yahoo (gratis). Índices con ^ (ej. ^VIX)."""
+    from datetime import datetime, timezone
+    from urllib.parse import quote
+    try:
+        r = _S.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{quote(simbolo)}?range={rango}&interval=1d", headers=_UA_JSON, timeout=30)
+        res = r.json()["chart"]["result"][0]
+        cierres = res["indicators"]["quote"][0]["close"]
+        return [[datetime.fromtimestamp(ts, timezone.utc).date().isoformat(), round(c, 4)]
+                for ts, c in zip(res["timestamp"], cierres) if c]
+    except Exception as e:
+        print(f"[yahoo] {simbolo}: {e}")
+        return []
+
+
+def datos_wallstreet(universo: list[str], rango: str = "2y") -> dict:
+    """Índices (S&P, VIX, tasa 10 años, sectores) y precios en dólares de los CEDEARs del universo."""
+    from ..agentes.wallstreet import INDICES
+    from datetime import date
+    idx = {s: yahoo(s, rango) for s in INDICES}
+    precios = {}
+    for tk in universo:
+        x = yahoo(tk.replace(".", "-"), rango)
+        if len(x) >= 260:
+            precios[tk] = x
+    return {"fecha": date.today().isoformat(), "indices": idx, "precios": precios}

@@ -80,6 +80,13 @@ def diario(simular: bool = False) -> dict:
         except Exception as ex:
             print(f"[cierre] eventos EE.UU.: {ex}")
 
+    # datos de Wall Street para el Estratega (gratis): índices + CEDEARs del universo, últimos ~300 días
+    if not simular:
+        try:
+            a.put("wallstreet/datos", _datos_ws(a, paneles, "2y", 300))
+        except Exception as ex:
+            print(f"[cierre] wall street: {ex}")
+
     # huecos (p. ej. un cierre que falló): se completan pidiendo SOLO las fechas faltantes, máx. 10 por día
     if iol is not None:
         from datetime import date, timedelta
@@ -129,6 +136,25 @@ def semanal() -> list[dict]:
     return reg.cerrar_ranking_semanal()
 
 
+def _universo_cedears(a, paneles=None) -> list[str]:
+    """CEDEARs que la mesa sigue: los que tienen historial + Mi lista + cartera (máx. 80)."""
+    panel = (a.get("ui/panel") or {}).get("titulos") or {}
+    ced = {tk for tk, x in panel.items() if x[4] == "cedears"}
+    base = lambda t: t[:-1] if t[-1:] in ("D", "C") and t[:-1] in ced else t
+    idx = set((a.get("cache/indice") or {}).keys())
+    mios = {base(str(x.get("ticker", "")).upper()) for k in ("usuario/lista", "usuario/cartera") for x in (a.get(k) or [])}
+    return sorted(({base(t) for t in idx & ced} | (mios & ced)) - {""})[:80]
+
+
+def _datos_ws(a, paneles, rango: str, ultimos: int | None = None) -> dict:
+    from .datos import gratis
+    d = gratis.datos_wallstreet(_universo_cedears(a, paneles), rango)
+    if ultimos:
+        d["indices"] = {k: v[-ultimos:] for k, v in d["indices"].items()}
+        d["precios"] = {k: v[-ultimos:] for k, v in d["precios"].items()}
+    return d
+
+
 def entrenar() -> dict:
     """Entrenamiento con la historia: hace opinar a los agentes en cada día pasado y mide cuánto acertaron."""
     from .nucleo import calibracion
@@ -144,6 +170,17 @@ def entrenar() -> dict:
     ens = {k: f"{v['aciertos'] / v['casos'] * 100:.1f}% de {v['casos']} ({v['suma_ret'] / v['casos']:+.2f}% prom.)"
            for k, v in (hist.get("_ensenanza") or {}).items() if v.get("casos")}
     a.put("ranking/ensenanza", hist.get("_ensenanza") or {})
+    # Estratega de Wall Street: 5 años en dólares
+    from .agentes import wallstreet
+    datos5 = _datos_ws(a, None, "5y")
+    ws = wallstreet.entrenar(datos5)
+    a.put("wallstreet/datos", {"fecha": datos5["fecha"], "indices": {k: v[-300:] for k, v in datos5["indices"].items()},
+                               "precios": {k: v[-300:] for k, v in datos5["precios"].items()}})
+    hist["wallstreet"] = ws["wallstreet"]
+    a.put("ranking/stats_historicas", hist)
+    a.put("ranking/ensenanza_ws", ws["ensenanza"])
+    ens["wallstreet"] = {k: f"{v['aciertos'] / v['casos'] * 100:.1f}% de {v['casos']} ({v['suma_ret'] / v['casos']:+.2f}% prom.)"
+                         for k, v in ws["ensenanza"].items() if v.get("casos")}
     reg = Registro(a)
     cal = reg.recalibrar()
     a.put("ranking/tabla", reg.ranking())
