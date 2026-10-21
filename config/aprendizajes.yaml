@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: "2026-10-21"
+  caso: "MSTR +8%: el aviso llegó tarde → nace el Anticipador"
+  que_paso: "El Radar avisó a las 13:04 que MSTR subía 8%, pero esa suba ya se veía en Nueva York desde el pre-market y la apertura de las 10:30, antes de que abra BYMA a las 11. Se entrenó además un modelo de 'precursores' con 5 años: de cada 100 papeles que marca, 52 subieron 5% o más en la semana (al azar, 24), pero también 43 cayeron 5% o más (al azar, 23). Neto: +2,6% promedio a 5 ruedas contra +0,4% al azar."
+  leccion: "Lo que pasa en Nueva York se ve antes que en BYMA: hay que mirarlo en cada ronda, y sobre todo antes de las 11. Los papeles que el modelo marca se mueven mucho para los dos lados: ganan en promedio, pero exigen stop y tamaño chico."
+  cambio: "Cada ronda compara 80 CEDEARs con su acción en Nueva York (incluido el pre-market) y avisa si al CEDEAR le falta acomodarse 2% o más; con las acciones argentinas pasa lo mismo con sus ADRs antes de las 11. Cada día al cierre sale la lista de precursores para los próximos días. Todo se mide con estadística propia."
+- fecha: "2026-10-21"
   caso: "Comprador de pánico, Noche de Nueva York y el Jefe que aprende"
   que_paso: "Comprador de pánico: 59% de aciertos en 242 casos a 20 ruedas (índices con pánico +5,2%; capitulación de CEDEARs sanos +3,7%; susto argentino +17% pero en solo 14 casos). Noche de Nueva York: la acción local sí se pone al día con su ADR (+0,5% desde la apertura), pero no alcanza para pagar la comisión de 1,2%. El Jefe que aprende combinaciones, probado con datos que no vio, eligió ideas que rindieron +7,0% a 20 ruedas contra +4,4% de la suma de votos."
   leccion: "Comprar el miedo fue lo más rentable de todo lo probado. El arbitraje con ADRs existe pero es chico para un inversor que paga 1,2% de comisión. Combinar bien a los agentes vale más que sumarlos."
