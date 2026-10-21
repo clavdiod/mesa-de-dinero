@@ -4,7 +4,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const num = (x, d = 2) => (x === null || x === undefined || isNaN(x) ? "—" : Number(x).toLocaleString("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d }));
 const pct = (x, d = 2) => (x === null || x === undefined ? "—" : `${x > 0 ? "+" : ""}${num(x, d)}%`);
 const NOMBRES = { acciones: "Acciones", cedears: "CEDEARs", ons: "ONs", soberanos: "Soberanos", pesos_tasas: "Pesos y tasas",
-  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", wallstreet: "Wall Street", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
+  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", wallstreet: "Wall Street", cripto: "Cripto", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
   hechos_emisor: "Hechos del emisor", calificadoras: "Calificadoras", riesgo: "Riesgo", jefe: "Jefe" };
 
 function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("ver"); setTimeout(() => e.classList.remove("ver"), 2500); }
@@ -109,6 +109,7 @@ function pintarEstado() {
   }
   pintarEconomista();
   pintarWallStreet();
+  pintarCripto();
   pintarSenales();
   pintarInformes();
   pintarOportunidades();
@@ -320,6 +321,16 @@ function pintarWallStreet() {
     <p class="tenue">Datos de Wall Street al cierre del ${esc(fecha(r.fecha))}.</p></div>`;
 }
 
+function pintarCripto() {
+  const r = ESTADO.estado?.cripto;
+  if (!r || !r.clase?.length) { $("#cripto").innerHTML = ""; return; }
+  const est = r.btc?.estado, col = est === "alcista" ? "verde" : est === "bajista" ? "rojo" : "amar";
+  $("#cripto").innerHTML = `<div class="card eco"><div class="fila"><b>₿ La visión Cripto</b><span class="chip ${col}">${esc(r.titulo)}</span></div>
+    ${r.clase.map((x) => `<p>${esc(x)}</p>`).join("")}
+    ${(r.ensena || []).map((x) => `<p class="tenue">• ${esc(x)}</p>`).join("")}
+    <p class="tenue">Agente a prueba: si con los datos no demuestra que aporta, se discontinúa.</p></div>`;
+}
+
 // ---------- calendario de eventos ----------
 const ICONO_EV = { cobro: "💵", balance: "📊", dividendo: "💰", macro: "🏛️", licitacion: "🏦" };
 const DIAS_TXT = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
@@ -435,6 +446,10 @@ async function pintarRanking() {
     <p class="tenue">Comprar cualquier CEDEAR según el clima de Wall Street de ese día, en 5 años (a 10 ruedas, en dólares):</p>
     <div class="tabla-scroll"><table><tr><th></th><th class="n">Sube</th><th class="n">Promedio</th><th class="n">Casos</th></tr>
     ${filaW("clima_comprador", "Clima comprador")}${filaW("clima_mixto", "Clima mixto")}${filaW("clima_defensivo", "Clima defensivo")}</table></div></div>` : "";
+  const ec = r.ensenanza_cripto || {};
+  $("#ensenanza-cripto").innerHTML = (ec.btc || ec.brecha) ? `<h2>¿Aporta el agente Cripto?</h2><div class="card">
+    ${[["btc", "Bitcoin como termómetro para CEDEARs"], ["brecha", "Dólar cripto como anticipo del CCL"]].map(([k, t]) => ec[k]?.veredicto ?
+      `<p><b>${t}:</b> ${esc(ec[k].veredicto)} <span class="chip ${ec[k].sirve ? "verde" : "rojo"}">${ec[k].sirve ? "aporta" : "no aporta"}</span></p>` : "").join("")}</div>` : "";
   const pend = r.pendientes.filter((p) => p.estado === "pendiente");
   $("#capacitacion").innerHTML = pend.length ? pend.map((p) => `<div class="card"><b>${esc(NOMBRES[p.agente])}</b>
     <p class="tenue">Antes: ${esc(JSON.stringify(p.antes))}<br>Después: ${esc(JSON.stringify(p.despues))}</p>

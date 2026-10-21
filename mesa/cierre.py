@@ -87,6 +87,15 @@ def diario(simular: bool = False) -> dict:
         except Exception as ex:
             print(f"[cierre] wall street: {ex}")
 
+    # datos del agente Cripto (gratis): Bitcoin y dólar cripto
+    if not simular:
+        try:
+            from .datos import gratis as _g
+            a.put("cripto/datos", {"fecha": hoy.isoformat(), "btc": _g.yahoo("BTC-USD", "2y")[-300:],
+                                   "dolar_cripto": dict(sorted(_g.dolar_cripto_historico().items())[-60:])})
+        except Exception as ex:
+            print(f"[cierre] cripto: {ex}")
+
     # huecos (p. ej. un cierre que falló): se completan pidiendo SOLO las fechas faltantes, máx. 10 por día
     if iol is not None:
         from datetime import date, timedelta
@@ -143,7 +152,8 @@ def _universo_cedears(a, paneles=None) -> list[str]:
     base = lambda t: t[:-1] if t[-1:] in ("D", "C") and t[:-1] in ced else t
     idx = set((a.get("cache/indice") or {}).keys())
     mios = {base(str(x.get("ticker", "")).upper()) for k in ("usuario/lista", "usuario/cartera") for x in (a.get(k) or [])}
-    return sorted(({base(t) for t in idx & ced} | (mios & ced)) - {""})[:80]
+    from .agentes.cripto import CEDEARS_CRIPTO
+    return sorted(({base(t) for t in idx & ced} | (mios & ced) | (set(CEDEARS_CRIPTO) & ced)) - {""})[:90]
 
 
 def _datos_ws(a, paneles, rango: str, ultimos: int | None = None) -> dict:
@@ -181,6 +191,19 @@ def entrenar() -> dict:
     a.put("ranking/ensenanza_ws", ws["ensenanza"])
     ens["wallstreet"] = {k: f"{v['aciertos'] / v['casos'] * 100:.1f}% de {v['casos']} ({v['suma_ret'] / v['casos']:+.2f}% prom.)"
                          for k, v in ws["ensenanza"].items() if v.get("casos")}
+    # Cripto: BTC 5 años y dólar cripto desde 2023
+    from .agentes import cripto
+    from .datos import gratis as _g
+    btc5 = _g.yahoo("BTC-USD", "5y")
+    dcr = _g.dolar_cripto_historico()
+    cr = cripto.entrenar(btc5, datos5["precios"], dcr, macro.get("ccl") or {})
+    hist["cripto"] = cr["cripto"]
+    a.put("ranking/stats_historicas", hist)
+    a.put("ranking/ensenanza_cripto", cr["ensenanza"])
+    a.put("cripto/datos", {"fecha": datos5["fecha"], "btc": btc5[-300:], "dolar_cripto": dict(sorted(dcr.items())[-60:])})
+    ens["cripto"] = {k: v.get("veredicto") for k, v in cr["ensenanza"].items()}
+    ens["cripto_por_plazo"] = {h: f"{v['aciertos'] / v['casos'] * 100:.1f}% de {v['casos']} ({v['suma_ret'] / v['casos']:+.2f}% prom.)"
+                               for h, v in cr["cripto"]["por_horizonte"].items() if v.get("casos")}
     ens["wallstreet_por_plazo"] = {h: f"{v['aciertos'] / v['casos'] * 100:.1f}% de {v['casos']} ({v['suma_ret'] / v['casos']:+.2f}% prom.)"
                                    for h, v in ws["wallstreet"]["por_horizonte"].items() if v.get("casos")}
     reg = Registro(a)

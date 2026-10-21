@@ -248,3 +248,11 @@ def datos_wallstreet(universo: list[str], rango: str = "2y") -> dict:
         if len(x) >= 260:
             precios[tk] = x
     return {"fecha": date.today().isoformat(), "indices": idx, "precios": precios}
+
+
+def dolar_cripto_historico() -> dict[str, float]:
+    try:
+        return {d["fecha"]: float(d["venta"]) for d in _json("https://api.argentinadatos.com/v1/cotizaciones/dolares/cripto") if d.get("venta")}
+    except Exception as e:
+        print(f"[cripto] dólar cripto: {e}")
+        return {}

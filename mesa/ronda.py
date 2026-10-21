@@ -13,7 +13,7 @@ from datetime import date, timedelta
 
 import yaml
 
-from .agentes import analistas, con_ia, economista, informes as informes_mod, oportunidades, riesgo, seguimiento, supervisor, wallstreet
+from .agentes import analistas, con_ia, cripto, economista, informes as informes_mod, oportunidades, riesgo, seguimiento, supervisor, wallstreet
 from .datos import gratis
 from .datos import eventos as eventos_mod
 from .datos.cache import CacheHistorico
@@ -105,6 +105,9 @@ def puntaje_ticker(senales: list[Senal], reg: Registro, ctx: Contexto | None = N
             m = economista.multiplicador(reg_eco, ctx, s.ticker, s.direccion) if s.agente != "economista" else 1.0
             if ctx and s.agente != "wallstreet":
                 m *= wallstreet.multiplicador(ctx.extra.get("wallstreet"), (ctx.titulo(s.ticker) or {}).get("grupo"), s.direccion)
+            if ctx and s.agente != "cripto" and ctx.extra.get("cripto"):
+                m *= cripto.multiplicador(ctx.extra["cripto"].get("btc"), ctx.extra["cripto"].get("ens") or {},
+                                          (ctx.titulo(s.ticker) or {}).get("grupo"), s.direccion)
             tot += s.direccion * s.fuerza * reg.peso(s.agente, s.fuerza) * m
     return round(tot, 3)
 
@@ -121,6 +124,34 @@ def _senales_ws(ctx, ws_datos: dict, tickers: list[str]) -> list[Senal]:
         return wallstreet.senales_en(ws_datos["precios"], cl, ctx.fecha.isoformat(), ced, bal)
     except Exception as ex:
         print(f"[wallstreet] {ex}")
+        return []
+
+
+def _senales_cripto(ctx, almacen, reg, senales, tickers, simular) -> list[Senal]:
+    """Agente Cripto: Bitcoin + dólar cripto. Aprende del agente con mejor historial (mayor voto calibrado)."""
+    if simular:
+        return []
+    try:
+        datos = almacen.get("cripto/datos") or {}
+        ens = almacen.get("ranking/ensenanza_cripto") or {}
+        btc = cripto.lectura_btc(datos.get("btc") or [], ctx.fecha.isoformat())
+        dc = (ctx.dolares.get("cripto") or {}).get("venta")
+        ccl = ctx.extra.get("ccl_al30") or (ctx.dolares.get("contadoconliqui") or {}).get("venta")
+        brecha = (dc / ccl - 1) * 100 if dc and ccl else None
+        cal = {a: c.get("factor") or 0 for a, c in (reg.calibracion or {}).items() if a != "cripto"}
+        mejor = max(cal, key=cal.get) if cal and max(cal.values()) >= 1 else None
+        otras: dict[str, list] = {}
+        for s in senales:
+            otras.setdefault(s.ticker, []).append(s)
+        nombre_mejor = {"wallstreet": "el Estratega de Wall Street"}.get(mejor, mejor)
+        cl = cripto.clase(btc, brecha, nombre_mejor, ens)
+        ctx.extra["cripto"] = {**cl, "btc": btc, "brecha": round(brecha, 2) if brecha is not None else None, "ens": ens}
+        sen = cripto.senales_en(btc, brecha, ctx, [t for t in tickers if ctx.titulo(t)], ens, otras, mejor)
+        for s in sen:
+            s.texto = s.texto.replace(f" {mejor}, el de", f" {nombre_mejor}, el de") if mejor else s.texto
+        return sen
+    except Exception as ex:
+        print(f"[cripto] {ex}")
         return []
 
 
@@ -263,6 +294,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     if ctx.extra.get("regimen"):
         senales += economista.senales(ctx, ctx.extra["regimen"], candidatos)
     senales += _senales_ws(ctx, ws_datos, candidatos + [t for t in ctx.tickers_lista()])
+    senales += _senales_cripto(ctx, almacen, reg, senales, candidatos + ctx.tickers_lista() + cripto.CEDEARS_CRIPTO, simular)
     por_ticker: dict[str, list[Senal]] = {}
     for s in senales:
         por_ticker.setdefault(s.ticker, []).append(s)
@@ -436,6 +468,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "opinion_cartera": opinion_cartera,
         "economista": ctx.extra.get("regimen"),
         "wallstreet": ctx.extra.get("wallstreet"),
+        "cripto": {k: v for k, v in (ctx.extra.get("cripto") or {}).items() if k != "ens"},
         "eventos": _calendario(almacen, ctx, hoy, ops, abiertas, cartera),
         "flujos_bonos": {k: v for k, v in eventos_mod.flujos_bonos().items()
                          if k in {c.get("ticker", "").upper() for c in cartera}},
