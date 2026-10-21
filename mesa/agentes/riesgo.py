@@ -19,7 +19,18 @@ from ..nucleo.contexto import Contexto
 from ..nucleo.modelos import Plan
 
 
-def armar_plan(ctx: Contexto, ticker: str) -> Plan | None:
+# Plazo de cada idea según el agente que la origina (en ruedas): cada estrategia gana en su plazo.
+# Wall Street (tendencia + momentum) gana a ~3 meses; Cripto y lo técnico, en días.
+PLAZO_AGENTE = {"wallstreet": 60, "oportunidades_mediano": 60, "economista": 20, "panico": 20,
+                "cripto": 10, "adr": 3, "volumen_flujo": 5}
+
+
+def plazo_de(agente: str | None) -> int:
+    return PLAZO_AGENTE.get(agente or "", int(config()["riesgo"]["salida_por_tiempo_dias"]))
+
+
+def armar_plan(ctx: Contexto, ticker: str, ruedas: int | None = None) -> Plan | None:
+    """Entrada, stop y objetivo. Con más plazo, stop más holgado y objetivo más lejos (la idea necesita aire)."""
     t = ctx.titulo(ticker)
     velas = ctx.cache.velas(ticker) if ctx.cache else []
     if not t or not t.get("ultimo") or len(velas) < 20:
@@ -35,11 +46,14 @@ def armar_plan(ctx: Contexto, ticker: str) -> Plan | None:
     if (t.get("variacion") or 0) >= float(config()["riesgo"].get("no_perseguir_suba_pct", 2.5)):
         entrada = min(entrada, precio - 0.5 * a)
     entrada = round(min(entrada, precio), 4)
-    base_stop = sop["desde"] if sop and entrada - sop["desde"] <= 2 * a else entrada - 1.5 * a
-    stop = round(base_stop - 0.25 * a, 4)
+    ruedas = int(ruedas or config()["riesgo"]["salida_por_tiempo_dias"])
+    escala = max(1.0, (ruedas / 10) ** 0.5)  # 60 ruedas ≈ 2,4 veces más aire que 10
+    base_stop = sop["desde"] if sop and entrada - sop["desde"] <= 2 * a * escala else entrada - 1.5 * a * escala
+    stop = round(min(base_stop - 0.25 * a, entrada - 1.5 * a * escala) if escala > 1 else base_stop - 0.25 * a, 4)
     riesgo = entrada - stop
-    objetivo = res["nivel"] if res and res["nivel"] - entrada >= 1.5 * riesgo else entrada + 2.5 * riesgo
-    vence = (ctx.fecha + timedelta(days=int(config()["riesgo"]["salida_por_tiempo_dias"]) * 7 // 5)).isoformat()
+    minimo_obj = 2.5 if ruedas <= 10 else 3.0
+    objetivo = res["nivel"] if res and res["nivel"] - entrada >= minimo_obj * riesgo else entrada + minimo_obj * riesgo
+    vence = (ctx.fecha + timedelta(days=ruedas * 7 // 5)).isoformat()
     return Plan(ticker, "compra", entrada, stop, round(objetivo, 4), 1.0, vence)
 
 

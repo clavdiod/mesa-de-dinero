@@ -186,6 +186,11 @@ def jefe(ia: IA, candidatos: list[dict], cupo: int, contexto_txt: str) -> list[d
             if d.get("id") in por_id:
                 por_id[d["id"]]["motivo_descarte"] = d.get("motivo")
         return out
+    if all(c.get("prob_modelo") is not None for c in candidatos):  # el Jefe aprendió combinaciones con la historia
+        elegidos = sorted(candidatos, key=lambda c: c["prob_modelo"], reverse=True)[:cupo]
+        return [{**c, "confianza": "alta" if c["prob_modelo"] >= 0.6 else "media",
+                 "resumen_jefe": f"Elegida por el Jefe que aprendió combinaciones: {c['prob_modelo'] * 100:.0f}% de probabilidad de ganar más que la comisión "
+                                 f"a 20 ruedas, según cómo terminaron combinaciones parecidas en la historia."} for c in elegidos]
     elegidos = sorted(candidatos, key=lambda c: c["puntaje"], reverse=True)[:cupo]
     return [{**c, "confianza": "media", "resumen_jefe": "Elegida por puntaje (Jefe sin IA disponible)."} for c in elegidos]
 

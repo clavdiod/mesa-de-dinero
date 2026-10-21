@@ -104,7 +104,7 @@ def senales_en(btc: dict | None, brecha: float | None, ctx, tickers: list[str], 
 
 
 def entrenar(btc_serie: list[list], precios_usd: dict[str, list[list]], cripto: dict[str, float], ccl: dict[str, float],
-             paso: int = 3) -> dict:
+             paso: int = 3, registro: list | None = None) -> dict:
     """¿Sirve? (1) BTC sobre CEDEARs cripto y sobre todos los CEDEARs, a 10 y 60 ruedas, en dólares.
     (2) ¿El dólar cripto despegado del CCL anticipa el CCL de los próximos 5 días?"""
     from ..nucleo.calibracion import _sumar, banda
@@ -124,6 +124,8 @@ def entrenar(btc_serie: list[list], precios_usd: dict[str, list[list]], cripto: 
             _sumar(ens_btc[f"btc_{b['estado']}"], r10, 0.5)
             if tk in CEDEARS_CRIPTO and b["estado"] != "indefinido":
                 d = 1 if b["estado"] == "alcista" else -1
+                if registro is not None:
+                    registro.append((tk, f, "cripto", d * 0.5))
                 r60 = (s[i + 60][1] / s[i][1] - 1) * 100
                 _sumar(stats["total"], r10 * d, 0.5)
                 _sumar(stats["bandas"].setdefault(banda(0.5), {}), r10 * d, 0.5)

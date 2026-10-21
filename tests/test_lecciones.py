@@ -44,3 +44,19 @@ def test_oportunidad_sin_confirmacion_de_otros_no_se_muestra():
            "METR": [Senal("tecnico", "METR", 1, 0.8, "ok"), Senal("macro_dolar", "METR", -1, 0.5, "clima malo")]}
     r = {o["ticker"]: o["mesa"] for o in filtrar_por_mesa(ops, por, set(), lambda a, f=None: 1.0)["corto"]}
     assert not r["SE"]["aprobada"] and r["TXAR"]["aprobada"] and not r["METR"]["aprobada"]
+
+
+def test_plan_de_wall_street_tiene_mas_aire_y_mas_plazo():
+    from datetime import date
+    from mesa.agentes import riesgo
+    from mesa.nucleo.contexto import Contexto
+
+    class C:
+        indice = {"AAPL": 1}
+        def velas(self, tk):
+            return [{"fecha": f"2026-0{1 + i // 28}-{1 + i % 28:02d}", "apertura": 100, "maximo": 101 + (i % 5), "minimo": 99 - (i % 5),
+                     "cierre": 100 + (i % 7) - 3, "volumen": 1000} for i in range(120)]
+    ctx = Contexto(date(2026, 10, 21), "12:00", {"cedears": [{"simbolo": "AAPL", "ultimo": 100, "venta": 100}]}, cache=C())
+    corto, largo = riesgo.armar_plan(ctx, "AAPL", 10), riesgo.armar_plan(ctx, "AAPL", 60)
+    assert largo.vence > corto.vence and (largo.entrada - largo.stop) > (corto.entrada - corto.stop)
+    assert riesgo.plazo_de("wallstreet") == 60 and riesgo.plazo_de("cripto") == 10

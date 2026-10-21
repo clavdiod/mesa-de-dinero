@@ -4,7 +4,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const num = (x, d = 2) => (x === null || x === undefined || isNaN(x) ? "—" : Number(x).toLocaleString("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d }));
 const pct = (x, d = 2) => (x === null || x === undefined ? "—" : `${x > 0 ? "+" : ""}${num(x, d)}%`);
 const NOMBRES = { acciones: "Acciones", cedears: "CEDEARs", ons: "ONs", soberanos: "Soberanos", pesos_tasas: "Pesos y tasas",
-  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", wallstreet: "Wall Street", cripto: "Cripto", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
+  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", wallstreet: "Wall Street", cripto: "Cripto", adr: "Noche de Nueva York", panico: "Comprador de pánico", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
   hechos_emisor: "Hechos del emisor", calificadoras: "Calificadoras", riesgo: "Riesgo", jefe: "Jefe" };
 
 function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("ver"); setTimeout(() => e.classList.remove("ver"), 2500); }
@@ -57,7 +57,7 @@ function tarjeta(p) {
       <div class="met"><span>Stop</span><b style="color:var(--rojo)">${num(pl.stop)}</b></div>
       <div class="met"><span>Tamaño · R neto</span><b>${num(pl.tamano_r, 1)}R · ${num(p.riesgo?.r_neto, 2)}</b></div>
     </div>
-    <p class="tenue">${p.cantidad_sugerida ? `Cantidad sugerida: ${num(p.cantidad_sugerida, 0)} (≈ $${num(p.cantidad_sugerida * pl.entrada, 0)}). ` : ""}Arriesga ${num(pl.riesgo_pct, 1)}% para ganar ${num(pl.recompensa_pct, 1)}%. Vence ${esc(pl.vence)}. ${esc((p.riesgo?.avisos || []).join(" "))}</p>
+    <p class="tenue">${p.cantidad_sugerida ? `Cantidad sugerida: ${num(p.cantidad_sugerida, 0)} (≈ $${num(p.cantidad_sugerida * pl.entrada, 0)}). ` : ""}Arriesga ${num(pl.riesgo_pct, 1)}% para ganar ${num(pl.recompensa_pct, 1)}%. ${p.principal ? `Plazo ${p.ruedas >= 40 ? "~" + Math.round(p.ruedas / 20) + " meses" : p.ruedas + " ruedas"} (idea de ${esc(nombreAg(p.principal))}): vence ${esc(fecha(pl.vence))}.` : `Vence ${esc(pl.vence)}.`} ${esc((p.riesgo?.avisos || []).join(" "))}</p>
     ${p.debate ? `<div class="debate"><b>Alcista:</b> ${esc(p.debate.alcista)}</div><div class="debate baj"><b>Bajista:</b> ${esc(p.debate.bajista)}</div>` : ""}
     <details><summary>Lo que dijo cada agente</summary>${sen || '<p class="tenue">Sin detalle.</p>'}</details>
     <button class="chico" data-abrir-debate="${esc(p.ticker)}">Ver debate completo</button>
@@ -110,6 +110,7 @@ function pintarEstado() {
   pintarEconomista();
   pintarWallStreet();
   pintarCripto();
+  pintarADR();
   pintarSenales();
   pintarInformes();
   pintarOportunidades();
@@ -331,6 +332,17 @@ function pintarCripto() {
     <p class="tenue">Agente a prueba: si con los datos no demuestra que aporta, se discontinúa.</p></div>`;
 }
 
+function pintarADR() {
+  const r = ESTADO.estado?.adr;
+  if (!r?.filas?.length) { $("#adr").innerHTML = ""; return; }
+  $("#adr").innerHTML = `<div class="card eco"><div class="fila"><b>🌙 Noche de Nueva York</b><span class="tenue">${esc(r.hora)}</span></div>
+    <p class="tenue">Cómo cerraron anoche los ADRs (con el CCL) contra el cierre local, y cuánto le falta hoy a cada acción para ponerse al día. Solo vale en la mañana.</p>
+    <div class="tabla-scroll"><table><tr><th>Acción</th><th class="n">ADR anoche</th><th class="n">Hoy</th><th class="n">Le falta</th></tr>
+    ${r.filas.map((x) => `<tr><td><span class="link" data-abrir-debate="${esc(x.ticker)}">${esc(x.ticker)}</span> <span class="tenue">${esc(x.adr)}</span></td>
+      <td class="n">${pct(x.brecha, 1)}</td><td class="n">${pct(x.hoy, 1)}</td>
+      <td class="n" style="color:var(--${Math.abs(x.resta) < 1.5 ? "tenue" : x.resta > 0 ? "verde" : "rojo"})"><b>${pct(x.resta, 1)}</b></td></tr>`).join("")}</table></div></div>`;
+}
+
 // ---------- calendario de eventos ----------
 const ICONO_EV = { cobro: "💵", balance: "📊", dividendo: "💰", macro: "🏛️", licitacion: "🏦" };
 const DIAS_TXT = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
@@ -446,6 +458,17 @@ async function pintarRanking() {
     <p class="tenue">Comprar cualquier CEDEAR según el clima de Wall Street de ese día, en 5 años (a 10 ruedas, en dólares):</p>
     <div class="tabla-scroll"><table><tr><th></th><th class="n">Sube</th><th class="n">Promedio</th><th class="n">Casos</th></tr>
     ${filaW("clima_comprador", "Clima comprador")}${filaW("clima_mixto", "Clima mixto")}${filaW("clima_defensivo", "Clima defensivo")}</table></div></div>` : "";
+  const j = r.jefe || {};
+  const NOMB_J = (k) => k.split("×").map((x) => nombreAg(x).replace("btc_alcista", "Bitcoin alcista").replace("miedo_eeuu", "miedo en Wall Street").replace("rp_subiendo", "riesgo país subiendo")).join(" + ");
+  $("#jefe-modelo").innerHTML = j.prueba ? `<h2>El Jefe que aprende combinaciones</h2><div class="card">
+    <div class="fila"><b>${j.activo ? "Activo" : "En pausa"}</b><span class="chip ${j.activo ? "verde" : "amar"}">${j.activo ? "elige él" : "sigue la suma de votos"}</span></div>
+    <p class="tenue">${esc(j.motivo || "")}</p>
+    <div class="tabla-scroll"><table><tr><th>Prueba con datos que no vio (a 20 ruedas)</th><th class="n">Promedio</th><th class="n">Gana más que comisión</th></tr>
+      <tr><td>Las que elige el Jefe que aprende</td><td class="n">${pct(j.prueba.modelo.prom, 1)}</td><td class="n">${num(j.prueba.modelo.gana_pct, 0)}%</td></tr>
+      <tr><td>Las que elige la suma de votos</td><td class="n">${pct(j.prueba.suma_votos.prom, 1)}</td><td class="n">${num(j.prueba.suma_votos.gana_pct, 0)}%</td></tr>
+      <tr><td>Todas las ideas de los agentes</td><td class="n">${pct(j.prueba.todas.prom, 1)}</td><td class="n">${num(j.prueba.todas.gana_pct, 0)}%</td></tr></table></div>
+    ${(j.aprendio || []).length ? `<p class="tenue"><b>Lo que más pesa en su decisión:</b> ${j.aprendio.slice(0, 5).map(([k, w]) => `${esc(NOMB_J(k))} (${w > 0 ? "suma" : "resta"})`).join(" · ")}</p>` : ""}
+    <p class="tenue">Aprendió con ${num(j.casos, 0)} ideas de la historia; se vuelve a entrenar cada semana.</p></div>` : "";
   const ec = r.ensenanza_cripto || {};
   $("#ensenanza-cripto").innerHTML = (ec.btc || ec.brecha) ? `<h2>¿Aporta el agente Cripto?</h2><div class="card">
     ${[["btc", "Bitcoin como termómetro para CEDEARs"], ["brecha", "Dólar cripto como anticipo del CCL"]].map(([k, t]) => ec[k]?.veredicto ?

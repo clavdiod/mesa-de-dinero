@@ -44,7 +44,7 @@ class _CacheHasta:
 
 
 def entrenar_con_historia(series: dict[str, list[dict]], grupos: dict[str, str], params: dict,
-                          paso: int = 2, desde: int = 100, macro: dict | None = None) -> dict:
+                          paso: int = 2, desde: int = 100, macro: dict | None = None, registro: list | None = None) -> dict:
     """Devuelve estadística por agente y banda de fuerza, a HORIZONTE ruedas."""
     from ..agentes import analistas, economista
 
@@ -76,6 +76,8 @@ def entrenar_con_historia(series: dict[str, list[dict]], grupos: dict[str, str],
             if not s.direccion:
                 continue
             vs, i = series[s.ticker], hasta[s.ticker]
+            if registro is not None:
+                registro.append((s.ticker, f, s.agente, s.direccion * s.fuerza))
             ret = (vs[i + HORIZONTE]["cierre"] / vs[i]["cierre"] - 1) * 100 * s.direccion
             ag = stats.setdefault(s.agente, {"total": {}, "bandas": {}})
             _sumar(ag["total"], ret, s.fuerza)

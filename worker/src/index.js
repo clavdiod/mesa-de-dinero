@@ -169,12 +169,13 @@ async function api(req, env, url) {
     return nope("no permitido", 405);
   }
   if (p === "/api/ranking") {
-    const [tabla, pend, params, cal, ensenanza, ensenanza_ws, ensenanza_cripto] = await Promise.all([
+    const [tabla, pend, params, cal, ensenanza, ensenanza_ws, ensenanza_cripto, jefe] = await Promise.all([
       leer(env, "ranking/tabla", []), leer(env, "capacitacion/pendientes", []),
       leer(env, "params/agentes", {}), leer(env, "calificadoras/historial", []), leer(env, "ranking/ensenanza", {}),
-      leer(env, "ranking/ensenanza_ws", {}), leer(env, "ranking/ensenanza_cripto", {}),
+      leer(env, "ranking/ensenanza_ws", {}), leer(env, "ranking/ensenanza_cripto", {}), leer(env, "jefe/modelo", {}),
     ]);
-    return json({ tabla, pendientes: pend, params, calificadoras: cal.slice(0, 30), ensenanza, ensenanza_ws, ensenanza_cripto });
+    return json({ tabla, pendientes: pend, params, calificadoras: cal.slice(0, 30), ensenanza, ensenanza_ws, ensenanza_cripto,
+      jefe: { activo: jefe.activo, motivo: jefe.motivo, prueba: jefe.prueba, aprendio: jefe.lo_que_aprendio, casos: jefe.casos } });
   }
   if (p === "/api/capacitacion" && req.method === "POST") {
     const { agente, aprobar } = await req.json();

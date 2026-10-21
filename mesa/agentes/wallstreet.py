@@ -128,7 +128,7 @@ def multiplicador(cl: dict | None, grupo: str | None, direccion: int) -> float:
     return round(1 + 0.2 * cl.get("riesgo", 0) * direccion * signo, 3)
 
 
-def entrenar(datos: dict, horizonte: int = 60, paso: int = 5, horizonte_clima: int = 10) -> dict:
+def entrenar(datos: dict, horizonte: int = 60, paso: int = 5, horizonte_clima: int = 10, registro: list | None = None) -> dict:
     """Rebobina 5 años: en cada fecha opina como si fuera ese día y mide qué pasó `horizonte` ruedas después (en dólares).
     Tendencia y momentum son estrategias de meses: se miden a 60 ruedas (~3 meses), el plazo "mediano" de la mesa.
     También prueba si el clima de Wall Street sirve para "enseñar": ¿rinden más las compras de CEDEARs cuando
@@ -143,6 +143,8 @@ def entrenar(datos: dict, horizonte: int = 60, paso: int = 5, horizonte_clima: i
         cl = clima(idx, f)
         for s in senales_en(precios, cl, f):
             i = pos[s.ticker].get(f)
+            if registro is not None:
+                registro.append((s.ticker, f, s.agente, s.direccion * s.fuerza))
             if i is None or i + horizonte >= len(precios[s.ticker]):
                 continue
             ret = (precios[s.ticker][i + horizonte][1] / precios[s.ticker][i][1] - 1) * 100 * s.direccion

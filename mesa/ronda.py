@@ -13,7 +13,7 @@ from datetime import date, timedelta
 
 import yaml
 
-from .agentes import analistas, con_ia, cripto, economista, informes as informes_mod, oportunidades, riesgo, seguimiento, supervisor, wallstreet
+from .agentes import adr, analistas, con_ia, cripto, economista, panico, informes as informes_mod, oportunidades, riesgo, seguimiento, supervisor, wallstreet
 from .datos import gratis
 from .datos import eventos as eventos_mod
 from .datos.cache import CacheHistorico
@@ -26,6 +26,7 @@ from .nucleo.ia import IA
 from .nucleo.modelos import Senal
 from .nucleo.registro import Registro
 from .nucleo.simulacion import Simulador
+from .nucleo import combinador
 from .nucleo.reloj import ahora, en_horario, es_dia_habil, toca_correr
 
 
@@ -124,6 +125,45 @@ def _senales_ws(ctx, ws_datos: dict, tickers: list[str]) -> list[Senal]:
         return wallstreet.senales_en(ws_datos["precios"], cl, ctx.fecha.isoformat(), ced, bal)
     except Exception as ex:
         print(f"[wallstreet] {ex}")
+        return []
+
+
+def _senales_panico(ctx, almacen, ws_datos, simular) -> list[Senal]:
+    """Comprador de pánico: CEDEARs (dólares, con VIX y S&P) y acciones locales (con el riesgo país)."""
+    if simular:
+        return []
+    try:
+        out = []
+        if ws_datos.get("precios"):
+            ced = [t for t in ws_datos["precios"] if ctx.titulo(t)]
+            out += panico.senales_cedears(ws_datos["precios"], ws_datos.get("indices") or {}, ctx.fecha.isoformat(), ced)
+        rp = dict(((almacen.get("macro/series") or {}).get("series") or {}).get("riesgo_pais") or {})
+        if ctx.riesgo_pais.get("valor"):
+            rp[ctx.fecha.isoformat()] = ctx.riesgo_pais["valor"]
+        loc = [t for t in (ctx.cache.indice if ctx.cache else {}) if (ctx.titulo(t) or {}).get("grupo") == "acciones"]
+        velas = {t: ctx.cache.velas(t) for t in loc}
+        out += panico.senales_locales(velas, rp, ctx.fecha.isoformat(), {t: ctx.titulo(t)["ultimo"] for t in loc if ctx.titulo(t).get("ultimo")})
+        return out
+    except Exception as ex:
+        print(f"[panico] {ex}")
+        return []
+
+
+def _senales_adr(ctx, almacen, hoy, ya, simular) -> list[Senal]:
+    """Noche de Nueva York: brecha de los ADRs contra la acción local. Los ADRs se bajan una vez por día (Yahoo, gratis)."""
+    if simular:
+        return []
+    try:
+        datos = almacen.get("adr/datos") or {}
+        if datos.get("fecha") != hoy.isoformat():
+            datos = {"fecha": hoy.isoformat(), "adrs": {a: gratis.yahoo(a, "3mo") for a in set(adr.ADRS.values())}}
+            almacen.put("adr/datos", datos)
+        ccl = ((almacen.get("macro/series") or {}).get("series") or {}).get("ccl") or {}
+        sen, tabla = adr.senales_en(ctx, datos, ccl, ya.hour * 60 + ya.minute)
+        ctx.extra["adr_tabla"] = {"hora": ctx.hora, "filas": sorted(tabla, key=lambda x: -abs(x["resta"]))} if tabla else None
+        return sen
+    except Exception as ex:
+        print(f"[adr] {ex}")
         return []
 
 
@@ -295,6 +335,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         senales += economista.senales(ctx, ctx.extra["regimen"], candidatos)
     senales += _senales_ws(ctx, ws_datos, candidatos + [t for t in ctx.tickers_lista()])
     senales += _senales_cripto(ctx, almacen, reg, senales, candidatos + ctx.tickers_lista() + cripto.CEDEARS_CRIPTO, simular)
+    senales += _senales_adr(ctx, almacen, hoy, ya, simular)
+    senales += _senales_panico(ctx, almacen, ws_datos, simular)
     por_ticker: dict[str, list[Senal]] = {}
     for s in senales:
         por_ticker.setdefault(s.ticker, []).append(s)
@@ -345,16 +387,21 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     for tk in preseleccion:
         if tk in ya_propuestos:
             continue
-        plan = riesgo.armar_plan(ctx, tk)
+        sh = [s for s in por_ticker.get(tk, [])]
+        # el plazo lo marca el agente que más empuja la idea (cada estrategia gana en su plazo)
+        aportes = [(s.direccion * s.fuerza * reg.peso(s.agente, s.fuerza), s.agente) for s in sh if s.direccion > 0]
+        principal = max(aportes)[1] if aportes else None
+        ruedas = riesgo.plazo_de(principal)
+        plan = riesgo.armar_plan(ctx, tk, ruedas)
         if not plan:
             continue
         r = riesgo.evaluar(ctx, plan, estado, vetos)
         plan.tamano_r = r["tamano_r"]
-        sh = [s for s in por_ticker.get(tk, [])]
         hist = next((s.datos for s in sh if s.agente == "historiador"), None)
         evaluados.append({"id": hashlib.sha1(f"{hoy}{tk}{ctx.hora}".encode()).hexdigest()[:10], "ticker": tk,
                           "sector": sector(tk), "puntaje": puntajes[tk], "plan": plan.dict(), "riesgo": r,
-                          "senales": [s.dict() for s in sh], "historiador": hist})
+                          "senales": [s.dict() for s in sh], "historiador": hist,
+                          "principal": principal, "ruedas": ruedas})
 
     cupo = config()["riesgo"]["max_propuestas_dia"] - len(propuestas_hoy)
     # lo que el Jefe ya descartó hoy no se vuelve a debatir salvo que el puntaje haya subido
@@ -368,6 +415,23 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     contexto_txt = (f"Clima {ctx.extra.get('clima_estado')}, riesgo país {ctx.riesgo_pais.get('valor')} "
                     f"(ayer {ctx.riesgo_pais_ayer}), MEP {ctx.extra.get('mep_al30')}, CCL {ctx.extra.get('ccl_al30')}")
     debatidos = [e for e in aprobados if "debate" in e]
+    # Jefe que aprendió combinaciones: probabilidad de ganar más que la comisión a 20 ruedas
+    modelo = almacen.get("jefe/modelo") or {}
+    if modelo.get("activo") and debatidos:
+        try:
+            ws_i = (ws_datos.get("indices") or {}) if not simular else {}
+            btc_s = (almacen.get("cripto/datos") or {}).get("btc") if not simular else None
+            rp_s = ((almacen.get("macro/series") or {}).get("series") or {}).get("riesgo_pais")
+            cx = combinador.contexto(hoy.isoformat(), btc_s, ws_i.get("^VIX"), rp_s)
+            for e in debatidos:
+                sen = {}
+                for s_ in e["senales"]:
+                    if s_.get("direccion") and abs(s_["direccion"] * s_["fuerza"]) > abs(sen.get(s_["agente"], 0)):
+                        sen[s_["agente"]] = s_["direccion"] * s_["fuerza"]
+                e["prob_modelo"] = combinador.probabilidad(modelo, sen, cx)
+            debatidos = [e for e in debatidos if (e.get("prob_modelo") or 0) >= modelo.get("umbral", 0.5)]
+        except Exception as ex:
+            print(f"[jefe-modelo] {ex}")
     elegidos = con_ia.jefe(ia, debatidos, cupo, contexto_txt)
     ids_elegidos = {e["id"] for e in elegidos}
     for e in debatidos:
@@ -469,6 +533,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "economista": ctx.extra.get("regimen"),
         "wallstreet": ctx.extra.get("wallstreet"),
         "cripto": {k: v for k, v in (ctx.extra.get("cripto") or {}).items() if k != "ens"},
+        "adr": ctx.extra.get("adr_tabla"),
         "eventos": _calendario(almacen, ctx, hoy, ops, abiertas, cartera),
         "flujos_bonos": {k: v for k, v in eventos_mod.flujos_bonos().items()
                          if k in {c.get("ticker", "").upper() for c in cartera}},

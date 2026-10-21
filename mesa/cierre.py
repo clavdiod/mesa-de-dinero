@@ -153,7 +153,8 @@ def _universo_cedears(a, paneles=None) -> list[str]:
     idx = set((a.get("cache/indice") or {}).keys())
     mios = {base(str(x.get("ticker", "")).upper()) for k in ("usuario/lista", "usuario/cartera") for x in (a.get(k) or [])}
     from .agentes.cripto import CEDEARS_CRIPTO
-    return sorted(({base(t) for t in idx & ced} | (mios & ced) | (set(CEDEARS_CRIPTO) & ced)) - {""})[:90]
+    from .agentes.panico import INDICES_CEDEAR
+    return sorted(({base(t) for t in idx & ced} | (mios & ced) | (set(CEDEARS_CRIPTO + INDICES_CEDEAR) & ced)) - {""})[:95]
 
 
 def _datos_ws(a, paneles, rango: str, ultimos: int | None = None) -> dict:
@@ -175,7 +176,8 @@ def entrenar() -> dict:
     series = {tk: cache.velas(tk) for tk in cache.indice}
     from .datos import gratis
     macro = gratis.series_macro()
-    hist = calibracion.entrenar_con_historia(series, grupos, a.get("params/agentes") or {}, macro=macro)
+    registro: list = []  # todas las opiniones de la historia, para que el Jefe aprenda combinaciones
+    hist = calibracion.entrenar_con_historia(series, grupos, a.get("params/agentes") or {}, macro=macro, registro=registro)
     a.put("ranking/stats_historicas", hist)
     ens = {k: f"{v['aciertos'] / v['casos'] * 100:.1f}% de {v['casos']} ({v['suma_ret'] / v['casos']:+.2f}% prom.)"
            for k, v in (hist.get("_ensenanza") or {}).items() if v.get("casos")}
@@ -183,7 +185,7 @@ def entrenar() -> dict:
     # Estratega de Wall Street: 5 años en dólares
     from .agentes import wallstreet
     datos5 = _datos_ws(a, None, "5y")
-    ws = wallstreet.entrenar(datos5)
+    ws = wallstreet.entrenar(datos5, registro=registro)
     a.put("wallstreet/datos", {"fecha": datos5["fecha"], "indices": {k: v[-300:] for k, v in datos5["indices"].items()},
                                "precios": {k: v[-300:] for k, v in datos5["precios"].items()}})
     hist["wallstreet"] = ws["wallstreet"]
@@ -191,12 +193,46 @@ def entrenar() -> dict:
     a.put("ranking/ensenanza_ws", ws["ensenanza"])
     ens["wallstreet"] = {k: f"{v['aciertos'] / v['casos'] * 100:.1f}% de {v['casos']} ({v['suma_ret'] / v['casos']:+.2f}% prom.)"
                          for k, v in ws["ensenanza"].items() if v.get("casos")}
+    # Noche de Nueva York: ADRs contra acciones locales (lo realista: desde la apertura del día siguiente)
+    from .agentes import adr
+    adrs2 = {x: gratis.yahoo(x, "2y") for x in set(adr.ADRS.values())}
+    hist["adr"] = adr.entrenar({loc: cache.velas(loc) for loc in adr.ADRS}, adrs2, macro.get("ccl") or {})
+    a.put("ranking/stats_historicas", hist)
+    ph = hist["adr"]["por_horizonte"]
+    ens["adr"] = {k: f"{v['aciertos'] / v['casos'] * 100:.1f}% de {v['casos']} ({v['suma_ret'] / v['casos']:+.2f}% prom.)"
+                  for k, v in ph.items() if v.get("casos")}
+    a.put("ranking/prueba_adr", ph)
+
+    # Comprador de pánico: CEDEARs 5 años en dólares + acciones locales con el riesgo país
+    from .agentes import panico
+    acciones = {tk: cache.velas(tk) for tk in cache.indice if grupos.get(tk) == "acciones"}
+    hist["panico"] = panico.entrenar(datos5["precios"], datos5["indices"], acciones, macro.get("riesgo_pais") or {}, registro=registro)
+    a.put("ranking/stats_historicas", hist)
+    a.put("ranking/prueba_panico", {"por_tipo": hist["panico"]["por_tipo"], "por_horizonte": hist["panico"]["por_horizonte"]})
+    ens["panico"] = {k: f"{v['aciertos'] / v['casos'] * 100:.1f}% de {v['casos']} ({v['suma_ret'] / v['casos']:+.2f}% prom. a 20 ruedas)"
+                     for k, v in hist["panico"]["por_tipo"].items() if v.get("casos")}
+
     # Cripto: BTC 5 años y dólar cripto desde 2023
     from .agentes import cripto
     from .datos import gratis as _g
     btc5 = _g.yahoo("BTC-USD", "5y")
     dcr = _g.dolar_cripto_historico()
-    cr = cripto.entrenar(btc5, datos5["precios"], dcr, macro.get("ccl") or {})
+    cr = cripto.entrenar(btc5, datos5["precios"], dcr, macro.get("ccl") or {}, registro=registro)
+    # El Jefe aprende combinaciones (precio en dólares para CEDEARs, en pesos para acciones)
+    from .nucleo import combinador
+    precios_lbl = {tk: [c for _, c in s] for tk, s in datos5["precios"].items()}
+    fechas_lbl = {tk: {f: i for i, (f, _) in enumerate(s)} for tk, s in datos5["precios"].items()}
+    for tk in cache.indice:
+        if tk not in precios_lbl and grupos.get(tk) == "acciones":
+            vs = cache.velas(tk)
+            precios_lbl[tk] = [v["cierre"] for v in vs]
+            fechas_lbl[tk] = {v["fecha"]: i for i, v in enumerate(vs)}
+    vix = datos5["indices"].get("^VIX")
+    rp_m = macro.get("riesgo_pais") or {}
+    datos_jefe = combinador.armar_datos(registro, precios_lbl, fechas_lbl, lambda f: combinador.contexto(f, btc5, vix, rp_m))
+    modelo = combinador.entrenar(datos_jefe)
+    a.put("jefe/modelo", modelo)
+    ens["jefe"] = {"motivo": modelo.get("motivo"), "prueba": modelo.get("prueba"), "aprendio": modelo.get("lo_que_aprendio")}
     hist["cripto"] = cr["cripto"]
     a.put("ranking/stats_historicas", hist)
     a.put("ranking/ensenanza_cripto", cr["ensenanza"])
