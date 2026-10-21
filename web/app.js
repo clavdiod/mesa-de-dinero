@@ -451,13 +451,30 @@ function pintarEventos() {
   $("#eventos").innerHTML = `<label class="check"><input type="checkbox" id="solo-mio" ${SOLO_MIO ? "checked" : ""}> Solo lo mío y lo que mueve al mercado</label>` +
     (Object.keys(porDia).length ? Object.entries(porDia).map(([f, xs]) => `<div class="dia"><div class="dia-tit">${diaTxt(f)}</div>${xs.map(filaEvento).join("")}</div>`).join("")
       : '<p class="tenue">Sin eventos en los próximos 45 días.</p>') +
-    '<p class="tenue">💵 cobros de bonos y ONs · 📊 balances · 💰 dividendos · 🏛️ inflación, Reserva Federal y otras fechas macro. Antes de un balance la mesa no propone entrar en ese papel.</p>';
+    '<p class="tenue">🏦 licitaciones (ONs, fideicomisos, Tesoro, provincias; fuente MAE) · 💵 cobros de bonos y ONs · 📊 balances · 💰 dividendos · 🏛️ inflación, Reserva Federal y otras fechas macro. Antes de un balance la mesa no propone entrar en ese papel.</p>';
   $("#solo-mio").onchange = (ev) => { SOLO_MIO = ev.target.checked; pintarEventos(); };
   // Hoy: lo de los próximos 7 días
   const lim = new Date(Date.now() + 7 * 864e5).toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
-  const sem = (ESTADO.estado?.eventos || []).filter((e) => e.fecha <= lim && (e.mio || e.tipo === "macro" || e.tipo === "cobro"));
+  const sem = (ESTADO.estado?.eventos || []).filter((e) => e.fecha <= lim && e.tipo !== "licitacion" && (e.mio || e.tipo === "macro" || e.tipo === "cobro"));
+  pintarLicitaciones(lim);
   $("#eventos-semana").innerHTML = sem.length ? `<h2>Esta semana</h2><div class="card">${sem.slice(0, 8).map((e) =>
     `<div class="evento ${e.fuerte ? "fuerte" : ""}"><span class="ev-ic">${ICONO_EV[e.tipo] || "•"}</span><span><b>${diaTxt(e.fecha)}</b> · ${e.ticker && e.ticker !== "AL/GD" ? esc(e.ticker) + " · " : ""}${esc(e.nombre)}</span></div>`).join("")}</div>` : "";
+}
+const CHIP_LIC = { ON: "verde", Tesoro: "azul", Provincia: "azul", Fideicomiso: "", VCP: "", Otra: "" };
+function pintarLicitaciones(lim) {
+  const hoy = HOY();
+  const ahora = new Date().toLocaleTimeString("en-GB", { timeZone: "America/Argentina/Buenos_Aires", hour: "2-digit", minute: "2-digit" });
+  const xs = (ESTADO.estado?.eventos || []).filter((e) => e.tipo === "licitacion" && e.fecha >= hoy && e.fecha <= lim);
+  if (!xs.length) { $("#licitaciones-hoy").innerHTML = ""; return; }
+  const deHoy = xs.filter((e) => e.fecha === hoy), prox = xs.filter((e) => e.fecha > hoy);
+  const estado = (e) => !e.hora_cierre ? "" : ahora < e.hora_inicio ? `<span class="chip">abre ${esc(e.hora_inicio)}</span>`
+    : ahora <= e.hora_cierre ? `<span class="chip verde">abierta hasta ${esc(e.hora_cierre)}</span>` : '<span class="chip rojo">cerró</span>';
+  const fila = (e, conDia) => `<div class="evento"><span class="ev-ic">🏦</span><span>${conDia ? `<b>${diaTxt(e.fecha)}</b> · ` : ""}<span class="chip ${CHIP_LIC[e.clase] || ""}">${esc(e.clase)}</span> ${esc(e.nombre)}
+    ${e.emisor ? `<span class="tenue"> · Emisor: ${esc(e.emisor)}</span>` : ""} ${e.fecha === hoy ? estado(e) : ""}</span></div>`;
+  $("#licitaciones-hoy").innerHTML = `<h2>🏦 Licitaciones${deHoy.length ? " de hoy" : " de la semana"}</h2><div class="card">` +
+    (deHoy.length ? deHoy.map((e) => fila(e, false)).join("") : '<p class="tenue">Hoy no hay licitaciones.</p>') +
+    (prox.length ? `<p class="tenue" style="margin-top:.6em">Próximas:</p>${prox.slice(0, 6).map((e) => fila(e, true)).join("")}` : "") +
+    '<p class="tenue">Fuente: calendario público del MAE (A3 Mercados). Para participar se pide al colocador o al bróker antes del cierre.</p></div>';
 }
 document.querySelectorAll("#cal-vista button").forEach((b) => b.addEventListener("click", () => {
   document.querySelectorAll("#cal-vista button").forEach((x) => x.classList.toggle("prim", x === b));

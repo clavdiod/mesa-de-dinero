@@ -304,3 +304,90 @@ def yahoo_ohlcv(simbolo: str, rango: str = "5y") -> list[dict]:
     except Exception as e:
         print(f"[yahoo ohlcv] {simbolo}: {e}")
         return []
+
+
+# ---------- Licitaciones del día (MAE / A3 Mercados: ONs, fideicomisos, Tesoro, provincias) ----------
+_MAE = "https://api.marketdata.mae.com.ar/api/"
+_MAE_H = {"Accept": "application/json", "Origin": "https://marketdata.mae.com.ar", "Referer": "https://marketdata.mae.com.ar/"}
+
+
+def _clase_licitacion(titulo: str) -> str:
+    t = titulo.upper().strip()
+    if "MINISTERIO DE ECONOM" in t or "TESORO" in t:
+        return "Tesoro"
+    if "PROVINCIA" in t or "CIUDAD" in t or "MUNICIPALIDAD" in t:
+        return "Provincia"
+    if t.startswith("ON") or " ON " in t or "OBLIGACIONES NEGOCIABLES" in t:
+        return "ON"
+    if t.startswith("FF") or "FIDEICOMISO" in t:
+        return "Fideicomiso"
+    if t.startswith("VCP") or "VALORES DE CORTO PLAZO" in t:
+        return "VCP"
+    return "Otra"
+
+
+def _hora_art(iso: str | None) -> tuple[str, str]:
+    """'2026-10-23T13:00:00Z' -> ('2026-10-23', '10:00') en hora argentina (UTC-3)."""
+    if not iso:
+        return "", ""
+    d = datetime.fromisoformat(iso.replace("Z", "+00:00")) - timedelta(hours=3)
+    return d.date().isoformat(), d.strftime("%H:%M")
+
+
+def licitaciones_mae(desde, hasta, detalle_dias: int = 10, max_detalles: int = 25) -> list[dict]:
+    """Calendario público de licitaciones del MAE (gratis, no usa consultas de IOL).
+    Para las cercanas trae el detalle: emisor, moneda, monto, qué se licita (tasa/precio), liquidación."""
+    r = _S.get(_MAE + "mercado/licitaciones", headers=_MAE_H, timeout=30,
+               params={"fechaDesde": desde.isoformat(), "fechaHasta": hasta.isoformat()})
+    r.raise_for_status()
+    out, pedidos = [], 0
+    lim_det = (desde + timedelta(days=detalle_dias)).isoformat()
+    for e in r.json().get("events") or []:
+        titulo = " ".join(str(e.get("title") or "").split())
+        clase = _clase_licitacion(titulo)
+        fecha, hora_ini = _hora_art(e.get("start"))
+        _, hora_fin = _hora_art(e.get("end"))
+        ev = {"fecha": fecha, "tipo": "licitacion", "clase": clase, "id": e.get("id"), "titulo": titulo,
+              "hora_inicio": hora_ini if clase not in ("Tesoro", "Provincia") else "",
+              "hora_cierre": hora_fin if clase not in ("Tesoro", "Provincia") else ""}
+        if clase not in ("Tesoro", "Provincia") and fecha <= lim_det and pedidos < max_detalles:
+            pedidos += 1
+            try:
+                d = _S.get(_MAE + f"mercado/licitacion/{e['id']}", headers=_MAE_H, timeout=20).json()
+                ev.update({"emisor": " ".join(str(d.get("emisor") or "").split()), "moneda": d.get("moneda"),
+                           "monto": d.get("montoaLicitar"), "licita": (d.get("variableLicitar") or "").lower(),
+                           "liquidacion": _hora_art(d.get("fechaLiquidacion"))[0], "estado": d.get("estado"),
+                           "modalidad": d.get("modalidad"), "colocador": " ".join(str(d.get("colocador") or "").split()),
+                           "segmento": d.get("tipo")})
+            except Exception as ex:
+                print(f"[mae] detalle {e.get('id')}: {ex}")
+        ev["nombre"] = nombre_licitacion(ev)
+        out.append(ev)
+    out.sort(key=lambda x: (x["fecha"], x.get("hora_cierre") or ""))
+    return out
+
+
+def nombre_licitacion(e: dict) -> str:
+    t = e["titulo"]
+    if t.isupper():
+        siglas = {"ON", "FF", "VCP", "SA", "S.A.", "PYME", "USD", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"}
+        t = " ".join(w if w in siglas else w.capitalize() for w in t.split())
+    if e["clase"] == "Tesoro":
+        return "Licitación del Tesoro (Ministerio de Economía: LECAP, BONCAP, CER, duales)"
+    if e["clase"] == "Provincia":
+        return "Licitación de la Provincia de Buenos Aires" if "BUENOS AIRES" in e["titulo"].upper() else f"Licitación: {t}"
+    partes = [f"Licitación {t}"]
+    det = []
+    if e.get("moneda"):
+        det.append("en dólares" if "USD" in str(e["moneda"]).upper() else "en pesos" if "ARS" in str(e["moneda"]).upper() or "PESO" in str(e["moneda"]).upper() else str(e["moneda"]))
+    if e.get("licita"):
+        det.append(f"se licita {e['licita']}")
+    if e.get("monto"):
+        det.append(f"por {e['monto']:,.0f}".replace(",", "."))
+    if e.get("hora_cierre"):
+        det.append(f"de {e.get('hora_inicio')} a {e['hora_cierre']} h")
+    if e.get("liquidacion"):
+        det.append(f"liquida {e['liquidacion'][8:10]}/{e['liquidacion'][5:7]}")
+    if det:
+        partes.append(" · ".join(det))
+    return " — ".join(partes)

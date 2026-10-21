@@ -71,7 +71,7 @@ def refrescar_puntas(ctx: Contexto, iol, consumo: Consumo, tickers: list[str]) -
             print(f"[puntas] {tk}: {e}")
 
 
-def _calendario(almacen, ctx, hoy, ops, abiertas, cartera) -> list[dict]:
+def _calendario(almacen, ctx, hoy, ops, abiertas, cartera, simular: bool = False) -> list[dict]:
     """Eventos de los próximos 45 días que importan: los de mis activos, oportunidades y los CEDEARs más operados."""
     try:
         base = lambda t: t[:-1] if t.endswith(("D", "C")) and ctx.titulo(t[:-1]) else t
@@ -80,9 +80,11 @@ def _calendario(almacen, ctx, hoy, ops, abiertas, cartera) -> list[dict]:
         mios |= set((almacen.get("usuario/ons") or {}).keys())
         top = sorted((t for t in ctx.grupo("cedears") if t.get("monto")), key=lambda t: -t["monto"])[:30]
         mios |= {t["simbolo"] for t in top if t.get("simbolo")}
+        if not simular:
+            eventos_mod.actualizar_licitaciones(almacen, hoy, ctx.hora or "")
         ev = eventos_mod.armar(almacen, hoy, 45, mios)
         for e in ev:
-            e["mio"] = e.get("ticker") in mios and e.get("ticker") not in {t["simbolo"] for t in top} or e.get("tipo") == "macro"
+            e["mio"] = e.get("ticker") in mios and e.get("ticker") not in {t["simbolo"] for t in top} or e.get("tipo") in ("macro", "licitacion")
         return ev[:80]
     except Exception as ex:
         print(f"[calendario] {ex}")
@@ -674,7 +676,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "anticipos": ctx.extra.get("anticipos"),
         "anticipo_lista": ctx.extra.get("anticipo_lista"),
         "anticipo_estadistica": None if simular else almacen.get("anticipo/estadistica"),
-        "eventos": _calendario(almacen, ctx, hoy, ops, abiertas, cartera),
+        "eventos": _calendario(almacen, ctx, hoy, ops, abiertas, cartera, simular),
         "flujos_bonos": {k: v for k, v in eventos_mod.flujos_bonos().items()
                          if k in {c.get("ticker", "").upper() for c in cartera}},
     }

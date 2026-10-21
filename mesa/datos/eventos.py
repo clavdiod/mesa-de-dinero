@@ -111,6 +111,28 @@ def armar(almacen, hoy: date, dias: int = 45, interes: set[str] | None = None) -
     ev = macro + cobros(hoy, dias, almacen.get("usuario/ons") or {}, interes)
     ev += [e for e in (almacen.get("eventos/eeuu") or {}).get("eventos", [])
            if hoy.isoformat() <= e["fecha"] <= hasta and (interes is None or e["ticker"] in interes)]
-    ev += [e for e in (almacen.get("eventos/licitaciones") or []) if hoy.isoformat() <= e.get("fecha", "") <= hasta]
+    lic = almacen.get("eventos/licitaciones") or []
+    lic = lic.get("eventos", []) if isinstance(lic, dict) else lic
+    ev += [{**e, "mio": True} for e in lic if hoy.isoformat() <= e.get("fecha", "") <= hasta]
     ev.sort(key=lambda e: (e["fecha"], e.get("tipo", "")))
     return ev
+
+
+def actualizar_licitaciones(almacen, hoy: date, hora: str = "", forzar: bool = False) -> dict:
+    """Licitaciones del MAE (gratis). Se piden a la mañana y se refrescan una vez a la tarde
+    (a veces se publican el mismo día). Se guardan solo si cambiaron."""
+    from . import gratis
+    guardado = almacen.get("eventos/licitaciones") or {}
+    if isinstance(guardado, list):
+        guardado = {}
+    tarde = hora >= "13:00"
+    if not forzar and guardado.get("fecha") == hoy.isoformat() and (not tarde or guardado.get("tarde")):
+        return guardado
+    try:
+        evs = gratis.licitaciones_mae(hoy - timedelta(days=1), hoy + timedelta(days=45))
+    except Exception as ex:
+        print(f"[licitaciones] {ex}")
+        return guardado
+    nuevo = {"fecha": hoy.isoformat(), "hora": hora, "tarde": tarde, "fuente": "MAE / A3 Mercados", "eventos": evs}
+    almacen.put("eventos/licitaciones", nuevo)
+    return nuevo

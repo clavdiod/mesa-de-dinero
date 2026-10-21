@@ -198,7 +198,10 @@ def calificadoras() -> dict:
     ia = IA()
     res = con_ia.calificadoras(ia, a, ahora().date())
     lic = con_ia.licitaciones(ia, a, ahora().date())
-    return {"cambios": len(res.get("cambios", [])), "licitacion": (lic.get("proxima") or {}).get("fecha")}
+    from .datos.eventos import actualizar_licitaciones
+    mae = actualizar_licitaciones(a, ahora().date(), ahora().strftime("%H:%M"), forzar=True)
+    return {"cambios": len(res.get("cambios", [])), "licitacion": (lic.get("proxima") or {}).get("fecha"),
+            "licitaciones_mae": len(mae.get("eventos") or [])}
 
 
 def semanal() -> list[dict]:
