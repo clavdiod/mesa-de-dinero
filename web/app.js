@@ -305,7 +305,7 @@ function pintarEconomista() {
     <div class="tiras">${inc.map(([k, v]) => `<span class="chip ${v >= 0.4 ? "verde" : v <= -0.4 ? "rojo" : ""}">${esc(CAT_ECO[k] || k)} ${v > 0 ? "▲" : v < 0 ? "▼" : "="}</span>`).join("")}</div>
     ${(r.clase || []).map((x) => `<p>${esc(x)}</p>`).join("")}
     ${(r.ensena || []).length ? `<p class="tenue"><b>Lo que les enseña hoy al resto:</b></p>${r.ensena.map((x) => `<p class="tenue">• ${esc(x)}</p>`).join("")}` : ""}
-    <p class="tenue">Así ajusta a la mesa: a las señales de los demás que van con este contexto se les cree hasta 25% más, y a las que van en contra, hasta 25% menos.</p></div>`;
+    <p class="tenue">${r.ensenanza_activa ? "Así ajusta a la mesa: a las señales de los demás que van con este contexto se les cree hasta 25% más, y a las que van en contra, hasta 25% menos." : "⏸ " + esc(r.ensenanza_motivo || "Su enseñanza está en pausa hasta que la historia muestre que sirve.")}</p></div>`;
 }
 
 // ---------- calendario de eventos ----------

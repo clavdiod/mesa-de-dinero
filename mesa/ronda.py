@@ -190,6 +190,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         series_m = {} if simular else _series_macro(almacen, hoy)
         fx = economista.foto(series_m, hoy, ctx.riesgo_pais.get("valor"), ctx.extra.get("ccl_al30"), ctx.extra.get("caucion_tna"))
         ctx.extra["regimen"] = economista.regimen(fx)
+        activa, motivo = economista.ensenanza_activa(almacen.get("ranking/ensenanza") or {})
+        ctx.extra["regimen"].update(ensenanza_activa=activa, ensenanza_motivo=motivo)
     except Exception as ex:
         print(f"[economista] {ex}")
     senales += analistas.acciones(ctx)

@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: "2026-10-21"
+  caso: "Llegó el Economista (contexto macro argentino)"
+  que_paso: "Se probó con la historia de 56 papeles la regla de manual: si el riesgo país baja, comprar bancos, acciones y bonos; si el dólar se acelera, CEDEARs. Su opinión propia acertó 41% (1.043 casos). Y las señales de los demás que iban a favor de su contexto rindieron -1,7% a 10 ruedas, contra +0,8% de las que iban en contra."
+  leccion: "En este último año, cuando el contexto ya era bueno el mercado ya lo había descontado: después de un mes de riesgo país en baja, los papeles tendieron a devolver. Las reglas de manual no alcanzan si el precio ya las reflejó."
+  cambio: "El Economista explica el contexto todos los días (Mercado), pero su voto quedó en el mínimo y su ajuste sobre los demás está en pausa hasta que la historia muestre que mejora resultados. Se vuelve a medir en cada entrenamiento."
+- fecha: "2026-10-21"
   caso: "Entrenamiento con la historia (56 papeles: 18 acciones y 38 CEDEARs, ~1 año)"
   que_paso: "Se hizo opinar a los agentes en cada día pasado y se midió qué pasó 10 ruedas después. Con solo 18 acciones, los rebotes de Técnico parecían buenos (62%), pero al sumar los CEDEARs bajaron a 52% y +0,3% promedio: menos que la comisión. Los quiebres de Técnico acertaron 45% (-0,7%) y Fuerza relativa 48% (-0,4%) sobre más de 1.500 casos."
   leccion: "Con pocos datos una regla puede parecer buena por casualidad. Hoy ninguna de las reglas técnicas simples gana más que la comisión: la mesa no les puede creer de más."

@@ -41,3 +41,12 @@ def test_economista_lee_riesgo_pais_y_dolar():
     r = economista.regimen(economista.foto(series, date(2026, 10, 21), caucion_tna=36.0))
     assert r["inclinacion"]["bonos_usd"] > 0.5 and r["inclinacion"]["bancos"] > 0.5 and r["inclinacion"]["pesos"] > 0
     assert any("Riesgo país en baja" in x for x in r["clase"])
+
+
+def test_ensenanza_solo_se_activa_si_mejora_a_los_demas():
+    from mesa.agentes import economista
+    malo = {"a_favor_del_contexto": {"casos": 900, "suma_ret": -1500.0}, "contra_el_contexto": {"casos": 830, "suma_ret": 630.0}}
+    bueno = {"a_favor_del_contexto": {"casos": 900, "suma_ret": 1800.0}, "contra_el_contexto": {"casos": 830, "suma_ret": -400.0}}
+    assert economista.ensenanza_activa(malo)[0] is False and economista.ensenanza_activa(bueno)[0] is True
+    reg = {"inclinacion": {"bancos": 1.0}, "ensenanza_activa": False}
+    assert economista.multiplicador(reg, None, "GGAL", 1) == 1.0

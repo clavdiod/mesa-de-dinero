@@ -151,8 +151,20 @@ def senales(ctx, reg: dict, tickers: list[str]) -> list[Senal]:
 
 def multiplicador(reg: dict | None, ctx, ticker: str, direccion: int) -> float:
     """Cuánto creerle a la señal de otro agente según el régimen (×0,75 a ×1,25)."""
-    if not reg or not direccion:
-        return 1.0
+    if not reg or not direccion or not reg.get("ensenanza_activa"):
+        return 1.0  # su enseñanza solo se aplica si la historia mostró que mejora a los demás
     cat = categoria(ticker, (ctx.titulo(ticker) or {}).get("grupo"))
     v = reg["inclinacion"].get(cat, 0.0) if cat else 0.0
     return round(1 + 0.25 * v * direccion, 3)
+
+
+def ensenanza_activa(prueba: dict) -> tuple[bool, str]:
+    """¿Las señales que siguieron su contexto ganaron más que las que fueron en contra? (≥200 casos cada una)."""
+    a, c = prueba.get("a_favor_del_contexto") or {}, prueba.get("contra_el_contexto") or {}
+    if a.get("casos", 0) < 200 or c.get("casos", 0) < 200:
+        return False, "Todavía no hay suficientes casos para probar si su enseñanza mejora a los demás."
+    pa, pc = a["suma_ret"] / a["casos"], c["suma_ret"] / c["casos"]
+    if pa - pc >= 0.5:
+        return True, f"En la historia, seguir su contexto mejoró a los demás ({pa:+.1f}% contra {pc:+.1f}% a 10 ruedas): su enseñanza se aplica."
+    return False, (f"En la historia, seguir su contexto no mejoró a los demás ({pa:+.1f}% a favor contra {pc:+.1f}% en contra, a 10 ruedas): "
+                   "su enseñanza está en pausa y la mesa no ajusta votos por el contexto hasta que demuestre que sirve.")
