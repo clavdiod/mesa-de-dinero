@@ -114,7 +114,9 @@ def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, pas
             if x is None:
                 continue
             futuro = max(y["c"] for y in f[i + 1: i + 1 + HORIZONTE]) / f[i]["c"] - 1
-            filas.append((fe, tk, x, 1.0 if futuro * 100 >= META else 0.0))
+            peor = min(y["c"] for y in f[i + 1: i + 1 + HORIZONTE]) / f[i]["c"] - 1
+            r5 = f[i + HORIZONTE]["c"] / f[i]["c"] - 1
+            filas.append((fe, tk, x, 1.0 if futuro * 100 >= META else 0.0, r5 * 100, 1.0 if peor * 100 <= -META else 0.0))
     if len(filas) < 2000:
         return {"activo": False, "motivo": f"Pocos casos ({len(filas)})."}
     filas.sort(key=lambda r: r[0])
@@ -133,20 +135,28 @@ def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, pas
         z = (np.array(x) - mu) / sd
         zz = np.r_[1.0, z, z ** 2]
         return float(1 / (1 + math.exp(-zz @ w)))
-    pt = sorted(((prob(r[2]), r[3]) for r in te), reverse=True)
+    pt = sorted(((prob(r[2]), r[3], r[4], r[5]) for r in te), reverse=True)
     base = sum(r[3] for r in te) / len(te)
     top5 = pt[: max(20, len(pt) // 20)]
     top10 = pt[: max(20, len(pt) // 10)]
-    prec5, prec10 = sum(y for _, y in top5) / len(top5), sum(y for _, y in top10) / len(top10)
+    prec5, prec10 = sum(r[1] for r in top5) / len(top5), sum(r[1] for r in top10) / len(top10)
     umbral = top10[-1][0]
-    activo = prec10 >= base * 1.5 and prec10 >= base + 0.05
+    # control honesto: ¿elige papeles que suben, o solo papeles que se mueven mucho para los dos lados?
+    caen10 = sum(r[3] for r in top10) / len(top10)
+    caen_base = sum(r[5] for r in te) / len(te)
+    ret10 = sum(r[2] for r in top10) / len(top10)
+    ret_base = sum(r[4] for r in te) / len(te)
+    activo = prec10 >= base * 1.5 and prec10 >= base + 0.05 and ret10 - ret_base >= 0.5 and ret10 > 1.2
     importancia = sorted(((NOMBRES[k], round(float(w[1 + k]), 3)) for k in range(len(NOMBRES))), key=lambda t: -abs(t[1]))[:5]
     return {"activo": activo, "mu": mu.tolist(), "sd": sd.tolist(), "w": w.tolist(), "umbral": round(umbral, 4),
             "prueba": {"casos": len(te), "base_pct": round(base * 100, 1), "top5_pct": round(prec5 * 100, 1),
-                       "top10_pct": round(prec10 * 100, 1), "lift10": round(prec10 / base, 2) if base else None},
+                       "top10_pct": round(prec10 * 100, 1), "lift10": round(prec10 / base, 2) if base else None,
+                       "caen5_top10_pct": round(caen10 * 100, 1), "caen5_base_pct": round(caen_base * 100, 1),
+                       "ret5_top10": round(ret10, 2), "ret5_base": round(ret_base, 2)},
             "importancia": importancia,
-            "motivo": (f"Con datos que no vio: de cada 100 papeles marcados (su 10% más probable), {prec10 * 100:.0f} subieron 5% o más "
-                       f"en la semana, contra {base * 100:.0f} de cada 100 al azar ({prec10 / base:.1f} veces más)." if base else "")}
+            "motivo": (f"Con datos que no vio: de cada 100 papeles marcados, {prec10 * 100:.0f} subieron 5% o más en la semana (al azar: {base * 100:.0f}), "
+                       f"{caen10 * 100:.0f} cayeron 5% o más (al azar: {caen_base * 100:.0f}); rendimiento promedio a 5 ruedas {ret10:+.1f}% "
+                       f"contra {ret_base:+.1f}% al azar. " + ("Se activa." if activo else "No alcanza: queda solo como información.") if base else "")}
 
 
 def puntuar(modelo: dict, series: dict[str, list[dict]], ctx_mkt: dict, tickers: list[str] | None = None) -> list[dict]:
