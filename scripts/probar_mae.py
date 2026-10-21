@@ -1,23 +1,23 @@
-"""Lee el módulo useLicitacionesCalendar de MAE Market Data para encontrar la ruta de la API y la prueba."""
-import re
+"""Calendario de licitaciones de MAE: lista y detalle."""
+import json
 from datetime import date, timedelta
 
 import requests
 
 UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64)", "Accept": "application/json", "Origin": "https://marketdata.mae.com.ar",
       "Referer": "https://marketdata.mae.com.ar/"}
-c = requests.get("https://marketdata.mae.com.ar/assets/useLicitacionesCalendar-DCUzzxDC.js", headers=UA, timeout=40).text
-out = [f"modulo {len(c)}b: {c[:1500]}"]
-rutas = sorted(set(re.findall(r'["\'`]([a-zA-Z0-9/_${}.?=&:-]*(?:licit|calend|Licit)[a-zA-Z0-9/_${}.?=&:-]*)["\'`]', c)))
-out.append(f"rutas={rutas}")
+B = "https://api.marketdata.mae.com.ar/api/"
 hoy = date.today()
-for r in rutas[:8]:
-    for u in (f"https://api.marketdata.mae.com.ar/api/{r.lstrip('/')}",):
-        u = u.replace("${", "{")
-        u = re.sub(r"\{[^}]*\}", "", u)
+r = requests.get(B + "mercado/licitaciones", headers=UA, params={"fechaDesde": (hoy - timedelta(days=2)).isoformat(),
+                                                                  "fechaHasta": (hoy + timedelta(days=10)).isoformat()}, timeout=30).json()
+ev = r.get("events") or []
+out = [f"{len(ev)} eventos: " + " | ".join(f"{e['start'][:16]} {e['title'][:70]} (id {e['id']})" for e in ev[:20])]
+if ev:
+    i = ev[0]["id"]
+    for ruta in (f"mercado/licitaciones/{i}", f"mercado/licitaciones/detalle/{i}", f"licitaciones/{i}", f"mercado/licitacion/{i}"):
         try:
-            rr = requests.get(u, headers=UA, timeout=20, params={"fechaDesde": hoy.isoformat(), "fechaHasta": (hoy + timedelta(days=14)).isoformat()})
-            out.append(f"GET {rr.url} -> {rr.status_code} {rr.text[:400]!r}")
+            d = requests.get(B + ruta, headers=UA, timeout=20)
+            out.append(f"{ruta} -> {d.status_code} {d.text[:600]!r}")
         except Exception as e:
-            out.append(f"GET {u} -> ERROR {type(e).__name__}")
+            out.append(f"{ruta} -> ERROR {e}")
 print("::notice::" + " || ".join(out)[:3900])
