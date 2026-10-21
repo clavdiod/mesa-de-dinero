@@ -31,3 +31,13 @@ def test_entrenar_con_historia_no_mira_el_futuro_y_devuelve_bandas():
     assert set(st["tecnico"]["bandas"]) <= {"debil", "media", "fuerte"}
     cal = calibracion.calibrar({}, st)
     assert all(0.3 <= c["factor"] <= 1.5 for c in cal.values())
+
+
+def test_economista_lee_riesgo_pais_y_dolar():
+    from datetime import date
+    from mesa.agentes import economista
+    series = {"riesgo_pais": {"2026-09-20": 800.0, "2026-10-20": 650.0}, "ccl": {"2026-09-20": 1500.0, "2026-10-20": 1505.0},
+              "oficial": {"2026-09-20": 1450.0, "2026-10-20": 1460.0}, "inflacion": {"2026-08-31": 2.1, "2026-09-30": 1.9}}
+    r = economista.regimen(economista.foto(series, date(2026, 10, 21), caucion_tna=36.0))
+    assert r["inclinacion"]["bonos_usd"] > 0.5 and r["inclinacion"]["bancos"] > 0.5 and r["inclinacion"]["pesos"] > 0
+    assert any("Riesgo país en baja" in x for x in r["clase"])

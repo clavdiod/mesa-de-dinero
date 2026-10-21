@@ -202,3 +202,21 @@ def historial_cedear(simbolo: str, precio_hoy_ars: float) -> list[dict]:
     return [{"fecha": v["fecha"], "apertura": round(v["apertura"] * c * k, 4), "maximo": round(v["maximo"] * c * k, 4),
              "minimo": round(v["minimo"] * c * k, 4), "cierre": round(v["cierre"] * c * k, 4), "volumen": 0}
             for v, c in crudo]
+
+
+def series_macro(anios: int = 3) -> dict:
+    """Riesgo país, CCL, oficial (diarios) e inflación (mensual), de argentinadatos. fecha -> valor."""
+    from datetime import date, timedelta
+    desde = (date.today() - timedelta(days=365 * anios)).isoformat()
+    base = "https://api.argentinadatos.com/v1"
+    out = {}
+    for nombre, url, campo in (("riesgo_pais", f"{base}/finanzas/indices/riesgo-pais", "valor"),
+                               ("ccl", f"{base}/cotizaciones/dolares/contadoconliqui", "venta"),
+                               ("oficial", f"{base}/cotizaciones/dolares/oficial", "venta"),
+                               ("inflacion", f"{base}/finanzas/indices/inflacion", "valor")):
+        try:
+            out[nombre] = {d["fecha"]: float(d[campo]) for d in _json(url) if d.get(campo) is not None and d["fecha"] >= desde}
+        except Exception as e:
+            print(f"[macro] {nombre}: {e}")
+            out[nombre] = {}
+    return out

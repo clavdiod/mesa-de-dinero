@@ -4,7 +4,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const num = (x, d = 2) => (x === null || x === undefined || isNaN(x) ? "—" : Number(x).toLocaleString("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d }));
 const pct = (x, d = 2) => (x === null || x === undefined ? "—" : `${x > 0 ? "+" : ""}${num(x, d)}%`);
 const NOMBRES = { acciones: "Acciones", cedears: "CEDEARs", ons: "ONs", soberanos: "Soberanos", pesos_tasas: "Pesos y tasas",
-  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
+  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
   hechos_emisor: "Hechos del emisor", calificadoras: "Calificadoras", riesgo: "Riesgo", jefe: "Jefe" };
 
 function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("ver"); setTimeout(() => e.classList.remove("ver"), 2500); }
@@ -107,6 +107,7 @@ function pintarEstado() {
     $("#hora-mercado").classList.toggle("vieja", min === null || min > 20);
     document.querySelectorAll("[data-hora]").forEach((x) => (x.textContent = `· ${est.hora}`));
   }
+  pintarEconomista();
   pintarSenales();
   pintarInformes();
   pintarOportunidades();
@@ -293,6 +294,20 @@ $("#form-on").addEventListener("submit", async (ev) => {
   await put("usuario/ons", USUARIO.ons); ev.target.reset(); pintarCalendario(); toast("ON guardada");
 });
 
+// ---------- economista ----------
+const CAT_ECO = { acciones: "Acciones locales", bancos: "Bancos", energia: "Energía", utilities: "Servicios públicos", bonos_usd: "Bonos en dólares", cedears: "CEDEARs", pesos: "Pesos" };
+function pintarEconomista() {
+  const r = ESTADO.estado?.economista;
+  if (!r) { $("#economista").innerHTML = ""; return; }
+  const inc = Object.entries(r.inclinacion || {}).sort((a, b) => b[1] - a[1]);
+  $("#economista").innerHTML = `<div class="card eco"><div class="fila"><b>🎓 La clase del Economista</b><span class="tenue">${esc(fecha(r.fecha))}</span></div>
+    <p style="font-weight:600;margin:8px 0">${esc(r.titulo)}</p>
+    <div class="tiras">${inc.map(([k, v]) => `<span class="chip ${v >= 0.4 ? "verde" : v <= -0.4 ? "rojo" : ""}">${esc(CAT_ECO[k] || k)} ${v > 0 ? "▲" : v < 0 ? "▼" : "="}</span>`).join("")}</div>
+    ${(r.clase || []).map((x) => `<p>${esc(x)}</p>`).join("")}
+    ${(r.ensena || []).length ? `<p class="tenue"><b>Lo que les enseña hoy al resto:</b></p>${r.ensena.map((x) => `<p class="tenue">• ${esc(x)}</p>`).join("")}` : ""}
+    <p class="tenue">Así ajusta a la mesa: a las señales de los demás que van con este contexto se les cree hasta 25% más, y a las que van en contra, hasta 25% menos.</p></div>`;
+}
+
 // ---------- calendario de eventos ----------
 const ICONO_EV = { cobro: "💵", balance: "📊", dividendo: "💰", macro: "🏛️", licitacion: "🏦" };
 const DIAS_TXT = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
@@ -397,6 +412,12 @@ async function pintarRanking() {
       ${c.bandas && Object.keys(c.bandas).length ? `<div class="item-det">${Object.entries(c.bandas).map(([b, x]) => `${BANDA[b] || b}: ${num(x.acierto_pct, 0)}%${x.factor != null ? ` (voto x${num(x.factor, 1)})` : ""}`).join(" · ")}</div>` : ""}
       ${f.motivo ? `<div class="item-det">${esc(f.motivo)}</div>` : ""}</div>`;
   }).join("") : '<p class="tenue">El ranking arranca cuando los agentes juntan casos (se arma cada viernes).</p>';
+  const ens = r.ensenanza || {}, fila = (k, t) => { const x = ens[k]; return x?.casos ? `<tr><td>${t}</td><td class="n">${num(x.aciertos / x.casos * 100, 0)}%</td><td class="n">${pct(x.suma_ret / x.casos, 1)}</td><td class="n">${num(x.casos, 0)}</td></tr>` : ""; };
+  $("#ensenanza").innerHTML = Object.keys(ens).length ? `<h2>¿Sirve lo que enseña el Economista?</h2><div class="card">
+    <p class="tenue">Señales de los otros agentes en la historia, según si iban a favor o en contra del contexto macro de ese día (a 10 ruedas):</p>
+    <div class="tabla-scroll"><table><tr><th></th><th class="n">Acierta</th><th class="n">Promedio</th><th class="n">Casos</th></tr>
+    ${fila("a_favor_del_contexto", "A favor del contexto")}${fila("contexto_neutro", "Contexto neutro")}${fila("contra_el_contexto", "En contra del contexto")}</table></div>
+    <p class="tenue">Si "a favor" gana más que "en contra", su enseñanza sirve y se mantiene. Se vuelve a medir en cada entrenamiento.</p></div>` : "";
   const pend = r.pendientes.filter((p) => p.estado === "pendiente");
   $("#capacitacion").innerHTML = pend.length ? pend.map((p) => `<div class="card"><b>${esc(NOMBRES[p.agente])}</b>
     <p class="tenue">Antes: ${esc(JSON.stringify(p.antes))}<br>Después: ${esc(JSON.stringify(p.despues))}</p>

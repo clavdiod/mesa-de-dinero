@@ -13,7 +13,7 @@ from datetime import date
 
 import yaml
 
-from .agentes import analistas, con_ia, informes as informes_mod, oportunidades, riesgo, seguimiento, supervisor
+from .agentes import analistas, con_ia, economista, informes as informes_mod, oportunidades, riesgo, seguimiento, supervisor
 from .datos import gratis
 from .datos import eventos as eventos_mod
 from .datos.cache import CacheHistorico
@@ -95,12 +95,28 @@ def _aprendizajes() -> list[dict]:
         return []
 
 
-def puntaje_ticker(senales: list[Senal], reg: Registro) -> float:
+def puntaje_ticker(senales: list[Senal], reg: Registro, ctx: Contexto | None = None) -> float:
+    """Suma ponderada de las señales. El Economista "enseña": según el contexto macro, a las señales de los
+    demás que van a favor del régimen se les cree más y a las que van en contra, menos."""
+    reg_eco = (ctx.extra.get("regimen") if ctx else None)
     tot = 0.0
     for s in senales:
         if s.direccion:
-            tot += s.direccion * s.fuerza * reg.peso(s.agente, s.fuerza)
+            m = economista.multiplicador(reg_eco, ctx, s.ticker, s.direccion) if s.agente != "economista" else 1.0
+            tot += s.direccion * s.fuerza * reg.peso(s.agente, s.fuerza) * m
     return round(tot, 3)
+
+
+def _series_macro(almacen, hoy) -> dict:
+    """Series macro guardadas; se refrescan una vez por día (4 consultas gratis a argentinadatos)."""
+    guardado = almacen.get("macro/series") or {}
+    if guardado.get("fecha") == hoy.isoformat():
+        return guardado.get("series") or {}
+    series = gratis.series_macro()
+    if any(series.values()):
+        almacen.put("macro/series", {"fecha": hoy.isoformat(), "series": series})
+        return series
+    return guardado.get("series") or {}
 
 
 def correr(forzar: bool = False, simular: bool = False) -> dict:
@@ -169,6 +185,13 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     # --- analistas por reglas ---
     senales: list[Senal] = []
     senales += analistas.macro_dolar(ctx)
+    # --- Economista: régimen macro (riesgo país, dólar, brecha, tasa real) que guía al resto ---
+    try:
+        series_m = {} if simular else _series_macro(almacen, hoy)
+        fx = economista.foto(series_m, hoy, ctx.riesgo_pais.get("valor"), ctx.extra.get("ccl_al30"), ctx.extra.get("caucion_tna"))
+        ctx.extra["regimen"] = economista.regimen(fx)
+    except Exception as ex:
+        print(f"[economista] {ex}")
     senales += analistas.acciones(ctx)
     senales += analistas.cedears(ctx)
     senales += analistas.ons(ctx)
@@ -202,10 +225,12 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     senales += analistas.tecnico(ctx, candidatos)
     senales += analistas.historiador(ctx, candidatos)
 
+    if ctx.extra.get("regimen"):
+        senales += economista.senales(ctx, ctx.extra["regimen"], candidatos)
     por_ticker: dict[str, list[Senal]] = {}
     for s in senales:
         por_ticker.setdefault(s.ticker, []).append(s)
-    puntajes = {tk: puntaje_ticker(ss, reg) for tk, ss in por_ticker.items() if ctx.titulo(tk)}
+    puntajes = {tk: puntaje_ticker(ss, reg, ctx) for tk, ss in por_ticker.items() if ctx.titulo(tk)}
     preseleccion = [tk for tk, p in sorted(puntajes.items(), key=lambda x: -x[1]) if p >= 0.6][:8]
     preseleccion += [tk for tk in ctx.tickers_lista() if tk not in preseleccion and puntajes.get(tk, 0) > 0]
     preseleccion += [tk for tk in pedidos if tk not in preseleccion]
@@ -229,6 +254,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     # que el Técnico y el Historiador también opinen sobre cada oportunidad (usan el historial guardado, sin IOL)
     extra_tk = [tk for tk in dict.fromkeys(o["ticker"] for l in ops.values() for o in l) if tk not in candidatos]
     sen_extra = analistas.tecnico(ctx, extra_tk) + analistas.historiador(ctx, extra_tk) if extra_tk else []
+    if extra_tk and ctx.extra.get("regimen"):
+        sen_extra += economista.senales(ctx, ctx.extra["regimen"], extra_tk)
     senales += sen_ops + sen_extra
     nuevos_pre = []
     for s_ in sen_ops + sen_extra:
@@ -237,7 +264,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     aprobadas_tk = {o["ticker"] for l in ops.values() for o in l if o["mesa"]["aprobada"]}
     for tk in {s_.ticker for s_ in sen_ops} & aprobadas_tk:  # solo las que el comité confirma llegan al Jefe
         if ctx.titulo(tk):
-            puntajes[tk] = puntaje_ticker(por_ticker[tk], reg)
+            puntajes[tk] = puntaje_ticker(por_ticker[tk], reg, ctx)
             if puntajes[tk] >= 0.6 and tk not in preseleccion:
                 preseleccion.append(tk)
                 nuevos_pre.append(tk)
@@ -326,8 +353,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     # --- seguimiento de propuestas y señales ---
     reg.actualizar_seguimiento({k: v for k, v in ctx.por_simbolo.items()}, hoy)
     try:  # seguimiento activo: mantener / subir stop / salir, con aviso si cambia
-        alertas_seg = seguimiento.revisar(reg, ctx, por_ticker, lambda ss: puntaje_ticker(ss, reg))
-        opinion_cartera = seguimiento.opinion_cartera(ctx, cartera, por_ticker, lambda ss: puntaje_ticker(ss, reg))
+        alertas_seg = seguimiento.revisar(reg, ctx, por_ticker, lambda ss: puntaje_ticker(ss, reg, ctx))
+        opinion_cartera = seguimiento.opinion_cartera(ctx, cartera, por_ticker, lambda ss: puntaje_ticker(ss, reg, ctx))
     except Exception as ex:
         print(f"[seguimiento] {ex}")
         alertas_seg, opinion_cartera = [], {}
@@ -370,6 +397,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "oportunidades_observadas": sum(1 for v in ops.values() for o in v if not o["mesa"]["aprobada"]),
         "aprendizajes": _aprendizajes(),
         "opinion_cartera": opinion_cartera,
+        "economista": ctx.extra.get("regimen"),
         "eventos": _calendario(almacen, ctx, hoy, ops, abiertas, cartera),
         "flujos_bonos": {k: v for k, v in eventos_mod.flujos_bonos().items()
                          if k in {c.get("ticker", "").upper() for c in cartera}},

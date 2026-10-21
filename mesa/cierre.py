@@ -137,13 +137,18 @@ def entrenar() -> dict:
     panel = (a.get("ui/panel") or {}).get("titulos") or {}
     grupos = {tk: x[4] for tk, x in panel.items()}
     series = {tk: cache.velas(tk) for tk in cache.indice}
-    hist = calibracion.entrenar_con_historia(series, grupos, a.get("params/agentes") or {})
+    from .datos import gratis
+    macro = gratis.series_macro()
+    hist = calibracion.entrenar_con_historia(series, grupos, a.get("params/agentes") or {}, macro=macro)
     a.put("ranking/stats_historicas", hist)
+    ens = {k: f"{v['aciertos'] / v['casos'] * 100:.1f}% de {v['casos']} ({v['suma_ret'] / v['casos']:+.2f}% prom.)"
+           for k, v in (hist.get("_ensenanza") or {}).items() if v.get("casos")}
+    a.put("ranking/ensenanza", hist.get("_ensenanza") or {})
     reg = Registro(a)
     cal = reg.recalibrar()
     a.put("ranking/tabla", reg.ranking())
     resumen = {ag: f"{c['acierto_pct']}% de {c['casos']} casos ({c['fuente']}) -> voto x{c['factor']}" for ag, c in cal.items()}
-    return {"series": len(series), "calibracion": resumen}
+    return {"series": len(series), "calibracion": resumen, "ensenanza_economista": ens}
 
 
 def mensual() -> dict:

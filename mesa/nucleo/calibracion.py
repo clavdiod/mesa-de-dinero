@@ -44,9 +44,9 @@ class _CacheHasta:
 
 
 def entrenar_con_historia(series: dict[str, list[dict]], grupos: dict[str, str], params: dict,
-                          paso: int = 2, desde: int = 100) -> dict:
+                          paso: int = 2, desde: int = 100, macro: dict | None = None) -> dict:
     """Devuelve estadística por agente y banda de fuerza, a HORIZONTE ruedas."""
-    from ..agentes import analistas
+    from ..agentes import analistas, economista
 
     series = {tk: v for tk, v in series.items() if len(v) >= desde + HORIZONTE + 5 and grupos.get(tk) in ("acciones", "cedears")}
     if not series:
@@ -68,7 +68,10 @@ def entrenar_con_historia(series: dict[str, list[dict]], grupos: dict[str, str],
             continue
         ctx = Contexto(date.fromisoformat(f), "17:00", paneles, cache=_CacheHasta(series, hasta), params=params)
         tks = list(hasta)
+        reg_eco = economista.regimen(economista.foto(macro, ctx.fecha)) if macro else None
         sen = analistas.tecnico(ctx, tks) + analistas.historiador(ctx, tks) + analistas.fuerza_relativa(ctx, tks)
+        if reg_eco:
+            sen += economista.senales(ctx, reg_eco, tks)
         for s in sen:
             if not s.direccion:
                 continue
@@ -77,6 +80,11 @@ def entrenar_con_historia(series: dict[str, list[dict]], grupos: dict[str, str],
             ag = stats.setdefault(s.agente, {"total": {}, "bandas": {}})
             _sumar(ag["total"], ret, s.fuerza)
             _sumar(ag["bandas"].setdefault(banda(s.fuerza), {}), ret, s.fuerza)
+            # ¿les va mejor a los demás cuando siguen el contexto del economista?
+            if reg_eco and s.agente != "economista":
+                m = economista.multiplicador(reg_eco, ctx, s.ticker, s.direccion)
+                lado = "a_favor_del_contexto" if m > 1.05 else "contra_el_contexto" if m < 0.95 else "contexto_neutro"
+                _sumar(stats.setdefault("_ensenanza", {}).setdefault(lado, {}), ret, s.fuerza)
     return stats
 
 
@@ -98,7 +106,7 @@ def calibrar(vivo: dict, historico: dict) -> dict:
     """agente -> {factor, fuente, casos, acierto_pct, esperanza_pct, bandas}. Vivo manda si tiene casos suficientes."""
     minimo = config()["ranking"]["minimo_casos"]
     out = {}
-    for ag in set(vivo) | set(historico):
+    for ag in (set(vivo) | set(historico)) - {"_ensenanza"}:
         v = (vivo.get(ag) or {}).get(str(HORIZONTE)) or {}
         h = (historico.get(ag) or {}).get("total") or {}
         if v.get("casos", 0) >= minimo:

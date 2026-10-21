@@ -107,3 +107,4 @@ label.check input { width: auto; }
 .consejo.verde { background: var(--verde-bg); } .consejo.verde b { color: var(--verde); }
 .consejo.rojo { background: var(--rojo-bg); } .consejo.rojo b { color: var(--rojo); }
 .consejo.amar { background: var(--amar-bg); } .consejo.amar b { color: var(--amar); }
+.card.eco p { margin: 6px 0; font-size: 14px; }
