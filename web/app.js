@@ -45,7 +45,7 @@ function tarjeta(p) {
   const seg = p.seguimiento || {};
   const estadoSeg = seg.estado === "pendiente" ? "Esperando entrada" : seg.estado === "abierta" ? `Abierta · ${num(seg.r_actual, 2)}R`
     : seg.r !== undefined ? `Cerrada (${seg.estado}) · ${num(seg.r_neto, 2)}R neto` : seg.estado;
-  return `<div class="card">
+  return `<div class="card" data-tarjeta="${esc(p.id)}">
     <div class="fila"><div><span class="tenue">${esc(fecha(p.fecha))} ${esc(p.hora)} · ${esc(p.sector || "")}</span>
       <div style="font-size:18px;font-weight:600">${esc(p.ticker)}</div></div>
       <span class="chip ${p.decision === "aprobada" ? "verde" : p.decision === "rechazada" ? "rojo" : ""}">${esc(p.decision)}</span></div>
@@ -80,7 +80,7 @@ function pintarPropuestas() {
   $("#esperanza").innerHTML = e.casos ? `<span class="chip">${e.casos} cerradas</span><span class="chip">${num(e.aciertos_pct, 0)}% aciertos</span>
     <span class="chip ${e.esperanza_r > 0 ? "verde" : "rojo"}">Esperanza ${num(e.esperanza_r, 2)}R por operación</span>` : "";
   document.querySelectorAll("[data-dec]").forEach((b) => b.addEventListener("click", async () => {
-    try { await post("decision", { id: b.dataset.id, decision: b.dataset.dec }); toast("Anotado"); await cargar(); } catch (e) { toast(`No se pudo: ${e.message}`); }
+    try { await post("decision", { id: b.dataset.id, decision: b.dataset.dec }); VISTOS.add(b.dataset.id); guardarVistos(); toast("Anotado"); await cargar(); } catch (e) { toast(`No se pudo: ${e.message}`); }
   }));
 }
 
@@ -296,6 +296,50 @@ $("#form-on").addEventListener("submit", async (ev) => {
   USUARIO.ons[d.ticker.trim().toUpperCase()] = { emisor: d.emisor, moneda: d.moneda, lamina_minima: aNum(d.lamina) || 1, flujos };
   await put("usuario/ons", USUARIO.ons); ev.target.reset(); pintarCalendario(); toast("ON guardada");
 });
+
+// ---------- cartel de recomendación (en cualquier pestaña) ----------
+let VISTOS = new Set(), AVISADOS = null;
+try { VISTOS = new Set(JSON.parse(localStorage.getItem("mesa_vistos") || "[]")); } catch (_) {}
+const guardarVistos = () => { try { localStorage.setItem("mesa_vistos", JSON.stringify([...VISTOS].slice(-200))); } catch (_) {} };
+function minutosDesde(fechaP, horaP) {
+  if (fechaP !== HOY()) return null;
+  const ba = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" }));
+  const [h, m] = String(horaP || "0:0").split(":").map(Number);
+  return ba.getHours() * 60 + ba.getMinutes() - (h * 60 + m);
+}
+function sonar() {
+  try { navigator.vibrate?.([200, 100, 200]); } catch (_) {}
+  try { const c = new (window.AudioContext || window.webkitAudioContext)(), o = c.createOscillator(), g = c.createGain();
+    o.frequency.value = 880; o.connect(g); g.connect(c.destination); g.gain.setValueAtTime(0.15, c.currentTime);
+    o.start(); g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.6); o.stop(c.currentTime + 0.6); } catch (_) {}
+}
+function pintarAviso() {
+  const precios = ESTADO.estado?.precios || {};
+  // 1) propuestas nuevas del Jefe para decidir  2) consejos de seguimiento importantes de hoy
+  const nuevas = PROPS.filter((p) => p.decision === "pendiente" && p.fecha === HOY() && !VISTOS.has(p.id));
+  const consejos = PROPS.filter((p) => p.decision === "aprobada" && ["salir", "subir_stop", "antes_balance", "cancelar"].includes(p.seguimiento?.consejo?.accion)
+    && !VISTOS.has(p.id + "|" + p.seguimiento.consejo.accion));
+  const box = $("#aviso-global");
+  if (!nuevas.length && !consejos.length) { box.style.display = "none"; document.title = "Mesa de dinero"; return; }
+  const items = nuevas.map((p) => {
+    const pl = p.plan, ult = precios[p.ticker]?.ultimo, min = minutosDesde(p.fecha, p.hora);
+    const lejos = ult && ult > pl.entrada * 1.01;
+    return `<div class="aviso-item"><div><b>🔔 El Jefe recomienda COMPRAR ${esc(p.ticker)}</b> con límite <b>${num(pl.entrada)}</b>
+        · objetivo ${num(pl.objetivo)} · stop ${num(pl.stop)}${p.cantidad_sugerida ? ` · ${num(p.cantidad_sugerida, 0)} unidades` : ""}</div>
+      <div class="tenue">${min !== null ? (min < 1 ? "recién" : `hace ${min} min`) : esc(p.hora)} · válida hoy${ult ? ` · ahora ${num(ult)}` : ""}${lejos ? " · <b>el precio se alejó: no lo persigas, dejá la orden límite</b>" : ""}</div>
+      <div class="fila-form" style="margin-top:6px"><button class="chico prim" data-ir-prop="${esc(p.id)}">Ver y decidir</button><button class="chico" data-visto="${esc(p.id)}">Entendido</button></div></div>`;
+  }).concat(consejos.map((p) => `<div class="aviso-item"><div><b>⚠️ ${esc(p.ticker)}: ${esc(CONSEJO_TXT[p.seguimiento.consejo.accion])}</b></div>
+      <div class="tenue">${esc(p.seguimiento.consejo.texto)} (${esc(p.seguimiento.consejo.hora || "")})</div>
+      <div class="fila-form" style="margin-top:6px"><button class="chico prim" data-ir-prop="${esc(p.id)}">Ver</button><button class="chico" data-visto="${esc(p.id + "|" + p.seguimiento.consejo.accion)}">Entendido</button></div></div>`));
+  box.innerHTML = items.join("");
+  box.style.display = "block";
+  document.title = `(${items.length}) Mesa de dinero`;
+  const ids = [...nuevas.map((p) => p.id), ...consejos.map((p) => p.id + "|" + p.seguimiento.consejo.accion)].join(",");
+  if (AVISADOS !== null && ids !== AVISADOS && ids) sonar();  // llegó algo nuevo con la web abierta
+  AVISADOS = ids;
+  box.querySelectorAll("[data-visto]").forEach((b) => b.onclick = () => { VISTOS.add(b.dataset.visto); guardarVistos(); pintarAviso(); });
+  box.querySelectorAll("[data-ir-prop]").forEach((b) => b.onclick = () => { irA("propuestas"); setTimeout(() => document.querySelector(`[data-tarjeta="${b.dataset.irProp}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 100); });
+}
 
 // ---------- economista ----------
 const CAT_ECO = { acciones: "Acciones locales", bancos: "Bancos", energia: "Energía", utilities: "Servicios públicos", bonos_usd: "Bonos en dólares", cedears: "CEDEARs", pesos: "Pesos" };
@@ -658,7 +702,7 @@ async function cargar() {
   try {
     [ESTADO, PROPS, USUARIO.lista, USUARIO.cartera, USUARIO.ons, USUARIO.capital] = await Promise.all([
       api("estado"), api("propuestas"), api("usuario/lista"), api("usuario/cartera"), api("usuario/ons"), api("usuario/capital")]);
-    pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes();
+    pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes(); pintarAviso();
     $("#login").style.display = "none"; document.querySelector("main").style.display = "";
   } catch (e) {
     if (String(e.message).includes("sin acceso")) {
