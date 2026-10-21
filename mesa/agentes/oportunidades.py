@@ -166,7 +166,7 @@ def filtrar_por_mesa(ops: dict, por_ticker: dict, vetos: set[str], peso) -> dict
                      if not s.agente.startswith("oportunidades_") and s.agente not in mismo]
             favor = sorted({s.agente for s in otras if s.direccion > 0 and s.fuerza >= 0.2})
             contra = sorted({s.agente for s in otras if (s.direccion < 0 and s.fuerza >= c["contra_max"]) or s.veto})
-            puntaje = sum(s.direccion * s.fuerza * peso(s.agente) for s in otras if s.direccion)
+            puntaje = sum(s.direccion * s.fuerza * peso(s.agente, s.fuerza) for s in otras if s.direccion)
             motivos = []
             if o["semaforo"] == "rojo":
                 motivos.append("no pasa Riesgo")

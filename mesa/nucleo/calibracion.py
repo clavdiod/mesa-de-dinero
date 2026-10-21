@@ -109,6 +109,10 @@ def calibrar(vivo: dict, historico: dict) -> dict:
         out[ag] = {"factor": factor(d), "fuente": fuente, "casos": d["casos"],
                    "acierto_pct": round(d["aciertos"] / d["casos"] * 100, 1),
                    "esperanza_pct": round(d["suma_ret"] / d["casos"], 2),
-                   "bandas": {b: {"casos": x["casos"], "acierto_pct": round(x["aciertos"] / x["casos"] * 100, 1)}
+                   # cada banda (débil / media / fuerte) con su propio factor: un agente puede acertar en un tipo
+                   # de señal y errar en otro (ej. Técnico: acierta rebotes, falla quiebres)
+                   "bandas": {b: {"casos": x["casos"], "acierto_pct": round(x["aciertos"] / x["casos"] * 100, 1),
+                                  "esperanza_pct": round(x["suma_ret"] / x["casos"], 2),
+                                  "factor": factor(x) if x["casos"] >= 30 else None}
                               for b, x in bandas.items() if x.get("casos")}}
     return out

@@ -202,9 +202,15 @@ class Registro:
         self.a.put("ranking/tabla", filas)
         return filas
 
-    def peso(self, agente: str) -> float:
-        """Peso del voto = nivel en el ranking × calibración (si promete más de lo que acierta, vale menos)."""
-        cal = (self.calibracion.get(agente) or {}).get("factor")
+    def peso(self, agente: str, fuerza: float | None = None) -> float:
+        """Peso del voto = nivel en el ranking × calibración (si promete más de lo que acierta, vale menos).
+        Si se conoce la fuerza de la señal, se usa la calibración de esa banda (débil/media/fuerte)."""
+        from .calibracion import banda
+        c = self.calibracion.get(agente) or {}
+        cal = c.get("factor")
+        if fuerza is not None:
+            fb = ((c.get("bandas") or {}).get(banda(float(fuerza))) or {}).get("factor")
+            cal = fb if fb is not None else cal
         return float(self.pesos.get(agente, 1.0)) * (float(cal) if cal is not None else 1.0)
 
     def recalibrar(self) -> dict:

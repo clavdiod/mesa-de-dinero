@@ -99,7 +99,7 @@ def puntaje_ticker(senales: list[Senal], reg: Registro) -> float:
     tot = 0.0
     for s in senales:
         if s.direccion:
-            tot += s.direccion * s.fuerza * reg.peso(s.agente)
+            tot += s.direccion * s.fuerza * reg.peso(s.agente, s.fuerza)
     return round(tot, 3)
 
 

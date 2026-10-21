@@ -394,7 +394,7 @@ async function pintarRanking() {
     return `<div class="item"><div class="item-cab"><b>${esc(nombreAg(f.agente))}</b>${niv}
         <span class="item-precio"><span class="tenue">voto</span> <b style="color:var(--${voto >= 1 ? "verde" : voto >= 0.6 ? "amar" : "rojo"})">x${num(voto, 1)}</b></span></div>
       <div class="item-det">${c.casos ? `Acierta <b>${num(c.acierto_pct, 0)}%</b> a 10 ruedas · ${pct(c.esperanza_pct, 1)} promedio · ${num(c.casos, 0)} casos (${esc(c.fuente)})` : f.casos ? `Acierta ${num(f.aciertos_pct, 0)}% en ${f.casos} casos` : "Juntando casos todavía"}${f.sim_cerradas ? ` · simulación ${plata(f.sim_ganancia)}` : ""}</div>
-      ${c.bandas && Object.keys(c.bandas).length ? `<div class="item-det">${Object.entries(c.bandas).map(([b, x]) => `${BANDA[b] || b}: ${num(x.acierto_pct, 0)}%`).join(" · ")}</div>` : ""}
+      ${c.bandas && Object.keys(c.bandas).length ? `<div class="item-det">${Object.entries(c.bandas).map(([b, x]) => `${BANDA[b] || b}: ${num(x.acierto_pct, 0)}%${x.factor != null ? ` (voto x${num(x.factor, 1)})` : ""}`).join(" · ")}</div>` : ""}
       ${f.motivo ? `<div class="item-det">${esc(f.motivo)}</div>` : ""}</div>`;
   }).join("") : '<p class="tenue">El ranking arranca cuando los agentes juntan casos (se arma cada viernes).</p>';
   const pend = r.pendientes.filter((p) => p.estado === "pendiente");
