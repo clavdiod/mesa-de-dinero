@@ -378,13 +378,19 @@ function pintarCripto() {
 
 function pintarADR() {
   const r = ESTADO.estado?.adr;
-  if (!r?.filas?.length) { $("#adr").innerHTML = ""; return; }
-  $("#adr").innerHTML = `<div class="card eco"><div class="fila"><b>🌙 Noche de Nueva York</b><span class="tenue">${esc(r.hora)}</span></div>
-    <p class="tenue">Cómo cerraron anoche los ADRs (con el CCL) contra el cierre local, y cuánto le falta hoy a cada acción para ponerse al día. Solo vale en la mañana.</p>
+  if (!r || (!r.filas?.length && !r.vivo?.length)) { $("#adr").innerHTML = ""; return; }
+  const color = (v, u = 1) => (Math.abs(v) < u ? "tenue" : v > 0 ? "verde" : "rojo");
+  const manana = r.filas?.length ? `<p class="tenue"><b>Anoche:</b> cómo cerraron los ADRs contra el cierre local y cuánto le falta hoy a cada acción para ponerse al día (vale en la mañana).</p>
     <div class="tabla-scroll"><table><tr><th>Acción</th><th class="n">ADR anoche</th><th class="n">Hoy</th><th class="n">Le falta</th></tr>
     ${r.filas.map((x) => `<tr><td><span class="link" data-abrir-debate="${esc(x.ticker)}">${esc(x.ticker)}</span> <span class="tenue">${esc(x.adr)}</span></td>
-      <td class="n">${pct(x.brecha, 1)}</td><td class="n">${pct(x.hoy, 1)}</td>
-      <td class="n" style="color:var(--${Math.abs(x.resta) < 1.5 ? "tenue" : x.resta > 0 ? "verde" : "rojo"})"><b>${pct(x.resta, 1)}</b></td></tr>`).join("")}</table></div></div>`;
+      <td class="n">${pct(x.brecha, 1)}</td><td class="n">${pct(x.hoy, 1)}</td><td class="n" style="color:var(--${color(x.resta, 1.5)})"><b>${pct(x.resta, 1)}</b></td></tr>`).join("")}</table></div>` : "";
+  const vivo = r.vivo?.length ? `<p class="tenue" style="margin-top:10px"><b>En vivo:</b> lo que el ADR (con el CCL) se movió hoy de más o de menos que la acción local. Positivo = la local quedó atrás.</p>
+    <div class="tiras">${r.vivo.map((x) => `<span class="chip ${color(x.brecha) === "verde" ? "verde" : color(x.brecha) === "rojo" ? "rojo" : ""}">${esc(x.ticker)} ${pct(x.brecha, 1)}</span>`).join("")}</div>` : "";
+  const e = r.estadistica, p = e?.plazos || {}, fila = (k, t) => p[k]?.casos ? `<tr><td>${t}</td><td class="n">${num(p[k].aciertos / p[k].casos * 100, 0)}%</td><td class="n">${pct(p[k].suma_ret / p[k].casos, 2)}</td><td class="n">${num(p[k].casos, 0)}</td></tr>` : "";
+  const est = e ? `<p class="tenue" style="margin-top:10px"><b>Estadística propia</b> (desde ${esc(fecha(e.desde))}, ${e.dias} días): cuando la brecha pasó 1%, cuánto se movió la acción local hacia el lado del ADR.</p>
+    <div class="tabla-scroll"><table><tr><th>Después de</th><th class="n">Acierta</th><th class="n">Promedio</th><th class="n">Casos</th></tr>
+    ${fila("30", "30 minutos")}${fila("60", "1 hora")}${fila("cierre", "al cierre")}</table></div>` : `<p class="tenue" style="margin-top:10px">Estadística propia: se arma sola con una foto por ronda; el primer resultado sale hoy al cierre.</p>`;
+  $("#adr").innerHTML = `<div class="card eco"><div class="fila"><b>🌙 ADRs en Nueva York</b><span class="tenue">${esc(r.hora)}</span></div>${manana}${vivo}${est}</div>`;
 }
 
 // ---------- calendario de eventos ----------

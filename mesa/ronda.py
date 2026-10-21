@@ -160,7 +160,21 @@ def _senales_adr(ctx, almacen, hoy, ya, simular) -> list[Senal]:
             almacen.put("adr/datos", datos)
         ccl = ((almacen.get("macro/series") or {}).get("series") or {}).get("ccl") or {}
         sen, tabla = adr.senales_en(ctx, datos, ccl, ya.hour * 60 + ya.minute)
-        ctx.extra["adr_tabla"] = {"hora": ctx.hora, "filas": sorted(tabla, key=lambda x: -abs(x["resta"]))} if tabla else None
+        # histórico propio: una foto por ronda (ADR en vivo, acción local, CCL) para armar estadística
+        vivo = {a: gratis.yahoo_vivo(a) for a in set(adr.ADRS.values())}
+        # mismo CCL que la serie histórica (dolarapi/argentinadatos), para no mezclar fuentes en la brecha
+        ccl_now = (ctx.dolares.get("contadoconliqui") or {}).get("venta") or ctx.extra.get("ccl_al30")
+        fo = adr.foto(ctx, vivo, ccl_now)
+        if fo["filas"]:
+            clave = f"adr/fotos/{hoy.isoformat()}"
+            fotos = (almacen.get(clave) or []) + [fo]
+            almacen.put(clave, fotos[-120:])
+        ccl_ant = next((v for f, v in sorted(ccl.items(), reverse=True) if f < hoy.isoformat()), None)
+        en_vivo = sorted(({"ticker": loc, "adr": adr.ADRS[loc], "brecha": adr.brecha_vivo(f, ccl_now, ccl_ant)}
+                          for loc, f in fo["filas"].items()), key=lambda x: -abs(x["brecha"] or 0))
+        ctx.extra["adr_tabla"] = {"hora": ctx.hora, "filas": sorted(tabla, key=lambda x: -abs(x["resta"])) if tabla else [],
+                                  "vivo": [x for x in en_vivo if x["brecha"] is not None],
+                                  "estadistica": almacen.get("adr/estadistica")}
         return sen
     except Exception as ex:
         print(f"[adr] {ex}")

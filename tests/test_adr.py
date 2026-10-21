@@ -40,3 +40,14 @@ def test_senal_en_la_manana_descuenta_lo_que_ya_se_movio():
     sen, tabla = adr.senales_en(ctx, datos, ccl, 640)
     assert tabla[0]["resta"] == 2.0 and sen and sen[0].direccion == 1
     assert adr.senales_en(ctx, datos, ccl, 14 * 60)[0] == []
+
+
+def test_estadistica_propia_de_durante_el_dia():
+    def fo(h, adr_p, loc_p):
+        return {"hora": h, "ccl": 1600.0, "filas": {"GGAL": {"adr": adr_p, "adr_ant": 40.0, "loc": loc_p, "loc_ant": 6000.0}}}
+    # 11:00 el ADR sube 3% y la local no se movió; a las 11:30 la local subió 2%
+    fotos = [fo("11:00", 41.2, 6000.0), fo("11:30", 41.2, 6120.0), fo("12:00", 41.2, 6150.0), fo("16:55", 41.0, 6150.0)]
+    est = adr.estadistica_del_dia(fotos, 1600.0)
+    assert est["30"]["casos"] >= 1 and est["30"]["suma_ret"] > 0
+    tot = adr.acumular({}, est)
+    assert tot["30"]["casos"] == est["30"]["casos"]

@@ -87,6 +87,25 @@ def diario(simular: bool = False) -> dict:
         except Exception as ex:
             print(f"[cierre] wall street: {ex}")
 
+    # histórico propio de ADRs: estadística del día con las fotos de cada ronda
+    if not simular:
+        try:
+            from .agentes import adr as _adr
+            fotos = a.get(f"adr/fotos/{hoy.isoformat()}") or []
+            ccl_s = ((a.get("macro/series") or {}).get("series") or {}).get("ccl") or {}
+            ccl_ant = next((v for f, v in sorted(ccl_s.items(), reverse=True) if f < hoy.isoformat()), None)
+            if fotos:
+                dia = _adr.estadistica_del_dia(fotos, ccl_ant)
+                est = a.get("adr/estadistica") or {"desde": hoy.isoformat(), "dias": 0, "plazos": {}}
+                if est.get("ultimo_dia") != hoy.isoformat():
+                    est["plazos"] = _adr.acumular(est.get("plazos") or {}, dia)
+                    est["dias"] = est.get("dias", 0) + 1
+                    est["ultimo_dia"] = hoy.isoformat()
+                    a.put("adr/estadistica", est)
+                print(f"[cierre] ADR: {len(fotos)} fotos, {dia['30'].get('casos', 0)} casos hoy")
+        except Exception as ex:
+            print(f"[cierre] adr: {ex}")
+
     # datos del agente Cripto (gratis): Bitcoin y dólar cripto
     if not simular:
         try:

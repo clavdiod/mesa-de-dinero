@@ -256,3 +256,16 @@ def dolar_cripto_historico() -> dict[str, float]:
     except Exception as e:
         print(f"[cripto] dólar cripto: {e}")
         return {}
+
+
+def yahoo_vivo(simbolo: str) -> dict:
+    """Precio actual (o último) y cierre anterior de Yahoo. {'precio', 'anterior', 'hora'}"""
+    from urllib.parse import quote
+    try:
+        r = _S.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{quote(simbolo)}?range=1d&interval=5m", headers=_UA_JSON, timeout=20)
+        m = r.json()["chart"]["result"][0]["meta"]
+        return {"precio": m.get("regularMarketPrice"), "anterior": m.get("chartPreviousClose") or m.get("previousClose"),
+                "hora": m.get("regularMarketTime")}
+    except Exception as e:
+        print(f"[yahoo vivo] {simbolo}: {e}")
+        return {}

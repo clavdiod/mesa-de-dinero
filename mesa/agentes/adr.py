@@ -90,3 +90,59 @@ def senales_en(ctx, datos: dict, ccl_series: dict[str, float], minuto: int, umbr
                              f"Anoche en Nueva York el ADR {ad} (con el CCL) quedó {b:+.1f}% contra el cierre local; hoy {loc} va {hoy_local:+.1f}%: "
                              f"le falta {resta:+.1f}% para ponerse al día.", {"brecha": b, "hoy": hoy_local, "resta": resta}))
     return out, tabla
+
+
+# ---------- histórico propio de durante el día (se arma solo, ronda a ronda) ----------
+def foto(ctx, adrs_vivo: dict[str, dict], ccl: float | None) -> dict:
+    """Una foto por ronda: ADR (precio y cierre anterior), acción local (precio y cierre anterior) y CCL."""
+    filas = {}
+    for loc, ad in ADRS.items():
+        t, a = ctx.titulo(loc), adrs_vivo.get(ad)
+        if not t or not t.get("ultimo") or not a or not a.get("precio"):
+            continue
+        filas[loc] = {"adr": a["precio"], "adr_ant": a.get("anterior"), "loc": t["ultimo"], "loc_ant": t.get("cierre_anterior")}
+    return {"hora": ctx.hora, "ccl": ccl, "filas": filas}
+
+
+def brecha_vivo(f: dict, ccl: float | None, ccl_ant: float | None) -> float | None:
+    """Brecha en vivo: lo que el ADR (con el CCL) se movió hoy menos lo que se movió la acción local."""
+    if not (f.get("adr_ant") and f.get("loc_ant") and ccl and ccl_ant):
+        return None
+    adr_pesos = (f["adr"] / f["adr_ant"]) * (ccl / ccl_ant)
+    return round((adr_pesos / (f["loc"] / f["loc_ant"]) - 1) * 100, 2)
+
+
+def _minutos(h: str) -> int:
+    hh, mm = (int(x) for x in h.split(":")[:2])
+    return hh * 60 + mm
+
+
+def estadistica_del_dia(fotos: list[dict], ccl_ant: float | None, umbral: float = 1.0) -> dict:
+    """Con las fotos de un día: cuando la brecha superó el umbral, cuánto se movió la acción local
+    en la dirección de la brecha en los 30 y 60 minutos siguientes."""
+    from ..nucleo.calibracion import _sumar
+    out = {"30": {}, "60": {}, "cierre": {}}
+    fotos = sorted(fotos, key=lambda x: _minutos(x["hora"]))
+    for i, fo in enumerate(fotos):
+        for loc, f in fo["filas"].items():
+            b = brecha_vivo(f, fo.get("ccl"), ccl_ant)
+            if b is None or abs(b) < umbral:
+                continue
+            d = 1 if b > 0 else -1
+            m0 = _minutos(fo["hora"])
+            for etiqueta, mins in (("30", 30), ("60", 60)):
+                sig = next((x for x in fotos[i + 1:] if _minutos(x["hora"]) >= m0 + mins and loc in x["filas"]), None)
+                if sig:
+                    _sumar(out[etiqueta], (sig["filas"][loc]["loc"] / f["loc"] - 1) * 100 * d, 0.5)
+            ult = next((x for x in reversed(fotos) if loc in x["filas"]), None)
+            if ult and ult is not fo:
+                _sumar(out["cierre"], (ult["filas"][loc]["loc"] / f["loc"] - 1) * 100 * d, 0.5)
+    return out
+
+
+def acumular(total: dict, dia: dict) -> dict:
+    for k, d in dia.items():
+        t = total.setdefault(k, {})
+        for c in ("casos", "aciertos", "suma_ret", "suma_fuerza"):
+            t[c] = round(t.get(c, 0) + d.get(c, 0), 4)
+    return total
