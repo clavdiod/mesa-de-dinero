@@ -136,13 +136,18 @@ def actualizar_licitaciones(almacen, hoy: date, hora: str = "", forzar: bool = F
     # no todas las ONs se licitan en el sistema del MAE: se suman los titulares de las últimas 48 h
     noticias = []
     try:
+        import re
+        fuera = re.compile(r"calificaci|ratifica|app\b", re.I)
         vistos = set()
-        for q in ("licitación obligaciones negociables", "colocación ON clase licita hoy", "emisión obligaciones negociables tasa licitación"):
-            for n in gratis.buscar_noticias(q, horas=48, max_items=8):
-                clave = n["titulo"][:60].lower()
-                if clave not in vistos and any(w in n["titulo"].lower() for w in ("on ", "obligacion", "licita", "coloca", "emisión", "emite")):
-                    vistos.add(clave)
-                    noticias.append({"titulo": n["titulo"], "link": n.get("link"), "fecha": n.get("fecha")})
+        for q in ("obligaciones negociables", "nueva ON dólares empresa", "ON licita tasa clase", "emisión de deuda corporativa ON"):
+            for n in gratis.buscar_noticias(q, horas=120, max_items=10):
+                t = n["titulo"]
+                clave = t[:50].lower()
+                es_on = re.search(r"\bONs?\b", t) or "negociable" in t.lower()
+                if clave in vistos or not es_on or fuera.search(t):
+                    continue
+                vistos.add(clave)
+                noticias.append({"titulo": t, "link": n.get("link"), "fecha": n.get("fecha")})
     except Exception as ex:
         print(f"[licitaciones] noticias: {ex}")
     nuevo = {"fecha": hoy.isoformat(), "hora": hora, "tarde": tarde, "fuente": "MAE / A3 Mercados", "eventos": evs,
