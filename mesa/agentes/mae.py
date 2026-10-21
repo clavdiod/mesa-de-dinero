@@ -17,6 +17,8 @@ from datetime import date
 from ..datos.gratis import escala_mae, ticker_mae_a_byma
 
 GRUPOS_RF = ("soberanos", "ons", "letras", "bonos")
+# segmentos de compraventa (bilateral y garantizado). Se descartan pases (RT) y cauciones (K): no son precio de mercado.
+SEGMENTOS = {"BT", "GT", "GP"}
 UMBRAL = {"soberanos": 1.0, "letras": 0.7, "ons": 1.5, "bonos": 1.0}
 
 
@@ -29,6 +31,8 @@ def elegir_filas(rows: list[dict]) -> dict[tuple[str, str], dict]:
     mejor: dict[tuple[str, str], dict] = {}
     for m in rows:
         if not m.get("ultimo") and not m.get("precioCierre"):
+            continue
+        if (m.get("codigoSegmento") or m.get("codsegmento") or "BT").strip() not in SEGMENTOS:
             continue
         k = ((m.get("ticker") or m.get("codTitulo") or "").strip().upper(), (m.get("moneda") or "$").strip())
         p = mejor.get(k)
@@ -88,11 +92,11 @@ def cierres_a_series(rows: list[dict], existentes=None) -> dict[str, dict[str, l
     """{ticker BYMA: {fecha: [cierre, volumen]}} con una fila por papel, moneda y día (24 h si hay)."""
     por_dia: dict[tuple[str, str, str], dict] = {}
     for r in rows:
-        if not r.get("precioCierre"):
+        if not r.get("precioCierre") or (r.get("codsegmento") or "BT").strip() not in SEGMENTOS:
             continue
         k = (r["codTitulo"].strip().upper(), (r.get("moneda") or "$").strip(), r["fecha"][:10])
         p = por_dia.get(k)
-        rango = lambda x: (x.get("plazo") == "001", x.get("volumen") or 0)
+        rango = lambda x: (x.get("plazo") == "001", (x.get("tipoCierreDesc") or "").startswith("Repres"), x.get("volumen") or 0)
         if not p or rango(r) > rango(p):
             por_dia[k] = r
     out: dict[str, dict[str, list]] = {}

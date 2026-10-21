@@ -409,9 +409,9 @@ def ticker_mae_a_byma(cod: str, moneda: str | None, existentes=None) -> str:
     return cands[0]
 
 
-def escala_mae(moneda: str | None) -> float:
-    """MAE da las líneas en dólares por 1 nominal; BYMA cada 100."""
-    return 100.0 if (moneda or "$").strip().upper() in ("D", "C") else 1.0
+def escala_mae(moneda: str | None = None) -> float:
+    """MAE da la renta fija por 1 nominal (pesos y dólares); BYMA cada 100."""
+    return 100.0
 
 
 def mae_panel_rf() -> list[dict]:

@@ -8,6 +8,9 @@ from mesa.nucleo.almacen import almacen_por_defecto
 a = almacen_por_defecto()
 panel = (a.get("ui/panel") or {}).get("titulos") or {}
 hoy = date.today()
+for anio in (str(hoy.year - 1), str(hoy.year)):
+    a.put(f"mae/hist/{anio}", {})
+a.put("mae/indice", [])
 rows, d = [], hoy - timedelta(days=400)
 while d <= hoy:
     h = min(d + timedelta(days=30), hoy)
