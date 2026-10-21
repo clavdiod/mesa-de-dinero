@@ -44,7 +44,7 @@ class _CacheHasta:
 
 
 def entrenar_con_historia(series: dict[str, list[dict]], grupos: dict[str, str], params: dict,
-                          paso: int = 5, desde: int = 200) -> dict:
+                          paso: int = 2, desde: int = 100) -> dict:
     """Devuelve estadística por agente y banda de fuerza, a HORIZONTE ruedas."""
     from ..agentes import analistas
 
