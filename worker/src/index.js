@@ -284,6 +284,7 @@ async function reloj(evento, env) {
     if (hm === 13 * 60) await disparar(env, "tareas.yml", { tarea: "calificadoras" });                  // 10:00 ART
     if (hm === 20 * 60 + 10) await disparar(env, "tareas.yml", { tarea: "diario" });                    // 17:10 ART
     if (dia === 5 && hm === 20 * 60 + 30) await disparar(env, "tareas.yml", { tarea: "semanal" });      // vie 17:30
+    if (dia === 5 && hm === 20 * 60 + 45) await disparar(env, "tareas.yml", { tarea: "entrenar" });     // vie 17:45: re-entrena con la historia
   }
   if (d.getUTCDate() <= 3 && hm === 21 * 60) await disparar(env, "tareas.yml", { tarea: "mensual" });
 }
