@@ -14,6 +14,10 @@ from .config import config
 ESTADOS_ABIERTOS = ("pendiente", "abierta")
 
 
+# agentes nuevos que todavía no tienen estadística: su voto arranca reducido
+A_PRUEBA = {"mundo": 0.5}
+
+
 class Registro:
     def __init__(self, almacen):
         self.a = almacen
@@ -212,7 +216,9 @@ class Registro:
         if fuerza is not None:
             fb = ((c.get("bandas") or {}).get(banda(float(fuerza))) or {}).get("factor")
             cal = fb if fb is not None else cal
-        return float(self.pesos.get(agente, 1.0)) * (float(cal) if cal is not None else 1.0)
+        if cal is None:
+            cal = A_PRUEBA.get(agente, 1.0)  # agente nuevo sin historia: arranca con medio voto hasta demostrar
+        return float(self.pesos.get(agente, 1.0)) * float(cal)
 
     def recalibrar(self) -> dict:
         from .calibracion import calibrar

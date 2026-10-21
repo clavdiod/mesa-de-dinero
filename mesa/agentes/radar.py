@@ -91,7 +91,10 @@ def investigar(alerta: dict, ctx, por_ticker: dict, noticias_emisor: list[dict],
         causas.append(f"Calendario: {e.get('nombre')} ({e['fecha'][8:10]}/{e['fecha'][5:7]})")
     if "adr" in alerta.get("tipos", []):
         causas.append("Diferencia con Nueva York: si el ADR lidera, la acción local suele acomodarse.")
-    if "mae" in alerta.get("tipos", []):
+    if "mundo" in alerta.get("tipos", []):
+        conclusion = ("Noticia del mundo o de la empresa que puede mover el precio antes de que se vea en el panel. "
+                      "Los analistas la cruzan con el gráfico; el Jefe la escucha con el peso que el Corresponsal se ganó.")
+    elif "mae" in alerta.get("tipos", []):
         conclusion = ("El mismo papel cotiza distinto en MAE y en BYMA. Antes de operar, mirar las puntas en los dos: "
                       "si la diferencia sigue, conviene comprar donde está más barato (o vender donde está más caro).")
     elif alerta["grupo"] == "macro":

@@ -4,7 +4,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const num = (x, d = 2) => (x === null || x === undefined || isNaN(x) ? "—" : Number(x).toLocaleString("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d }));
 const pct = (x, d = 2) => (x === null || x === undefined ? "—" : `${x > 0 ? "+" : ""}${num(x, d)}%`);
 const NOMBRES = { acciones: "Acciones", cedears: "CEDEARs", ons: "ONs", soberanos: "Soberanos", pesos_tasas: "Pesos y tasas",
-  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", wallstreet: "Wall Street", cripto: "Cripto", adr: "Noche de Nueva York", panico: "Comprador de pánico", anticipo: "Anticipo (Nueva York)", anticipador: "Anticipador", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
+  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", wallstreet: "Wall Street", cripto: "Cripto", adr: "Noche de Nueva York", panico: "Comprador de pánico", mundo: "Corresponsal (mundo)", anticipo: "Anticipo (Nueva York)", anticipador: "Anticipador", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
   hechos_emisor: "Hechos del emisor", calificadoras: "Calificadoras", riesgo: "Riesgo", jefe: "Jefe" };
 
 function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("ver"); setTimeout(() => e.classList.remove("ver"), 2500); }
@@ -109,6 +109,7 @@ function pintarEstado() {
   }
   pintarEconomista();
   pintarWallStreet();
+  pintarMundo();
   pintarCripto();
   pintarADR();
   pintarSenales();
@@ -436,6 +437,28 @@ function pintarMAE() {
   $("#mae").innerHTML = `<div class="card eco"><div class="fila"><b>⚖️ MAE contra BYMA</b><span class="tenue">${esc(r?.hora || "")}</span></div>
     <p class="tenue">El mismo bono o la misma ON cotiza en los dos mercados. Si la diferencia es grande y hay volumen, el radar avisa: conviene comprar donde está más barato (o es un precio viejo: mirar las puntas).</p>
     ${tablaRes}${tablaPares}${hist}</div>`;
+}
+
+const NOMBRE_TEMA = { empresa_rumor: "Rumores de empresas", empresa_hecho: "Noticias de empresas" };
+function pintarMundo() {
+  const r = ESTADO.estado?.mundo;
+  if (!r) { $("#mundo").innerHTML = ""; return; }
+  const link = (n) => n.link ? `<a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.titulo)}</a>` : esc(n.titulo);
+  const chips = (ef) => Object.entries(ef).map(([tk, d]) => `<span class="chip ${d > 0 ? "verde" : "rojo"}">${esc(tk)} ${d > 0 ? "▲" : "▼"}</span>`).join(" ");
+  const temas = (r.temas || []).map((t) => `<div class="tema-mundo"><b>${esc(t.nombre)}</b> <span class="tenue">· ${t.n} titulares</span>
+    <p class="tenue">${esc(t.explica)}</p><div class="tiras">${chips(t.efectos)}</div>
+    ${t.titulares.slice(0, 3).map((n) => `<div class="evento"><span class="ev-ic">📰</span><span>${link(n)} <span class="tenue">${esc(n.fuente || "")}</span></span></div>`).join("")}</div>`).join("");
+  const emp = (r.empresas || []).map((e) => `<div class="evento"><span class="ev-ic">${e.dir > 0 ? "🟢" : "🔴"}</span><span><b class="link" data-abrir-debate="${esc(e.ticker)}">${esc(e.ticker)}</b>
+    ${e.rumor ? '<span class="chip">rumor</span> ' : ""}${link(e.titulares[0])}</span></div>`).join("");
+  const st = Object.entries(r.stats || {}).filter(([, x]) => x.casos);
+  const tablaSt = st.length ? `<p class="tenue" style="margin-top:10px"><b>Cómo le fue</b> (a 5 ruedas, lo que el tema anticipaba): con 10 casos o más, si no acierta se silencia solo.</p>
+    <div class="tabla-scroll"><table><tr><th>Tema</th><th class="n">Acierta</th><th class="n">Promedio</th><th class="n">Casos</th></tr>
+    ${st.map(([k, x]) => `<tr><td>${esc(NOMBRE_TEMA[k] || k.replaceAll("_", " "))}</td><td class="n">${num(x.aciertos / x.casos * 100, 0)}%</td><td class="n">${pct(x.suma_ret / x.casos, 2)}</td><td class="n">${x.casos}</td></tr>`).join("")}</table></div>`
+    : '<p class="tenue" style="margin-top:10px">Agente a prueba: arranca con medio voto. Su estadística propia sale a la semana de las primeras noticias.</p>';
+  $("#mundo").innerHTML = `<div class="card eco"><div class="fila"><b>🌍 El Corresponsal</b><span class="tenue">${esc(r.hora || "")} · ${r.titulares || 0} titulares leídos</span></div>
+    <p class="tenue">Lee portales y diarios del mundo y de Argentina cada 30 minutos. Si detecta un tema que mueve precios (guerra en el Golfo, la Fed, aranceles, China, Vaca Muerta, el FMI...) o una noticia de una empresa, se lo dice a la mesa y el Jefe lo escucha.</p>
+    ${temas || '<p class="tenue">Ahora no hay temas del mundo que muevan precios.</p>'}
+    ${emp ? `<p style="margin-top:10px"><b>Empresas</b></p>${emp}` : ""}${tablaSt}</div>`;
 }
 
 function pintarADR() {

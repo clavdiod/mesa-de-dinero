@@ -92,6 +92,20 @@ def diario(simular: bool = False) -> dict:
         except Exception as ex:
             print(f"[cierre] mae: {ex}")
 
+    # Corresponsal: cierra las anotaciones de hace una semana y aprende qué temas anticipan el precio
+    if not simular:
+        try:
+            from .agentes import mundo as _mundo
+            log = a.get("mundo/log") or []
+            if log:
+                quedan, stats = _mundo.evaluar(log, a.get("mundo/stats") or {}, lambda tk: (precios.get(tk) or {}).get("ultimo"), hoy.isoformat())
+                if len(quedan) != len(log):
+                    a.put("mundo/log", quedan)
+                    a.put("mundo/stats", stats)
+                print(f"[cierre] corresponsal: {len(log) - len(quedan)} anotaciones evaluadas")
+        except Exception as ex:
+            print(f"[cierre] mundo: {ex}")
+
     # calendario de balances y dividendos de EE.UU. para los CEDEARs (gratis, no usa IOL)
     if not simular:
         try:

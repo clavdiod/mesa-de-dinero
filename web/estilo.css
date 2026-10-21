@@ -113,3 +113,6 @@ label.check input { width: auto; }
 .aviso-item b { color: var(--txt); }
 details.radar.alta { border-color: var(--rojo); } details.radar.media { border-color: var(--amar); }
 details.radar p { margin: 6px 0; font-size: 14px; }
+
+.tema-mundo { border-top: 1px solid var(--borde, rgba(127,127,127,.2)); padding-top: 8px; margin-top: 8px; }
+.tema-mundo p { margin: 4px 0; }

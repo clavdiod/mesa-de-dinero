@@ -211,7 +211,7 @@ def _radar_investigar(ctx, almacen, hoy, alertas: list[dict], por_ticker: dict) 
     from .nucleo.config import emisores
     nombres = {"tecnico": "Técnico", "historiador": "Historiador", "fuerza_relativa": "Fuerza relativa", "volumen_flujo": "Volumen y flujo",
                "economista": "Economista", "wallstreet": "Wall Street", "cripto": "Cripto", "adr": "Noche de Nueva York", "panico": "Comprador de pánico",
-               "acciones": "Acciones", "cedears": "CEDEARs", "soberanos": "Soberanos", "ons": "ONs", "macro_dolar": "Macro / dólar",
+               "mundo": "Corresponsal (mundo)", "acciones": "Acciones", "cedears": "CEDEARs", "soberanos": "Soberanos", "ons": "ONs", "macro_dolar": "Macro / dólar",
                "noticias": "Noticias", "hechos_emisor": "Hechos del emisor", "calificadoras": "Calificadoras",
                "oportunidades_corto": "Oportunidades (corto)", "oportunidades_mediano": "Oportunidades (mediano)"}
     cache_n = almacen.get(f"radar/noticias/{hoy.isoformat()}") or {}
@@ -244,6 +244,36 @@ def _radar_investigar(ctx, almacen, hoy, alertas: list[dict], por_ticker: dict) 
         r["primera"] = hist[k]["primera"]
     almacen.put(f"radar/{hoy.isoformat()}", hist)
     return out, avisos
+
+
+def _senales_mundo(ctx, almacen, hoy, minuto: int, refrescar: bool, simular: bool) -> list[Senal]:
+    """Corresponsal: noticias del mundo y de empresas. Lee los portales cada 30 minutos (gratis); en el resto de
+    las rondas usa lo último guardado. Lleva su propia estadística por tema para aprender qué titulares anticipan."""
+    if simular:
+        return []
+    try:
+        from .agentes import mundo
+        from .nucleo.config import emisores
+        guardado = almacen.get("mundo/ultimo") or {}
+        if refrescar or guardado.get("fecha") != hoy.isoformat():
+            tit = mundo.leer()
+            temas = mundo.detectar_temas(tit)
+            emp = mundo.detectar_empresas(tit, mundo.claves_empresas(emisores()))
+            guardado = {"fecha": hoy.isoformat(), "hora": ctx.hora, "titulares": len(tit), "temas": temas, "empresas": emp}
+            almacen.put("mundo/ultimo", guardado)
+        existe = lambda tk: ctx.titulo(tk) is not None
+        stats = almacen.get("mundo/stats") or {}
+        sens = mundo.senales(guardado.get("temas") or [], guardado.get("empresas") or [], existe, stats)
+        ctx.extra["mundo"] = {**guardado, "stats": stats}
+        ctx.extra["mundo_alertas"] = mundo.alertas_radar(guardado.get("temas") or [], guardado.get("empresas") or [], existe)
+        if minuto >= 11 * 60 + 5:  # anotación con precio de BYMA abierto, para la estadística propia
+            log = almacen.get("mundo/log") or []
+            if mundo.anotar(log, sens, lambda tk: (ctx.titulo(tk) or {}).get("ultimo"), hoy.isoformat()):
+                almacen.put("mundo/log", log[-1500:])
+        return sens
+    except Exception as ex:
+        print(f"[mundo] {ex}")
+        return []
 
 
 def _senales_panico(ctx, almacen, ws_datos, simular) -> list[Senal]:
@@ -450,10 +480,14 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     senales += analistas.fuerza_relativa(ctx)
     senales += analistas.volumen_flujo(ctx)
 
+    # Corresponsal: el mundo y las empresas (guerra en el Golfo, Fed, aranceles, rumores, nuevos desarrollos...)
+    senales += _senales_mundo(ctx, almacen, hoy, ya.hour * 60 + ya.minute, cada30, simular)
+
     # candidatos: lo que alguien marcó + Mi lista; con carga de historial una sola vez por ticker
     marcados = [s.ticker for s in senales if s.direccion != 0 and ctx.titulo(s.ticker)]
     # --- Radar: todo lo anormal del mercado entra al análisis de TODOS los analistas en esta ronda ---
     alertas_radar = [] if simular else _radar_detectar(ctx, almacen, hoy, ya)
+    alertas_radar += [a for a in ctx.extra.get("mundo_alertas") or [] if a["ticker"] not in {x["ticker"] for x in alertas_radar}]
     radar_tks = [a["ticker"] for a in alertas_radar if a["grupo"] != "macro" and ctx.titulo(a["ticker"])][:15]
     candidatos = list(dict.fromkeys(foco + radar_tks + marcados))
     # cargas iniciales de historial: máx. 2 por ronda y 15 por día (cuida el cupo de IOL);
@@ -696,6 +730,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "licitaciones_noticias": ctx.extra.get("licitaciones_noticias"),
         "licitaciones_avisos": ctx.extra.get("licitaciones_avisos"),
         "mae": ctx.extra.get("mae"),
+        "mundo": ctx.extra.get("mundo"),
         "mae_dias": None if simular else [{"fecha": d["fecha"], "resumen": d["resumen"]}
                                           for d in ((almacen.get("mae/comparacion") or {}).get("dias") or [])[-20:]],
         "anticipo_lista": ctx.extra.get("anticipo_lista"),
