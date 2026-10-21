@@ -29,6 +29,8 @@ def test_licitaciones_mae(monkeypatch):
         def put(self, k, v): self[k] = v
     a = A()
     monkeypatch.setattr(gratis, "licitaciones_mae", lambda d, h: evs)
+    monkeypatch.setattr(gratis, "buscar_noticias", lambda q, **k: [{"titulo": "Loma Negra licita ON clase 5", "link": "x"}])
     eventos.actualizar_licitaciones(a, date(2026, 10, 21), "10:00")
+    assert a["eventos/licitaciones"]["noticias"][0]["titulo"].startswith("Loma")
     cal = eventos.armar(a, date(2026, 10, 21), 45, set())
     assert any(e["tipo"] == "licitacion" and e["mio"] for e in cal)

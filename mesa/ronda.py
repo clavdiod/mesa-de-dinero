@@ -81,7 +81,7 @@ def _calendario(almacen, ctx, hoy, ops, abiertas, cartera, simular: bool = False
         top = sorted((t for t in ctx.grupo("cedears") if t.get("monto")), key=lambda t: -t["monto"])[:30]
         mios |= {t["simbolo"] for t in top if t.get("simbolo")}
         if not simular:
-            eventos_mod.actualizar_licitaciones(almacen, hoy, ctx.hora or "")
+            ctx.extra["licitaciones_noticias"] = eventos_mod.actualizar_licitaciones(almacen, hoy, ctx.hora or "").get("noticias")
         ev = eventos_mod.armar(almacen, hoy, 45, mios)
         for e in ev:
             e["mio"] = e.get("ticker") in mios and e.get("ticker") not in {t["simbolo"] for t in top} or e.get("tipo") in ("macro", "licitacion")
@@ -674,6 +674,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "adr": ctx.extra.get("adr_tabla"),
         "radar": radar_inv,
         "anticipos": ctx.extra.get("anticipos"),
+        "licitaciones_noticias": ctx.extra.get("licitaciones_noticias"),
         "anticipo_lista": ctx.extra.get("anticipo_lista"),
         "anticipo_estadistica": None if simular else almacen.get("anticipo/estadistica"),
         "eventos": _calendario(almacen, ctx, hoy, ops, abiertas, cartera, simular),

@@ -465,7 +465,8 @@ function pintarLicitaciones(lim) {
   const hoy = HOY();
   const ahora = new Date().toLocaleTimeString("en-GB", { timeZone: "America/Argentina/Buenos_Aires", hour: "2-digit", minute: "2-digit" });
   const xs = (ESTADO.estado?.eventos || []).filter((e) => e.tipo === "licitacion" && e.fecha >= hoy && e.fecha <= lim);
-  if (!xs.length) { $("#licitaciones-hoy").innerHTML = ""; return; }
+  const nots = ESTADO.estado?.licitaciones_noticias || [];
+  if (!xs.length && !nots.length) { $("#licitaciones-hoy").innerHTML = ""; return; }
   const deHoy = xs.filter((e) => e.fecha === hoy), prox = xs.filter((e) => e.fecha > hoy);
   const estado = (e) => !e.hora_cierre ? "" : ahora < e.hora_inicio ? `<span class="chip">abre ${esc(e.hora_inicio)}</span>`
     : ahora <= e.hora_cierre ? `<span class="chip verde">abierta hasta ${esc(e.hora_cierre)}</span>` : '<span class="chip rojo">cerró</span>';
@@ -474,6 +475,8 @@ function pintarLicitaciones(lim) {
   $("#licitaciones-hoy").innerHTML = `<h2>🏦 Licitaciones${deHoy.length ? " de hoy" : " de la semana"}</h2><div class="card">` +
     (deHoy.length ? deHoy.map((e) => fila(e, false)).join("") : '<p class="tenue">Hoy no hay licitaciones.</p>') +
     (prox.length ? `<p class="tenue" style="margin-top:.6em">Próximas:</p>${prox.slice(0, 6).map((e) => fila(e, true)).join("")}` : "") +
+    (nots.length ? `<p class="tenue" style="margin-top:.6em">En las noticias (ONs que se licitan por otros sistemas y no figuran en el MAE):</p>${nots.slice(0, 5).map((n) =>
+      `<div class="evento"><span class="ev-ic">📰</span><span>${n.link ? `<a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.titulo)}</a>` : esc(n.titulo)}</span></div>`).join("")}` : "") +
     '<p class="tenue">Fuente: calendario público del MAE (A3 Mercados). Para participar se pide al colocador o al bróker antes del cierre.</p></div>';
 }
 document.querySelectorAll("#cal-vista button").forEach((b) => b.addEventListener("click", () => {
