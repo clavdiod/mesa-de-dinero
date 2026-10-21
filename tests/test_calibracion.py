@@ -12,6 +12,8 @@ def test_factor_castiga_al_que_promete_mas_de_lo_que_acierta():
     perdedor = {"casos": 100, "aciertos": 60, "suma_ret": -30.0, "suma_fuerza": 60.0}
     assert calibracion.factor(flojo) == 0.3
     assert calibracion.factor(bueno) == 1.07
+    # acierta 60% pero gana 0,5% promedio: no alcanza para pagar la comisión de 1,2%
+    assert calibracion.factor({"casos": 100, "aciertos": 60, "suma_ret": 50.0, "suma_fuerza": 50.0}) == 0.3
     assert calibracion.factor(perdedor) == 0.3
 
 

@@ -1,10 +1,10 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: "2026-10-21"
-  caso: "Primer entrenamiento con la historia (18 papeles, ~1 año)"
-  que_paso: "Se hizo opinar a los agentes en cada día pasado y se midió qué pasó 10 ruedas después. Técnico: los rebotes en soporte acertaron 62% (+3,3% promedio), pero los quiebres de máximos solo 42% (-1,4%). Fuerza relativa: comprar a los que más subieron acertó 47% (-2,3%): en este mercado los líderes de 20 ruedas tendieron a devolver."
-  leccion: "En el mercado argentino de este último año, perseguir lo que ya subió funcionó mal y comprar en soporte funcionó bien."
-  cambio: "Cada tipo de señal vota según lo que acierta de verdad: los rebotes de Técnico votan casi completo (x0,9), sus quiebres y Fuerza relativa votan poco (x0,3). Se recalibra todos los viernes con lo nuevo que pase."
+  caso: "Entrenamiento con la historia (56 papeles: 18 acciones y 38 CEDEARs, ~1 año)"
+  que_paso: "Se hizo opinar a los agentes en cada día pasado y se midió qué pasó 10 ruedas después. Con solo 18 acciones, los rebotes de Técnico parecían buenos (62%), pero al sumar los CEDEARs bajaron a 52% y +0,3% promedio: menos que la comisión. Los quiebres de Técnico acertaron 45% (-0,7%) y Fuerza relativa 48% (-0,4%) sobre más de 1.500 casos."
+  leccion: "Con pocos datos una regla puede parecer buena por casualidad. Hoy ninguna de las reglas técnicas simples gana más que la comisión: la mesa no les puede creer de más."
+  cambio: "Su voto quedó en el mínimo (x0,3) hasta que demuestren lo contrario. Una señal solo vota completo si, además de acertar, gana más que el 1,2% de comisión. Se recalibra cada viernes y el historial de CEDEARs ahora se arma gratis, así cada semana hay más casos."
 - fecha: "2026-10-20"
   caso: "Comité para las oportunidades"
   que_paso: "Las oportunidades salían de un solo agente, sin que el resto de la mesa opinara. De 13 simuladas, 12 eran de un agente solo y casi todas perdían."

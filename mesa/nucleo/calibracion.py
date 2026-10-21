@@ -88,7 +88,8 @@ def factor(d: dict) -> float | None:
     hit = d["aciertos"] / casos
     esperanza = d["suma_ret"] / casos
     f_media = d.get("suma_fuerza", 0.6 * casos) / casos
-    if esperanza <= 0 or hit <= 0.5:
+    # tiene que ganar más que la comisión de compra y venta: si no, operar esa señal pierde plata
+    if esperanza <= config()["capital"]["comision_ida_vuelta_pct"] or hit <= 0.5:
         return 0.3
     return round(max(0.3, min(1.5, (hit - 0.5) / (0.3 * f_media))), 2)
 
