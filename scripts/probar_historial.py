@@ -1,17 +1,18 @@
-"""Muestra la forma cruda del historial sin ajustar de un CEDEAR (1 consulta). No imprime secretos."""
-from datetime import timedelta
-import json
+"""Prueba fuentes gratis para el historial de CEDEARs: precio de EE.UU. (Stooq) y CCL histórico (argentinadatos)."""
+import requests
 
-from mesa.datos.consumo import Consumo
-from mesa.datos.iol import IOL
-from mesa.nucleo.almacen import almacen_por_defecto
-from mesa.nucleo.reloj import ahora
-
-a = almacen_por_defecto()
-consumo = Consumo(a)
-iol = IOL(consumo, almacen=a)
-hasta = ahora().date() - timedelta(days=1)
-data = iol._get(f"/api/v2/bCBA/Titulos/AAPL/Cotizacion/seriehistorica/{(hasta - timedelta(days=6)).isoformat()}/{hasta.isoformat()}/sinAjustar", "historial")
-consumo.guardar()
-campos = ("fechaHora", "ultimoPrecio", "apertura", "maximo", "minimo", "volumenNominal", "montoOperado", "cantidadOperaciones", "cierreAnterior")
-print("::notice::n=" + str(len(data)) + " " + json.dumps([{k: d.get(k) for k in campos} for d in data[:12]], ensure_ascii=False)[:3800])
+out = []
+for sym in ("aapl", "ko"):
+    try:
+        r = requests.get(f"https://stooq.com/q/d/l/?s={sym}.us&i=d", timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+        lineas = r.text.strip().splitlines()
+        out.append(f"stooq {sym}: HTTP {r.status_code}, {len(lineas)} líneas, {lineas[0][:60] if lineas else ''} … {lineas[-1][:60] if lineas else ''}")
+    except Exception as e:
+        out.append(f"stooq {sym}: ERROR {e}")
+try:
+    r = requests.get("https://api.argentinadatos.com/v1/cotizaciones/dolares/contadoconliqui", timeout=30)
+    d = r.json()
+    out.append(f"ccl: HTTP {r.status_code}, {len(d)} días, último {d[-1]}")
+except Exception as e:
+    out.append(f"ccl: ERROR {e}")
+print("::notice::" + " | ".join(out))
