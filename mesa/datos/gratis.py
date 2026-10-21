@@ -258,14 +258,49 @@ def dolar_cripto_historico() -> dict[str, float]:
         return {}
 
 
-def yahoo_vivo(simbolo: str) -> dict:
-    """Precio actual (o último) y cierre anterior de Yahoo. {'precio', 'anterior', 'hora'}"""
+def yahoo_vivo(simbolo: str, prepost: bool = False) -> dict:
+    """Precio actual y cierre anterior de Yahoo. Con prepost=True incluye el pre-market (antes de las 10:30 ART)."""
     from urllib.parse import quote
     try:
-        r = _S.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{quote(simbolo)}?range=1d&interval=5m", headers=_UA_JSON, timeout=20)
-        m = r.json()["chart"]["result"][0]["meta"]
-        return {"precio": m.get("regularMarketPrice"), "anterior": m.get("chartPreviousClose") or m.get("previousClose"),
+        extra = "&includePrePost=true" if prepost else ""
+        r = _S.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{quote(simbolo)}?range=1d&interval=5m{extra}", headers=_UA_JSON, timeout=20)
+        res = r.json()["chart"]["result"][0]
+        m = res["meta"]
+        precio = m.get("regularMarketPrice")
+        if prepost:
+            cl = [c for c in (res["indicators"]["quote"][0].get("close") or []) if c]
+            precio = cl[-1] if cl else precio
+        return {"precio": precio, "anterior": m.get("chartPreviousClose") or m.get("previousClose"),
                 "hora": m.get("regularMarketTime")}
     except Exception as e:
         print(f"[yahoo vivo] {simbolo}: {e}")
         return {}
+
+
+def yahoo_varios(simbolos: list[str], prepost: bool = False, hilos: int = 8) -> dict[str, dict]:
+    """Varios precios en vivo en paralelo (Yahoo, gratis)."""
+    from concurrent.futures import ThreadPoolExecutor
+    simbolos = list(dict.fromkeys(simbolos))
+    with ThreadPoolExecutor(hilos) as ex:
+        res = list(ex.map(lambda s: yahoo_vivo(s.replace(".", "-"), prepost), simbolos))
+    return {s: r for s, r in zip(simbolos, res) if r.get("precio")}
+
+
+def yahoo_ohlcv(simbolo: str, rango: str = "5y") -> list[dict]:
+    """Velas diarias completas [{fecha, c, h, l, v}] de Yahoo."""
+    from datetime import datetime, timezone
+    from urllib.parse import quote
+    try:
+        r = _S.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{quote(simbolo)}?range={rango}&interval=1d", headers=_UA_JSON, timeout=30)
+        res = r.json()["chart"]["result"][0]
+        q = res["indicators"]["quote"][0]
+        out = []
+        for k, ts in enumerate(res["timestamp"]):
+            c = q["close"][k]
+            if c:
+                out.append({"fecha": datetime.fromtimestamp(ts, timezone.utc).date().isoformat(), "c": round(c, 4),
+                            "h": round(q["high"][k] or c, 4), "l": round(q["low"][k] or c, 4), "v": q["volume"][k] or 0})
+        return out
+    except Exception as e:
+        print(f"[yahoo ohlcv] {simbolo}: {e}")
+        return []

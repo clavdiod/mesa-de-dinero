@@ -106,6 +106,49 @@ def diario(simular: bool = False) -> dict:
         except Exception as ex:
             print(f"[cierre] adr: {ex}")
 
+    # Anticipador (días antes): lista de papeles con precursores de suba, para mañana
+    if not simular:
+        try:
+            from .agentes import anticipo as _ant2
+            from .datos import gratis as _g2
+            mod = a.get("anticipo/modelo") or {}
+            if mod.get("w"):
+                from concurrent.futures import ThreadPoolExecutor
+                uni = _universo_cedears(a)
+                with ThreadPoolExecutor(8) as ex:
+                    ser = {tk: f for tk, f in zip(uni, ex.map(lambda t: _g2.yahoo_ohlcv(t.replace(".", "-"), "6mo"), uni)) if len(f) > 60}
+                for tk in cache.indice:
+                    vs = cache.velas(tk)
+                    if tk not in ser and len(vs) > 60 and tk in {t.get("simbolo") for t in paneles.get("acciones", [])}:
+                        ser[tk] = [{"fecha": v["fecha"], "c": v["cierre"], "h": v.get("maximo") or v["cierre"],
+                                    "l": v.get("minimo") or v["cierre"], "v": v.get("volumen") or 0} for v in vs[-120:]]
+                spy = {f: c for f, c in _g2.yahoo("SPY", "3mo")}
+                vix = {f: c for f, c in _g2.yahoo("^VIX", "3mo")}
+                btc = {f: c for f, c in _g2.yahoo("BTC-USD", "3mo")}
+                cm = _ant2.contexto_mkt(max(spy) if spy else hoy.isoformat(), spy, vix, btc)
+                lista = _ant2.puntuar(mod, ser, cm)
+                a.put("anticipo/lista", {"fecha": hoy.isoformat(), "activo": mod.get("activo"), "umbral": mod.get("umbral"),
+                                         "prueba": mod.get("prueba"), "lista": [x for x in lista if x["prob"] >= (mod.get("umbral") or 1)][:15]})
+        except Exception as ex:
+            print(f"[cierre] anticipador: {ex}")
+
+    # Anticipador: estadística propia (desde el primer precio operable hasta el cierre)
+    if not simular:
+        try:
+            from .agentes import anticipo as _ant
+            reg_a = a.get(f"anticipo/{hoy.isoformat()}") or {}
+            if reg_a:
+                dia = _ant.evaluar_dia(reg_a, {tk: t.get("ultimo") for tk, t in precios.items()})
+                est = a.get("anticipo/estadistica") or {"desde": hoy.isoformat(), "dias": 0, "plazos": {}}
+                if est.get("ultimo_dia") != hoy.isoformat():
+                    from .agentes.adr import acumular
+                    est["plazos"] = acumular(est.get("plazos") or {}, dia)
+                    est["dias"] += 1
+                    est["ultimo_dia"] = hoy.isoformat()
+                    a.put("anticipo/estadistica", est)
+        except Exception as ex:
+            print(f"[cierre] anticipo: {ex}")
+
     # datos del agente Cripto (gratis): Bitcoin y dólar cripto
     if not simular:
         try:
@@ -230,6 +273,28 @@ def entrenar() -> dict:
     a.put("ranking/prueba_panico", {"por_tipo": hist["panico"]["por_tipo"], "por_horizonte": hist["panico"]["por_horizonte"]})
     ens["panico"] = {k: f"{v['aciertos'] / v['casos'] * 100:.1f}% de {v['casos']} ({v['suma_ret'] / v['casos']:+.2f}% prom. a 20 ruedas)"
                      for k, v in hist["panico"]["por_tipo"].items() if v.get("casos")}
+
+    # Anticipador (días antes): precursores de subas de 5% en la semana, 5 años de CEDEARs + acciones locales
+    from .agentes import anticipo as _ant
+    ohlcv = {}
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(8) as ex:
+        tks = list(datos5["precios"])
+        for tk, f in zip(tks, ex.map(lambda t: gratis.yahoo_ohlcv(t.replace(".", "-"), "5y"), tks)):
+            if len(f) > 300:
+                ohlcv[tk] = f
+    for tk in cache.indice:
+        if grupos.get(tk) == "acciones":
+            vs = cache.velas(tk)
+            if len(vs) > 120:
+                ohlcv[tk] = [{"fecha": v["fecha"], "c": v["cierre"], "h": v.get("maximo") or v["cierre"],
+                              "l": v.get("minimo") or v["cierre"], "v": v.get("volumen") or 0} for v in vs]
+    sp = {f: c for f, c in datos5["indices"].get("SPY", [])}
+    vx = {f: c for f, c in datos5["indices"].get("^VIX", [])}
+    bt = {f: c for f, c in gratis.yahoo("BTC-USD", "5y")}
+    mod_a = _ant.entrenar(ohlcv, sp, vx, bt)
+    a.put("anticipo/modelo", mod_a)
+    ens["anticipador"] = {"motivo": mod_a.get("motivo"), "prueba": mod_a.get("prueba"), "activo": mod_a.get("activo")}
 
     # Cripto: BTC 5 años y dólar cripto desde 2023
     from .agentes import cripto

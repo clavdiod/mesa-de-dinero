@@ -13,7 +13,7 @@ from datetime import date, timedelta
 
 import yaml
 
-from .agentes import adr, analistas, con_ia, cripto, economista, panico, radar, informes as informes_mod, oportunidades, riesgo, seguimiento, supervisor, wallstreet
+from .agentes import adr, analistas, anticipo, con_ia, cripto, economista, panico, radar, informes as informes_mod, oportunidades, riesgo, seguimiento, supervisor, wallstreet
 from .datos import gratis
 from .datos import eventos as eventos_mod
 from .datos.cache import CacheHistorico
@@ -141,7 +141,43 @@ def _radar_detectar(ctx, almacen, hoy, ya) -> list[dict]:
         ccl_now = (ctx.dolares.get("contadoconliqui") or {}).get("venta")
         fo = adr.foto(ctx, vivo, ccl_now)
         brechas = {loc: adr.brecha_vivo(f, ccl_now, ccl_ay) for loc, f in fo["filas"].items()}
-        return radar.detectar(ctx, ya.hour * 60 + ya.minute, brechas, ctx.riesgo_pais_ayer, ccl_ay)
+        alertas = radar.detectar(ctx, ya.hour * 60 + ya.minute, brechas, ctx.riesgo_pais_ayer, ccl_ay)
+        # --- Anticipador: CEDEARs que todavía no copiaron lo que su acción ya hizo en Nueva York (incluye pre-market) ---
+        minuto = ya.hour * 60 + ya.minute
+        ced = sorted((t for t in ctx.grupo("cedears") if t.get("simbolo") and not (t["simbolo"][-1:] in ("D", "C") and ctx.titulo(t["simbolo"][:-1]))),
+                     key=lambda t: -(t.get("monto") or 0))
+        universo = [t["simbolo"] for t in ced[:80]] + [x for x in ctx.tickers_lista() if (ctx.titulo(x) or {}).get("grupo") == "cedears"]
+        vivo_us = gratis.yahoo_varios(universo, prepost=True)
+        atr = anticipo.atrasos(ctx, vivo_us, ccl_now, ccl_ay, minuto)
+        ctx.extra["anticipos"] = atr
+        ya_alertados = {a["ticker"] for a in alertas}
+        for a in atr:
+            if a["ticker"] in ya_alertados:
+                continue
+            cuando = "antes de que abra BYMA" if a["antes_de_abrir"] else "en vivo"
+            alertas.append({"tipo": "anticipo", "tipos": ["anticipo"], "ticker": a["ticker"], "grupo": "cedears", "valor": a["atraso"],
+                            "severidad": a["severidad"],
+                            "texto": f"⏩ {a['ticker']}: en Nueva York va {a['us']:+.1f}% ({cuando}); el CEDEAR debería {'subir' if a['atraso'] > 0 else 'bajar'} "
+                                     f"{abs(a['atraso']):.1f}% más para acomodarse."})
+        # ADRs antes de que abra BYMA: la acción local todavía no operó, todo lo que hizo el ADR es anticipo
+        if minuto < 11 * 60:
+            for loc, b in brechas.items():
+                if b is not None and abs(b) >= 2 and loc not in ya_alertados:
+                    alertas.append({"tipo": "anticipo", "tipos": ["anticipo"], "ticker": loc, "grupo": "acciones", "valor": b,
+                                    "severidad": "alta" if abs(b) >= 4 else "media",
+                                    "texto": f"⏩ {loc}: su ADR en Nueva York va {b:+.1f}% antes de que abra BYMA: debería abrir {'arriba' if b > 0 else 'abajo'}."})
+        # registro del día para la estadística propia (precio de referencia = primer precio operable en BYMA)
+        reg_a = almacen.get(f"anticipo/{hoy.isoformat()}") or {}
+        for a in atr:
+            r = reg_a.setdefault(a["ticker"], {"hora": ctx.hora, "atraso": a["atraso"], "ref": None})
+            if r["ref"] is None and minuto >= 11 * 60 + 5:
+                r["ref"] = (ctx.titulo(a["ticker"]) or {}).get("ultimo")
+        for tk, r in reg_a.items():  # los que se marcaron antes de abrir toman referencia en la primera ronda con BYMA abierto
+            if r["ref"] is None and minuto >= 11 * 60 + 5:
+                r["ref"] = (ctx.titulo(tk) or {}).get("ultimo")
+        if reg_a:
+            almacen.put(f"anticipo/{hoy.isoformat()}", reg_a)
+        return sorted(alertas, key=lambda a: (a["severidad"] != "alta", a["tipo"] != "anticipo", -abs(a["valor"])))
     except Exception as ex:
         print(f"[radar] {ex}")
         return []
@@ -412,6 +448,15 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
 
     if ctx.extra.get("regimen"):
         senales += economista.senales(ctx, ctx.extra["regimen"], candidatos)
+    senales += anticipo.senales_atraso(ctx.extra.get("anticipos") or [])
+    lista_ant = {} if simular else (almacen.get("anticipo/lista") or {})
+    ctx.extra["anticipo_lista"] = lista_ant
+    if lista_ant.get("activo"):
+        for x in lista_ant.get("lista") or []:
+            if ctx.titulo(x["ticker"]):
+                senales.append(Senal("anticipador", x["ticker"], 1, round(min(0.8, 0.3 + x["prob"]), 2),
+                                     f"Precursores de suba para esta semana ({x['prob'] * 100:.0f}% de probabilidad de subir 5% o más): "
+                                     + (", ".join(x["razones"]) or "combinación de señales previas") + ".", x))
     senales += _senales_ws(ctx, ws_datos, candidatos + [t for t in ctx.tickers_lista()])
     senales += _senales_cripto(ctx, almacen, reg, senales, candidatos + ctx.tickers_lista() + cripto.CEDEARS_CRIPTO, simular)
     senales += _senales_adr(ctx, almacen, hoy, ya, simular)
@@ -621,6 +666,9 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "cripto": {k: v for k, v in (ctx.extra.get("cripto") or {}).items() if k != "ens"},
         "adr": ctx.extra.get("adr_tabla"),
         "radar": radar_inv,
+        "anticipos": ctx.extra.get("anticipos"),
+        "anticipo_lista": ctx.extra.get("anticipo_lista"),
+        "anticipo_estadistica": None if simular else almacen.get("anticipo/estadistica"),
         "eventos": _calendario(almacen, ctx, hoy, ops, abiertas, cartera),
         "flujos_bonos": {k: v for k, v in eventos_mod.flujos_bonos().items()
                          if k in {c.get("ticker", "").upper() for c in cartera}},

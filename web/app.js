@@ -4,7 +4,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const num = (x, d = 2) => (x === null || x === undefined || isNaN(x) ? "—" : Number(x).toLocaleString("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d }));
 const pct = (x, d = 2) => (x === null || x === undefined ? "—" : `${x > 0 ? "+" : ""}${num(x, d)}%`);
 const NOMBRES = { acciones: "Acciones", cedears: "CEDEARs", ons: "ONs", soberanos: "Soberanos", pesos_tasas: "Pesos y tasas",
-  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", wallstreet: "Wall Street", cripto: "Cripto", adr: "Noche de Nueva York", panico: "Comprador de pánico", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
+  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", wallstreet: "Wall Street", cripto: "Cripto", adr: "Noche de Nueva York", panico: "Comprador de pánico", anticipo: "Anticipo (Nueva York)", anticipador: "Anticipador", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
   hechos_emisor: "Hechos del emisor", calificadoras: "Calificadoras", riesgo: "Riesgo", jefe: "Jefe" };
 
 function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("ver"); setTimeout(() => e.classList.remove("ver"), 2500); }
@@ -344,6 +344,24 @@ function pintarAviso() {
   box.querySelectorAll("[data-visto]").forEach((b) => b.onclick = () => { VISTOS.add(b.dataset.visto); guardarVistos(); pintarAviso(); });
   box.querySelectorAll("[data-ir-radar]").forEach((b) => b.onclick = () => { irA("propuestas"); setTimeout(() => $("#radar")?.scrollIntoView({ behavior: "smooth" }), 100); });
   box.querySelectorAll("[data-ir-prop]").forEach((b) => b.onclick = () => { irA("propuestas"); setTimeout(() => document.querySelector(`[data-tarjeta="${b.dataset.irProp}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 100); });
+}
+
+// ---------- anticipos ----------
+function pintarAnticipos() {
+  const e = ESTADO.estado || {}, at = e.anticipos || [], li = e.anticipo_lista || {}, es = e.anticipo_estadistica;
+  if (!at.length && !(li.lista || []).length) { $("#anticipos").innerHTML = ""; return; }
+  const col = (v) => (v > 0 ? "verde" : "rojo");
+  const tablaAt = at.length ? `<p class="tenue">Lo que su acción ya hizo en Nueva York (incluye el pre-market) y el CEDEAR todavía no. ${at.some((a) => a.antes_de_abrir) ? "<b>BYMA todavía no abrió:</b> esto es lo que debería pasar a las 11." : ""}</p>
+    <div class="tabla-scroll"><table><tr><th>CEDEAR</th><th class="n">En NY</th><th class="n">CEDEAR</th><th class="n">Le falta</th></tr>
+    ${at.slice(0, 12).map((a) => `<tr><td><span class="link" data-abrir-debate="${esc(a.ticker)}">${esc(a.ticker)}</span></td><td class="n">${pct(a.us, 1)}</td>
+      <td class="n">${a.antes_de_abrir ? "<span class='tenue'>sin abrir</span>" : pct(a.cedear, 1)}</td><td class="n" style="color:var(--${col(a.atraso)})"><b>${pct(a.atraso, 1)}</b></td></tr>`).join("")}</table></div>` : "";
+  const p = li.prueba || {};
+  const tablaLi = (li.lista || []).length ? `<p class="tenue" style="margin-top:10px"><b>Para los próximos días</b> (lista del cierre ${esc(fecha(li.fecha))}): papeles con las señales que suelen aparecer antes de una suba de 5% o más en la semana.
+      ${p.base_pct ? `En la prueba con datos que no vio, de cada 100 marcados subieron así ${num(p.top10_pct, 0)}, contra ${num(p.base_pct, 0)} al azar.` : ""}${li.activo ? "" : " (todavía no supera la prueba: solo informativo)"}</p>
+    ${li.lista.slice(0, 10).map((x) => `<div class="agente"><b class="link" data-abrir-debate="${esc(x.ticker)}">${esc(x.ticker)}<br><span class="tenue">${num(x.prob * 100, 0)}%</span></b><span>${esc((x.razones || []).join(" · ") || "combinación de precursores")}</span></div>`).join("")}` : "";
+  const pl = es?.plazos?.al_cierre;
+  const est = pl?.casos ? `<p class="tenue" style="margin-top:8px">Estadística propia de los anticipos (desde ${esc(fecha(es.desde))}): acertaron ${num(pl.aciertos / pl.casos * 100, 0)}% de ${pl.casos}, ${pct(pl.suma_ret / pl.casos, 2)} promedio hasta el cierre.</p>` : "";
+  $("#anticipos").innerHTML = `<h2>⏩ Anticipos <span class="hora">· ${esc(e.hora || "")}</span></h2><div class="card eco">${tablaAt}${tablaLi}${est}</div>`;
 }
 
 // ---------- radar del mercado ----------
@@ -732,7 +750,7 @@ async function cargar() {
   try {
     [ESTADO, PROPS, USUARIO.lista, USUARIO.cartera, USUARIO.ons, USUARIO.capital] = await Promise.all([
       api("estado"), api("propuestas"), api("usuario/lista"), api("usuario/cartera"), api("usuario/ons"), api("usuario/capital")]);
-    pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes(); pintarRadar(); pintarAviso();
+    pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes(); pintarAnticipos(); pintarRadar(); pintarAviso();
     $("#login").style.display = "none"; document.querySelector("main").style.display = "";
   } catch (e) {
     if (String(e.message).includes("sin acceso")) {
