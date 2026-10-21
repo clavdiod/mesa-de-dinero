@@ -94,3 +94,12 @@ td.n { white-space: nowrap; }
 .hora-datos { margin: 14px 0 4px; padding: 8px 12px; border-radius: 10px; background: var(--azul-bg); color: var(--azul); font-size: 14px; }
 .hora-datos.vieja { background: var(--amar-bg); color: var(--amar); }
 h2 .hora { font-weight: 400; font-size: 13px; color: var(--tenue); }
+.evento { display: flex; gap: 10px; padding: 7px 0; border-top: 1px solid var(--borde); font-size: 14px; align-items: flex-start; }
+.card .evento:first-child, .dia .evento:first-of-type { border-top: 0; }
+.evento.fuerte { color: var(--txt); }
+.ev-ic { flex: none; width: 22px; text-align: center; }
+.dia { background: var(--card); border: 1px solid var(--borde); border-radius: var(--r); padding: 8px 12px; margin: 8px 0; }
+.dia-tit { font-weight: 600; font-size: 13px; color: var(--tenue); text-transform: capitalize; padding-bottom: 4px; }
+label.check { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--txt); margin: 6px 0; }
+label.check input { width: auto; }
+#calendario table { font-size: 13px; } #calendario td, #calendario th { padding: 7px 4px; }

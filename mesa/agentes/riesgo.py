@@ -75,6 +75,12 @@ def evaluar(ctx: Contexto, plan: Plan, estado: dict, vetos: set[str]) -> dict:
     rp = ctx.riesgo_pais.get("valor")
     if rp and rp > c["riesgo_pais_tope_bancos"] and sec in ("bancos", "soberanos"):
         motivos.append(f"Riesgo país {rp:.0f} > {c['riesgo_pais_tope_bancos']}: no se compran {sec}.")
+    base = plan.ticker[:-1] if plan.ticker.endswith(("D", "C")) and ctx.titulo(plan.ticker[:-1]) else plan.ticker
+    limite = (ctx.fecha + timedelta(days=c.get("dias_antes_balance", 3))).isoformat()
+    bal = next((e for e in ctx.eventos if e.get("tipo") == "balance" and e.get("ticker") == base
+                and ctx.fecha.isoformat() <= e.get("fecha", "") <= limite), None)
+    if bal:
+        motivos.append(f"Presenta balance el {bal['fecha'][8:10]}/{bal['fecha'][5:7]}: no se entra justo antes (puede saltar para cualquier lado).")
     if any(e.get("fuerte") and e.get("fecha") == ctx.fecha.isoformat() for e in ctx.eventos):
         motivos.append("Hoy hay un evento fuerte en el calendario: no se abren posiciones nuevas.")
     if ctx.clima <= -0.3:

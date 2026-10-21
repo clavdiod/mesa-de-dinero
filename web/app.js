@@ -249,7 +249,7 @@ const HOY = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Ar
 
 function pintarCalendario() {
   const filas = [];
-  for (const pos of USUARIO.cartera) { const on = USUARIO.ons[pos.ticker]; if (!on) continue;
+  for (const pos of USUARIO.cartera) { const tk = pos.ticker.toUpperCase(), on = USUARIO.ons[tk] || ESTADO.estado?.flujos_bonos?.[tk]; if (!on) continue;
     for (const f of flujo(on, pos.cantidad, HOY())) filas.push({ ...f, ticker: pos.ticker, moneda: on.moneda }); }
   filas.sort((a, b) => a.fecha.localeCompare(b.fecha));
   const porMes = {}; for (const f of filas) { const m = f.fecha.slice(0, 7); porMes[m] = (porMes[m] || 0) + f.total; }
@@ -257,7 +257,8 @@ function pintarCalendario() {
   $("#calendario").innerHTML = filas.length ? `<div class="tiras">${Object.entries(porMes).slice(0, 6).map(([m, v]) => `<span class="chip">${MESES_TXT[+m.slice(5, 7) - 1]} ${m.slice(2, 4)}: ${num(v)}</span>`).join("")}</div>
     <div class="tabla-scroll"><table><tr><th>Fecha</th><th>ON</th><th class="n">Interés</th><th class="n">Amort.</th><th class="n">Total</th><th class="n">Faltan</th></tr>
     ${filas.slice(0, 40).map((f) => `<tr><td>${fechaLarga(f.fecha)}</td><td>${esc(f.ticker)} <span class="tenue">${esc(f.moneda || "")}</span></td><td class="n">${num(f.interes)}</td><td class="n">${num(f.amortizacion)}</td><td class="n"><b>${num(f.total)}</b></td><td class="n">${dias(f.fecha)} d</td></tr>`).join("")}</table></div>`
-    : '<p class="tenue">Cargá en Cartera las ONs que tenés y sus flujos abajo para ver el calendario.</p>';
+    : '<p class="tenue">Cargá en "Lo que tengo" tus bonos (los soberanos AL/GD ya tienen sus pagos cargados) o tus ONs con sus flujos abajo.</p>';
+  pintarEventos();
   $("#sim-on").innerHTML = Object.keys(USUARIO.ons).map((k) => `<option>${esc(k)}</option>`).join("") || "<option value=''>Primero cargá una ON abajo</option>";
   const sel = $("#sim-on").value; const p = ESTADO.estado?.precios?.[sel]?.ultimo; if (p && !$("#form-sim").precio.value) $("#form-sim").precio.value = p;
 }
@@ -286,6 +287,36 @@ $("#form-on").addEventListener("submit", async (ev) => {
   USUARIO.ons[d.ticker.trim().toUpperCase()] = { emisor: d.emisor, moneda: d.moneda, lamina_minima: aNum(d.lamina) || 1, flujos };
   await put("usuario/ons", USUARIO.ons); ev.target.reset(); pintarCalendario(); toast("ON guardada");
 });
+
+// ---------- calendario de eventos ----------
+const ICONO_EV = { cobro: "💵", balance: "📊", dividendo: "💰", macro: "🏛️", licitacion: "🏦" };
+const DIAS_TXT = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+let SOLO_MIO = true;
+function diaTxt(f) { const d = new Date(f + "T12:00:00"); const n = Math.round((d - new Date(HOY() + "T12:00:00")) / 864e5);
+  return n === 0 ? "Hoy" : n === 1 ? "Mañana" : `${DIAS_TXT[d.getDay()]} ${fecha(f)}`; }
+function filaEvento(e) {
+  return `<div class="evento ${e.fuerte ? "fuerte" : ""}"><span class="ev-ic">${ICONO_EV[e.tipo] || "•"}</span>
+    <span>${e.ticker && e.ticker !== "AL/GD" ? `<b class="link" data-abrir-debate="${esc(e.ticker)}">${esc(e.ticker)}</b> ` : ""}${esc(e.nombre)}${e.fuerte ? ' <span class="chip rojo">ese día no se abren posiciones</span>' : ""}</span></div>`;
+}
+function pintarEventos() {
+  const evs = (ESTADO.estado?.eventos || []).filter((e) => !SOLO_MIO || e.mio || e.tipo === "cobro" || e.tipo === "macro");
+  const porDia = {}; for (const e of evs) (porDia[e.fecha] ||= []).push(e);
+  $("#eventos").innerHTML = `<label class="check"><input type="checkbox" id="solo-mio" ${SOLO_MIO ? "checked" : ""}> Solo lo mío y lo que mueve al mercado</label>` +
+    (Object.keys(porDia).length ? Object.entries(porDia).map(([f, xs]) => `<div class="dia"><div class="dia-tit">${diaTxt(f)}</div>${xs.map(filaEvento).join("")}</div>`).join("")
+      : '<p class="tenue">Sin eventos en los próximos 45 días.</p>') +
+    '<p class="tenue">💵 cobros de bonos y ONs · 📊 balances · 💰 dividendos · 🏛️ inflación, Reserva Federal y otras fechas macro. Antes de un balance la mesa no propone entrar en ese papel.</p>';
+  $("#solo-mio").onchange = (ev) => { SOLO_MIO = ev.target.checked; pintarEventos(); };
+  // Hoy: lo de los próximos 7 días
+  const lim = new Date(Date.now() + 7 * 864e5).toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
+  const sem = (ESTADO.estado?.eventos || []).filter((e) => e.fecha <= lim && (e.mio || e.tipo === "macro" || e.tipo === "cobro"));
+  $("#eventos-semana").innerHTML = sem.length ? `<h2>Esta semana</h2><div class="card">${sem.slice(0, 8).map((e) =>
+    `<div class="evento ${e.fuerte ? "fuerte" : ""}"><span class="ev-ic">${ICONO_EV[e.tipo] || "•"}</span><span><b>${diaTxt(e.fecha)}</b> · ${e.ticker && e.ticker !== "AL/GD" ? esc(e.ticker) + " · " : ""}${esc(e.nombre)}</span></div>`).join("")}</div>` : "";
+}
+document.querySelectorAll("#cal-vista button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll("#cal-vista button").forEach((x) => x.classList.toggle("prim", x === b));
+  $("#calendario").style.display = b.dataset.cal === "cobros" ? "" : "none";
+  $("#eventos").style.display = b.dataset.cal === "eventos" ? "" : "none";
+}));
 
 // ---------- aprendizajes ----------
 function pintarAprendizajes() {

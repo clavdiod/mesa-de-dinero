@@ -50,8 +50,10 @@ def diario(simular: bool = False) -> dict:
     # así Técnico, Historiador y Oportunidades también los analizan
     if iol is not None:
         import re as _re
+        simbolos = {t.get("simbolo") for g in ("cedears", "acciones") for t in paneles.get(g, [])}
+        es_linea_usd = lambda s: s[-1:] in ("D", "C") and s[:-1] in simbolos  # AAPLD sí; PLD o AMD no
         candidatos = [t for g in ("cedears", "acciones") for t in paneles.get(g, [])
-                      if t.get("simbolo") and t.get("monto") and not _re.search(r"[A-Z0-9][DC]$", t["simbolo"])
+                      if t.get("simbolo") and t.get("monto") and not es_linea_usd(t["simbolo"])
                       and not cache.velas(t["simbolo"])]
         candidatos.sort(key=lambda t: t["monto"], reverse=True)
         nuevos = 0
@@ -61,6 +63,18 @@ def diario(simular: bool = False) -> dict:
             cache.asegurar(t["simbolo"], 1)
             nuevos += 1 if cache.velas(t["simbolo"]) else 0
         print(f"[cierre] historial nuevo: {nuevos} (más operados)")
+
+    # calendario de balances y dividendos de EE.UU. para los CEDEARs (gratis, no usa IOL)
+    if not simular:
+        try:
+            from .datos import eventos as ev_mod
+            simb = {t.get("simbolo") for t in paneles.get("cedears", []) if t.get("simbolo")}
+            cedears = {s for s in simb if not (s[-1:] in ("D", "C") and s[:-1] in simb)}
+            ev = ev_mod.eeuu(cedears, hoy, 21)
+            a.put("eventos/eeuu", {"fecha": hoy.isoformat(), "eventos": ev})
+            print(f"[cierre] eventos EE.UU.: {len(ev)}")
+        except Exception as ex:
+            print(f"[cierre] eventos EE.UU.: {ex}")
 
     # huecos (p. ej. un cierre que falló): se completan pidiendo SOLO las fechas faltantes, máx. 10 por día
     if iol is not None:

@@ -1,6 +1,8 @@
 # Calendario de eventos. 'fuerte: true' = ese día Riesgo no abre posiciones nuevas.
-# Cargar fechas oficiales (INDEC, BCRA, licitaciones del Tesoro, balances, elecciones).
-# Las fechas se verifican en las agendas oficiales antes de cargarlas; no se inventan.
-# - {fecha: "2026-11-12", nombre: "Inflación de octubre (INDEC)", fuerte: true}
-# - {fecha: "2026-11-05", nombre: "Balance Grupo Galicia 3T", ticker: GGAL, fuerte: false}
-[]
+# Solo fechas verificadas en fuentes oficiales o confiables; no se inventan.
+# Los pagos de bonos soberanos salen de config/bonos_flujos.yaml y los balances/dividendos de EE.UU.
+# se actualizan solos cada día (cierre diario).
+- {fecha: "2026-10-28", nombre: "Decisión de tasa de la Reserva Federal (EE.UU.)", tipo: macro, fuerte: true, fuente: "federalreserve.gov"}
+- {fecha: "2026-11-12", nombre: "Inflación de octubre (INDEC), 16 h", tipo: macro, fuerte: true, fuente: "calendario INDEC"}
+- {fecha: "2026-12-09", nombre: "Decisión de tasa de la Reserva Federal (EE.UU.)", tipo: macro, fuerte: true, fuente: "federalreserve.gov"}
+- {fecha: "2027-01-27", nombre: "Decisión de tasa de la Reserva Federal (EE.UU.)", tipo: macro, fuerte: true, fuente: "federalreserve.gov (tentativa)"}

@@ -1,0 +1,409 @@
+_nota: 'Flujos por cada 100 nominales ORIGINALES (interés y amortización en % del
+  VN original). Fuente: IOL, 20/10/2026. Los Bonares (AL) pagan igual que su Global
+  (GD).'
+equivalentes:
+  AL29: GD29
+  AL30: GD30
+  AL35: GD35
+  AE38: GD38
+  AL41: GD41
+bonos:
+  GD29:
+    emisor: Tesoro Nacional
+    moneda: USD
+    flujos:
+    - fecha: '2027-01-09'
+      interes: 0.3
+      amortizacion: 10
+    - fecha: '2027-07-09'
+      interes: 0.25
+      amortizacion: 10
+    - fecha: '2028-01-09'
+      interes: 0.2
+      amortizacion: 10
+    - fecha: '2028-07-09'
+      interes: 0.15
+      amortizacion: 10
+    - fecha: '2029-01-09'
+      interes: 0.1
+      amortizacion: 10
+    - fecha: '2029-07-09'
+      interes: 0.05
+      amortizacion: 10
+  GD30:
+    emisor: Tesoro Nacional
+    moneda: USD
+    flujos:
+    - fecha: '2027-01-09'
+      interes: 0.345
+      amortizacion: 8
+    - fecha: '2027-07-09'
+      interes: 0.315
+      amortizacion: 8
+    - fecha: '2028-01-09'
+      interes: 0.665
+      amortizacion: 8
+    - fecha: '2028-07-09'
+      interes: 0.595
+      amortizacion: 8
+    - fecha: '2029-01-09'
+      interes: 0.525
+      amortizacion: 8
+    - fecha: '2029-07-09'
+      interes: 0.455
+      amortizacion: 8
+    - fecha: '2030-01-09'
+      interes: 0.385
+      amortizacion: 8
+    - fecha: '2030-07-09'
+      interes: 0.315
+      amortizacion: 8
+  GD35:
+    emisor: Tesoro Nacional
+    moneda: USD
+    flujos:
+    - fecha: '2027-01-09'
+      interes: 2.06
+      amortizacion: 0
+    - fecha: '2027-07-09'
+      interes: 2.06
+      amortizacion: 0
+    - fecha: '2028-01-09'
+      interes: 2.38
+      amortizacion: 0
+    - fecha: '2028-07-09'
+      interes: 2.38
+      amortizacion: 0
+    - fecha: '2029-01-09'
+      interes: 2.5
+      amortizacion: 0
+    - fecha: '2029-07-09'
+      interes: 2.5
+      amortizacion: 0
+    - fecha: '2030-01-09'
+      interes: 2.5
+      amortizacion: 0
+    - fecha: '2030-07-09'
+      interes: 2.5
+      amortizacion: 0
+    - fecha: '2031-01-09'
+      interes: 2.5
+      amortizacion: 10
+    - fecha: '2031-07-09'
+      interes: 2.25
+      amortizacion: 10
+    - fecha: '2032-01-09'
+      interes: 2
+      amortizacion: 10
+    - fecha: '2032-07-09'
+      interes: 1.75
+      amortizacion: 10
+    - fecha: '2033-01-09'
+      interes: 1.5
+      amortizacion: 10
+    - fecha: '2033-07-09'
+      interes: 1.25
+      amortizacion: 10
+    - fecha: '2034-01-09'
+      interes: 1
+      amortizacion: 10
+    - fecha: '2034-07-09'
+      interes: 0.75
+      amortizacion: 10
+    - fecha: '2035-01-09'
+      interes: 0.5
+      amortizacion: 10
+    - fecha: '2035-07-09'
+      interes: 0.25
+      amortizacion: 10
+  GD38:
+    emisor: Tesoro Nacional
+    moneda: USD
+    flujos:
+    - fecha: '2027-01-09'
+      interes: 2.5
+      amortizacion: 0
+    - fecha: '2027-07-09'
+      interes: 2.5
+      amortizacion: 4.54
+    - fecha: '2028-01-09'
+      interes: 2.3865
+      amortizacion: 4.54
+    - fecha: '2028-07-09'
+      interes: 2.273
+      amortizacion: 4.54
+    - fecha: '2029-01-09'
+      interes: 2.1595
+      amortizacion: 4.54
+    - fecha: '2029-07-09'
+      interes: 2.046
+      amortizacion: 4.54
+    - fecha: '2030-01-09'
+      interes: 1.9325
+      amortizacion: 4.54
+    - fecha: '2030-07-09'
+      interes: 1.819
+      amortizacion: 4.54
+    - fecha: '2031-01-09'
+      interes: 1.7055
+      amortizacion: 4.54
+    - fecha: '2031-07-09'
+      interes: 1.592
+      amortizacion: 4.54
+    - fecha: '2032-01-09'
+      interes: 1.4785
+      amortizacion: 4.54
+    - fecha: '2032-07-09'
+      interes: 1.365
+      amortizacion: 4.54
+    - fecha: '2033-01-09'
+      interes: 1.2515
+      amortizacion: 4.54
+    - fecha: '2033-07-09'
+      interes: 1.138
+      amortizacion: 4.54
+    - fecha: '2034-01-09'
+      interes: 1.0245
+      amortizacion: 4.54
+    - fecha: '2034-07-09'
+      interes: 0.911
+      amortizacion: 4.54
+    - fecha: '2035-01-09'
+      interes: 0.7975
+      amortizacion: 4.54
+    - fecha: '2035-07-09'
+      interes: 0.684
+      amortizacion: 4.54
+    - fecha: '2036-01-09'
+      interes: 0.5705
+      amortizacion: 4.54
+    - fecha: '2036-07-09'
+      interes: 0.457
+      amortizacion: 4.54
+    - fecha: '2037-01-09'
+      interes: 0.3435
+      amortizacion: 4.54
+    - fecha: '2037-07-09'
+      interes: 0.23
+      amortizacion: 4.54
+    - fecha: '2038-01-09'
+      interes: 0.1165
+      amortizacion: 4.66
+  GD41:
+    emisor: Tesoro Nacional
+    moneda: USD
+    flujos:
+    - fecha: '2027-01-09'
+      interes: 1.75
+      amortizacion: 0
+    - fecha: '2027-07-09'
+      interes: 1.75
+      amortizacion: 0
+    - fecha: '2028-01-09'
+      interes: 1.75
+      amortizacion: 3.57
+    - fecha: '2028-07-09'
+      interes: 1.687525
+      amortizacion: 3.57
+    - fecha: '2029-01-09'
+      interes: 1.62505
+      amortizacion: 3.57
+    - fecha: '2029-07-09'
+      interes: 1.562575
+      amortizacion: 3.57
+    - fecha: '2030-01-09'
+      interes: 2.089425
+      amortizacion: 3.57
+    - fecha: '2030-07-09'
+      interes: 2.00240625
+      amortizacion: 3.57
+    - fecha: '2031-01-09'
+      interes: 1.9153875
+      amortizacion: 3.57
+    - fecha: '2031-07-09'
+      interes: 1.82836875
+      amortizacion: 3.57
+    - fecha: '2032-01-09'
+      interes: 1.74135
+      amortizacion: 3.57
+    - fecha: '2032-07-09'
+      interes: 1.65433125
+      amortizacion: 3.57
+    - fecha: '2033-01-09'
+      interes: 1.5673125
+      amortizacion: 3.57
+    - fecha: '2033-07-09'
+      interes: 1.48029375
+      amortizacion: 3.57
+    - fecha: '2034-01-09'
+      interes: 1.393275
+      amortizacion: 3.57
+    - fecha: '2034-07-09'
+      interes: 1.30625625
+      amortizacion: 3.57
+    - fecha: '2035-01-09'
+      interes: 1.2192375
+      amortizacion: 3.57
+    - fecha: '2035-07-09'
+      interes: 1.13221875
+      amortizacion: 3.57
+    - fecha: '2036-01-09'
+      interes: 1.0452
+      amortizacion: 3.57
+    - fecha: '2036-07-09'
+      interes: 0.95818125
+      amortizacion: 3.57
+    - fecha: '2037-01-09'
+      interes: 0.8711625
+      amortizacion: 3.57
+    - fecha: '2037-07-09'
+      interes: 0.78414375
+      amortizacion: 3.57
+    - fecha: '2038-01-09'
+      interes: 0.697125
+      amortizacion: 3.57
+    - fecha: '2038-07-09'
+      interes: 0.61010625
+      amortizacion: 3.57
+    - fecha: '2039-01-09'
+      interes: 0.5230875
+      amortizacion: 3.57
+    - fecha: '2039-07-09'
+      interes: 0.43606875
+      amortizacion: 3.57
+    - fecha: '2040-01-09'
+      interes: 0.34905
+      amortizacion: 3.57
+    - fecha: '2040-07-09'
+      interes: 0.26203125
+      amortizacion: 3.57
+    - fecha: '2041-01-09'
+      interes: 0.1750125
+      amortizacion: 3.57
+    - fecha: '2041-07-09'
+      interes: 0.08799375
+      amortizacion: 3.61
+  GD46:
+    emisor: Tesoro Nacional
+    moneda: USD
+    flujos:
+    - fecha: '2027-01-09'
+      interes: 1.875225
+      amortizacion: 2.27
+    - fecha: '2028-07-09'
+      interes: 1.82840625
+      amortizacion: 2.27
+    - fecha: '2028-01-09'
+      interes: 1.8895625
+      amortizacion: 2.27
+    - fecha: '2029-07-09'
+      interes: 1.83990625
+      amortizacion: 2.27
+    - fecha: '2029-01-09'
+      interes: 2.046
+      amortizacion: 2.27
+    - fecha: '2030-07-09'
+      interes: 1.98925
+      amortizacion: 2.27
+    - fecha: '2030-01-09'
+      interes: 1.9325
+      amortizacion: 2.27
+    - fecha: '2031-07-09'
+      interes: 1.87575
+      amortizacion: 2.27
+    - fecha: '2031-01-09'
+      interes: 1.819
+      amortizacion: 2.27
+    - fecha: '2032-07-09'
+      interes: 1.76225
+      amortizacion: 2.27
+    - fecha: '2032-01-09'
+      interes: 1.7055
+      amortizacion: 2.27
+    - fecha: '2033-07-09'
+      interes: 1.64875
+      amortizacion: 2.27
+    - fecha: '2033-01-09'
+      interes: 1.592
+      amortizacion: 2.27
+    - fecha: '2034-07-09'
+      interes: 1.53525
+      amortizacion: 2.27
+    - fecha: '2034-01-09'
+      interes: 1.4785
+      amortizacion: 2.27
+    - fecha: '2035-07-09'
+      interes: 1.42175
+      amortizacion: 2.27
+    - fecha: '2035-01-09'
+      interes: 1.365
+      amortizacion: 2.27
+    - fecha: '2036-07-09'
+      interes: 1.30825
+      amortizacion: 2.27
+    - fecha: '2036-01-09'
+      interes: 1.2515
+      amortizacion: 2.27
+    - fecha: '2037-07-09'
+      interes: 1.19475
+      amortizacion: 2.27
+    - fecha: '2037-01-09'
+      interes: 1.138
+      amortizacion: 2.27
+    - fecha: '2038-07-09'
+      interes: 1.08125
+      amortizacion: 2.27
+    - fecha: '2038-01-09'
+      interes: 1.0245
+      amortizacion: 2.27
+    - fecha: '2039-07-09'
+      interes: 0.96775
+      amortizacion: 2.27
+    - fecha: '2039-01-09'
+      interes: 0.911
+      amortizacion: 2.27
+    - fecha: '2040-07-09'
+      interes: 0.85425
+      amortizacion: 2.27
+    - fecha: '2040-01-09'
+      interes: 0.7975
+      amortizacion: 2.27
+    - fecha: '2041-07-09'
+      interes: 0.74075
+      amortizacion: 2.27
+    - fecha: '2041-01-09'
+      interes: 0.684
+      amortizacion: 2.27
+    - fecha: '2042-07-09'
+      interes: 0.62725
+      amortizacion: 2.27
+    - fecha: '2042-01-09'
+      interes: 0.5705
+      amortizacion: 2.27
+    - fecha: '2043-07-09'
+      interes: 0.51375
+      amortizacion: 2.27
+    - fecha: '2043-01-09'
+      interes: 0.457
+      amortizacion: 2.27
+    - fecha: '2044-07-09'
+      interes: 0.40025
+      amortizacion: 2.27
+    - fecha: '2044-01-09'
+      interes: 0.3435
+      amortizacion: 2.27
+    - fecha: '2045-07-09'
+      interes: 0.28675
+      amortizacion: 2.27
+    - fecha: '2045-01-09'
+      interes: 0.23
+      amortizacion: 2.27
+    - fecha: '2046-07-09'
+      interes: 0.17325
+      amortizacion: 2.27
+    - fecha: '2046-01-09'
+      interes: 0.1165
+      amortizacion: 2.27
+    - fecha: '2047-07-09'
+      interes: 0.05975
+      amortizacion: 2.39

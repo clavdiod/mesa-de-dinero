@@ -35,6 +35,7 @@
   <section id="v-propuestas" class="vista activa">
     <div id="resumen-hoy"></div>
     <div id="alertas"></div>
+    <div id="eventos-semana"></div>
     <h2>Para decidir</h2>
     <div id="lista-propuestas"></div>
     <h2>Oportunidades confirmadas</h2>
@@ -98,8 +99,10 @@
       <button>Agregar</button>
     </form>
     <div id="cartera"></div>
-    <h2>Próximos cobros</h2>
+    <h2>Calendario</h2>
+    <div class="tiras" id="cal-vista"><button class="chico prim" data-cal="cobros">Mis cobros</button><button class="chico" data-cal="eventos">Eventos</button></div>
     <div id="calendario"></div>
+    <div id="eventos" style="display:none"></div>
     <details>
       <summary>Simular una ON (capital o nominales)</summary>
       <form id="form-sim" class="pila">

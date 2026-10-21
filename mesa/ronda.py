@@ -15,6 +15,7 @@ import yaml
 
 from .agentes import analistas, con_ia, informes as informes_mod, oportunidades, riesgo, supervisor
 from .datos import gratis
+from .datos import eventos as eventos_mod
 from .datos.cache import CacheHistorico
 from .datos.consumo import Consumo, PresupuestoAgotado
 from .nucleo import push
@@ -67,6 +68,24 @@ def refrescar_puntas(ctx: Contexto, iol, consumo: Consumo, tickers: list[str]) -
             ctx.por_simbolo[tk] = {**base, **{k: v for k, v in t.items() if v not in (None, [])}}
         except Exception as e:
             print(f"[puntas] {tk}: {e}")
+
+
+def _calendario(almacen, ctx, hoy, ops, abiertas, cartera) -> list[dict]:
+    """Eventos de los próximos 45 días que importan: los de mis activos, oportunidades y los CEDEARs más operados."""
+    try:
+        base = lambda t: t[:-1] if t.endswith(("D", "C")) and ctx.titulo(t[:-1]) else t
+        mios = {base(t) for t in ctx.tickers_lista() + list(abiertas) + [c.get("ticker", "").upper() for c in cartera]}
+        mios |= {o["ticker"] for l in (ops or {}).values() for o in l}
+        mios |= set((almacen.get("usuario/ons") or {}).keys())
+        top = sorted((t for t in ctx.grupo("cedears") if t.get("monto")), key=lambda t: -t["monto"])[:30]
+        mios |= {t["simbolo"] for t in top if t.get("simbolo")}
+        ev = eventos_mod.armar(almacen, hoy, 45, mios)
+        for e in ev:
+            e["mio"] = e.get("ticker") in mios and e.get("ticker") not in {t["simbolo"] for t in top} or e.get("tipo") == "macro"
+        return ev[:80]
+    except Exception as ex:
+        print(f"[calendario] {ex}")
+        return []
 
 
 def _aprendizajes() -> list[dict]:
@@ -131,7 +150,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                    riesgo_pais={} if simular else gratis.riesgo_pais(), riesgo_pais_ayer=rp_ayer,
                    reservas={} if simular else gratis.bcra_reservas(),
                    noticias=[] if simular else gratis.noticias(),
-                   cache=cache, lista=lista, cartera=cartera, params=params, eventos=_eventos())
+                   cache=cache, lista=lista, cartera=cartera, params=params, eventos=_eventos() + ((almacen.get("eventos/eeuu") or {}).get("eventos") or []))
     if simular:
         fx = json.loads((RAIZ / "tests" / "fixtures" / "contexto.json").read_text(encoding="utf-8"))
         ctx.dolares, ctx.riesgo_pais, ctx.riesgo_pais_ayer = fx["dolares"], fx["riesgo_pais"], fx["riesgo_pais_ayer"]
@@ -340,6 +359,9 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "oportunidades": {k: [o for o in v if o["mesa"]["aprobada"]] for k, v in ops.items()},
         "oportunidades_observadas": sum(1 for v in ops.values() for o in v if not o["mesa"]["aprobada"]),
         "aprendizajes": _aprendizajes(),
+        "eventos": _calendario(almacen, ctx, hoy, ops, abiertas, cartera),
+        "flujos_bonos": {k: v for k, v in eventos_mod.flujos_bonos().items()
+                         if k in {c.get("ticker", "").upper() for c in cartera}},
     }
     almacen.put("ui/estado", {**estado_ui, **resumen})
     # foto compacta de TODOS los paneles para el Asistente (sin gastar consultas extra)
