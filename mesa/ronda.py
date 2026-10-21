@@ -218,10 +218,12 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
             cl = wallstreet.clima(ws_datos["indices"], hoy.isoformat())
             activa, motivo = wallstreet.ensenanza_activa(almacen.get("ranking/ensenanza_ws") or {})
             cl.update(ensenanza_activa=activa, ensenanza_motivo=motivo, datos_al=ws_datos.get("fecha"))
-            if activa == "contrario" and cl["riesgo"] <= -0.4:
-                cl["ensena"].insert(0, "Hay miedo en Wall Street: en 5 años, comprar CEDEARs con este clima rindió más que con euforia. Buenas compras, con tamaño prudente.")
-            elif activa == "contrario" and cl["riesgo"] >= 0.5:
-                cl["ensena"].insert(0, "Euforia en Wall Street: en 5 años, comprar con este clima rindió menos que comprar con miedo. Ser selectivo.")
+            if activa == "contrario":  # la lección que respaldan los datos reemplaza a la del manual
+                cl["ensena"] = [x for x in cl["ensena"] if not x.startswith("Wall Street en modo")]
+                if cl["riesgo"] <= -0.4:
+                    cl["ensena"].insert(0, "Hay miedo en Wall Street: en 5 años, comprar CEDEARs con este clima rindió más que con clima comprador. Buen momento para comprar, con tamaño prudente.")
+                elif cl["riesgo"] >= 0.5:
+                    cl["ensena"].insert(0, "Clima comprador en Wall Street: en 5 años, comprar CEDEARs con este clima rindió menos que comprar con miedo. Ser selectivo: solo lo que tenga tendencia y momentum.")
             ctx.extra["wallstreet"] = cl
         except Exception as ex:
             print(f"[wallstreet] {ex}")
