@@ -64,7 +64,8 @@ def revisar(reg, ctx, por_ticker: dict, puntaje_fn) -> list[dict]:
         c = consejo(p, ctx, sen, puntaje_fn(sen))
         c["hora"] = ctx.hora
         previo = (p["seguimiento"].get("consejo") or {}).get("accion")
-        p["seguimiento"]["consejo"] = c
+        if c["accion"] != previo:  # solo se actualiza si cambia el consejo (cuida las escrituras)
+            p["seguimiento"]["consejo"] = c
         if c["accion"] in ALERTA and c["accion"] != previo and p.get("decision") == "aprobada":
             alertas.append({"fecha": ctx.fecha.isoformat(), "hora": ctx.hora, "ticker": f"{p['ticker']} ({c['accion']})",
                             "texto": f"{p['ticker']}: {c['texto']}"})

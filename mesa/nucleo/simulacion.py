@@ -56,6 +56,11 @@ class Simulador:
     def __init__(self, almacen):
         self.a = almacen
         self.pos: list[dict] = almacen.get("sim/posiciones") or []
+        self._firma0 = self._firma()
+
+    def _firma(self) -> str:
+        """Lo que importa guardar enseguida: qué posiciones hay y en qué estado (no el precio de cada ronda)."""
+        return "|".join(f"{p['id']}:{p['estado']}" for p in self.pos)
 
     def _activa(self, clave: str) -> bool:
         return any(p["clave"] == clave and p["estado"] in ("pendiente", "abierta") for p in self.pos)
@@ -169,7 +174,10 @@ class Simulador:
                 "por_origen": por("origen"), "por_setup": por("setup"), "por_semaforo": por("semaforo"),
                 "por_agente": {k: stats(v) for k, v in ag.items()}, "nominales": _cfg()["nominales"]}
 
-    def guardar(self) -> None:
+    def guardar(self, forzar: bool = True) -> None:
+        """Si no hubo altas ni cierres, solo se guarda cuando `forzar` (cada 30 minutos) para cuidar escrituras."""
+        if not forzar and self._firma() == self._firma0:
+            return
         # se guardan todas las activas y las últimas 600 cerradas
         activas = [p for p in self.pos if p["estado"] in ("pendiente", "abierta")]
         resto = [p for p in self.pos if p["estado"] not in ("pendiente", "abierta")][:600]

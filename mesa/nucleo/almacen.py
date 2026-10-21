@@ -62,23 +62,35 @@ class AlmacenWorker(Almacen):
             self.s.headers["CF-Access-Client-Id"] = access_id
             self.s.headers["CF-Access-Client-Secret"] = access_secret
         self._cache: dict[str, Any] = {}
+        self._foto: dict[str, str] = {}   # cómo estaba guardado cada valor (para no reescribir lo que no cambió)
+        self.escrituras = 0
+        self.omitidas = 0
 
     def get(self, clave, defecto=None):
         if clave in self._cache:
             return self._cache[clave]
         r = self.s.get(f"{self.url}/api/kv/{clave}", timeout=30)
         if r.status_code == 404:
+            self._foto[clave] = "null"
             return defecto
         r.raise_for_status()
         v = r.json()
         self._cache[clave] = v
+        self._foto[clave] = json.dumps(v, ensure_ascii=False, sort_keys=True)
         return v
 
     def put(self, clave, valor):
+        """Cloudflare KV gratis permite ~1.000 escrituras por día: si el valor no cambió, no se escribe."""
+        nuevo = json.dumps(valor, ensure_ascii=False, sort_keys=True)
+        if self._foto.get(clave) == nuevo:
+            self.omitidas += 1
+            return
         r = self.s.put(f"{self.url}/api/kv/{clave}", data=json.dumps(valor, ensure_ascii=False).encode(), timeout=30,
                        headers={"Content-Type": "application/json"})
         r.raise_for_status()
+        self.escrituras += 1
         self._cache[clave] = valor
+        self._foto[clave] = nuevo
 
     def listar(self, prefijo):
         r = self.s.get(f"{self.url}/api/kv-lista/{prefijo}", timeout=30)

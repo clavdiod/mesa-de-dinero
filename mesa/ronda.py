@@ -298,6 +298,9 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         if not toca_correr(ya, consumo.factor_frecuencia()):
             return {"corrio": False, "motivo": "no toca en este horario"}
 
+    # Cloudflare KV gratis: ~1.000 escrituras por día. Lo que no es urgente se guarda cada 30 minutos.
+    minuto_dia = ya.hour * 60 + ya.minute
+    cada30 = bool(forzar or simular or minuto_dia % 30 < 5 or minuto_dia >= 16 * 60 + 55)
     if not simular and not forzar:
         ultima = almacen.get("ronda/ultima") or {}
         if ultima.get("ts") and ya.timestamp() - ultima["ts"] < 170:
@@ -532,7 +535,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         nuevos_deb = {tk: supervisor.expediente(tk, ctx, por_tk.get(tk, []), puntajes.get(tk, 0.0), ev_por.get(tk),
                                                 el_por.get(tk), ctx.hora) for tk in tks if ctx.titulo(tk)}
         viejos = {k: v for k, v in previos_deb.items() if k not in nuevos_deb and v.get("fecha") == hoy.isoformat()}
-        almacen.put("ui/debates", {**dict(list(viejos.items())[:40]), **nuevos_deb})
+        if cada30 or pedidos or not previos_deb:
+            almacen.put("ui/debates", {**dict(list(viejos.items())[:40]), **nuevos_deb})
         if pedidos:
             resto = [t for t in (pedido_deb.get("tickers") or []) if t not in pedidos and ctx.titulo(t)]
             almacen.put("ui/pedido_debate", {"tickers": resto})
@@ -555,7 +559,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         sim = Simulador(almacen)
         sim.actualizar(ctx.por_simbolo, hoy)
         sim.abrir(ops, nuevas, ctx, por_ticker, hoy, ctx.hora)
-        sim.guardar()
+        sim.guardar(cada30)
     except Exception as ex:  # nunca frena la ronda
         print(f"[simulacion] {ex}")
 
@@ -572,9 +576,10 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     except Exception as ex:
         print(f"[seguimiento] {ex}")
         alertas_seg, opinion_cartera = [], {}
-    reg.guardar_senales(hoy, [s.dict() for s in senales],
+    if cada30:  # las señales se registran cada 30 minutos (para el ranking alcanza y cuida las escrituras)
+      reg.guardar_senales(hoy, [s.dict() for s in senales],
                         {k: v["ultimo"] for k, v in ctx.por_simbolo.items() if v.get("ultimo")})
-    reg.guardar()
+    reg.guardar(cada30 or bool(nuevas))
     cache.guardar()
 
     # --- informe de cada analista (IA solo cada ~30 min para cuidar el costo) ---
@@ -622,7 +627,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     }
     almacen.put("ui/estado", {**estado_ui, **resumen})
     # foto compacta de TODOS los paneles para el Asistente (sin gastar consultas extra)
-    almacen.put("ui/panel", {"fecha": hoy.isoformat(), "hora": ctx.hora, "titulos": {
+    if cada30 or ya.minute % 15 < 5:
+      almacen.put("ui/panel", {"fecha": hoy.isoformat(), "hora": ctx.hora, "titulos": {
         tk: [round(t.get("ultimo") or 0, 4), round(t["variacion"], 2) if t.get("variacion") is not None else None,
              t.get("compra"), t.get("venta"), t.get("grupo")]
         for tk, t in ctx.por_simbolo.items() if t.get("ultimo")}})
@@ -639,7 +645,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         if res["vencidas"]:
             almacen.put("push/suscripciones", [s for s in subs if s.get("endpoint") not in res["vencidas"]])
     return {"corrio": True, "nuevas": len(nuevas), "senales": len(senales), "consumo": consumo.resumen(),
-            "diagnostico": {"paneles": {g: len(t) for g, t in paneles.items()},
+            "diagnostico": {"kv_escrituras": getattr(almacen, "escrituras", None), "kv_omitidas": getattr(almacen, "omitidas", None),
+                            "paneles": {g: len(t) for g, t in paneles.items()},
                             "riesgo_pais": ctx.riesgo_pais.get("valor"), "rp_ayer": ctx.riesgo_pais_ayer,
                             "dolares": sorted(k for k in ctx.dolares if not k.startswith("_")),
                             "noticias": len(ctx.noticias), "con_historial": len(cache.indice),

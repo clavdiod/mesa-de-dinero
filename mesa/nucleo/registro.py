@@ -26,6 +26,7 @@ class Registro:
             if p["id"] in decisiones:
                 p["decision"] = decisiones[p["id"]]["decision"]
                 p["decision_hora"] = decisiones[p["id"]].get("hora")
+        self._firma0 = self._firma()
 
     # ---------- propuestas ----------
     def nuevas(self, props: list[dict]) -> None:
@@ -219,5 +220,14 @@ class Registro:
         self.a.put("ranking/calibracion", self.calibracion)
         return self.calibracion
 
-    def guardar(self) -> None:
+    def _firma(self) -> str:
+        import json as _j
+        return _j.dumps([{k: v for k, v in p.items() if k != "seguimiento"} | {"seg": {k: v for k, v in p["seguimiento"].items() if k != "r_actual"}}
+                         for p in self.propuestas[:60]], sort_keys=True, default=str)
+
+    def guardar(self, forzar: bool = True) -> None:
+        """Sin cambios de estado, el avance de cada posición (r_actual) se guarda solo cuando `forzar`."""
+        if not forzar and getattr(self, "_firma0", None) == self._firma():
+            return
+        self._firma0 = self._firma()
         self.a.put("registro/propuestas", self.propuestas[:1500])
