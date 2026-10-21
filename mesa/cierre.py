@@ -120,7 +120,26 @@ def calificadoras() -> dict:
 
 def semanal() -> list[dict]:
     a = almacen_por_defecto()
-    return Registro(a).cerrar_ranking_semanal()
+    reg = Registro(a)
+    reg.recalibrar()
+    return reg.cerrar_ranking_semanal()
+
+
+def entrenar() -> dict:
+    """Entrenamiento con la historia: hace opinar a los agentes en cada día pasado y mide cuánto acertaron."""
+    from .nucleo import calibracion
+    a = almacen_por_defecto()
+    cache = CacheHistorico(a)
+    panel = (a.get("ui/panel") or {}).get("titulos") or {}
+    grupos = {tk: x[4] for tk, x in panel.items()}
+    series = {tk: cache.velas(tk) for tk in cache.indice}
+    hist = calibracion.entrenar_con_historia(series, grupos, a.get("params/agentes") or {})
+    a.put("ranking/stats_historicas", hist)
+    reg = Registro(a)
+    cal = reg.recalibrar()
+    a.put("ranking/tabla", reg.ranking())
+    resumen = {ag: f"{c['acierto_pct']}% de {c['casos']} casos ({c['fuente']}) -> voto x{c['factor']}" for ag, c in cal.items()}
+    return {"series": len(series), "calibracion": resumen}
 
 
 def mensual() -> dict:
@@ -139,12 +158,12 @@ def mensual() -> dict:
 
 if __name__ == "__main__":
     tarea = sys.argv[1] if len(sys.argv) > 1 else "diario"
-    fn = {"diario": diario, "calificadoras": calificadoras, "semanal": semanal, "mensual": mensual}[tarea]
+    fn = {"diario": diario, "calificadoras": calificadoras, "semanal": semanal, "mensual": mensual, "entrenar": entrenar}[tarea]
     import traceback
     try:
         r = fn()
         print(json.dumps(r, ensure_ascii=False, indent=1, default=str))
-        print(f"::notice::{tarea} OK: {str(r)[:300]}")
+        print(f"::notice::{tarea} OK: {str(r)[:1500]}")
     except Exception as e:
         tb = traceback.extract_tb(e.__traceback__)[-1]
         print(f"::error::{tarea}: {type(e).__name__}: {str(e)[:400]} (en {tb.filename.split('/')[-1]}:{tb.lineno})")

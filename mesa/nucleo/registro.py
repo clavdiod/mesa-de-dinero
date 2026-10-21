@@ -19,6 +19,7 @@ class Registro:
         self.a = almacen
         self.propuestas: list[dict] = almacen.get("registro/propuestas") or []
         self.pesos: dict = almacen.get("ranking/pesos") or {}
+        self.calibracion: dict = almacen.get("ranking/calibracion") or {}
         # Tus decisiones las escribe la web en otra clave (así nunca se pisan con la ronda)
         decisiones = almacen.get("usuario/decisiones") or {}
         for p in self.propuestas:
@@ -126,6 +127,11 @@ class Registro:
                     st_ag["casos"] += 1
                     st_ag["aciertos"] += int(ret > 0)
                     st_ag["suma_ret"] = round(st_ag["suma_ret"] + ret, 4)
+                    st_ag["suma_fuerza"] = round(st_ag.get("suma_fuerza", 0.0) + float(s.get("fuerza") or 0.6), 4)
+                    # por banda de fuerza (débil / media / fuerte) para calibrar
+                    from .calibracion import _sumar, banda
+                    _sumar(stats[s["agente"]].setdefault("bandas", {}).setdefault(str(h), {}).setdefault(
+                        banda(float(s.get("fuerza") or 0.6)), {}), ret, float(s.get("fuerza") or 0.6))
                 evaluado.add(f"{f}|{h}")
         self.a.put("ranking/stats", stats)
         self.a.put("ranking/evaluado", sorted(evaluado)[-2000:])
@@ -138,10 +144,14 @@ class Registro:
         filas = []
         for ag, d in stats.items():
             h = d.get("10") or d.get("5") or {"casos": 0}
+            if not isinstance(h, dict) or "casos" not in h:
+                continue
             casos = h["casos"]
             ac = h["aciertos"] / casos * 100 if casos else 0
             esp = h["suma_ret"] / casos if casos else 0
             filas.append({"agente": ag, "casos": casos, "aciertos_pct": round(ac, 1), "esperanza_pct": round(esp, 2)})
+        vistos = {f["agente"] for f in filas}
+        filas += [{"agente": ag, "casos": 0, "aciertos_pct": 0.0, "esperanza_pct": 0.0} for ag in self.calibracion if ag not in vistos]
         evaluables = [f for f in filas if f["casos"] >= cfg["minimo_casos"]]
         evaluables.sort(key=lambda f: (f["esperanza_pct"], f["aciertos_pct"]), reverse=True)
         n = len(evaluables)
@@ -167,6 +177,8 @@ class Registro:
         for f in filas:
             f.setdefault("nivel", "sin_datos")
             f.setdefault("peso", 1.0)
+        for f in filas:
+            f["calibracion"] = self.calibracion.get(f["agente"])
         # incentivo en plata: con 10+ simulaciones cerradas, quien pierde dinero no puede ser titular
         sim = (self.a.get("sim/resumen") or {}).get("por_agente", {})
         minimo = config().get("simulacion", {}).get("minimo_cerradas_ranking", 10)
@@ -191,7 +203,15 @@ class Registro:
         return filas
 
     def peso(self, agente: str) -> float:
-        return float(self.pesos.get(agente, 1.0))
+        """Peso del voto = nivel en el ranking × calibración (si promete más de lo que acierta, vale menos)."""
+        cal = (self.calibracion.get(agente) or {}).get("factor")
+        return float(self.pesos.get(agente, 1.0)) * (float(cal) if cal is not None else 1.0)
+
+    def recalibrar(self) -> dict:
+        from .calibracion import calibrar
+        self.calibracion = calibrar(self.a.get("ranking/stats") or {}, self.a.get("ranking/stats_historicas") or {})
+        self.a.put("ranking/calibracion", self.calibracion)
+        return self.calibracion
 
     def guardar(self) -> None:
         self.a.put("registro/propuestas", self.propuestas[:1500])

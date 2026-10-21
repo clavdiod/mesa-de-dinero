@@ -4,7 +4,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const num = (x, d = 2) => (x === null || x === undefined || isNaN(x) ? "—" : Number(x).toLocaleString("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d }));
 const pct = (x, d = 2) => (x === null || x === undefined ? "—" : `${x > 0 ? "+" : ""}${num(x, d)}%`);
 const NOMBRES = { acciones: "Acciones", cedears: "CEDEARs", ons: "ONs", soberanos: "Soberanos", pesos_tasas: "Pesos y tasas",
-  tecnico: "Técnico", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
+  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
   hechos_emisor: "Hechos del emisor", calificadoras: "Calificadoras", riesgo: "Riesgo", jefe: "Jefe" };
 
 function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("ver"); setTimeout(() => e.classList.remove("ver"), 2500); }
@@ -36,6 +36,8 @@ function mercadoAbierto() {
 let ESTADO = {}, PROPS = [], USUARIO = { lista: [], cartera: [], ons: {}, capital: {} };
 
 // ---------- propuestas ----------
+const CONSEJO_TXT = { mantener: "Mantener", subir_stop: "Subir el stop", salir: "Salir", antes_balance: "Ojo, balance", cerca_stop: "Cerca del stop", cancelar: "Cancelar la orden", esperar: "Esperando precio" };
+const CONSEJO_COL = { mantener: "verde", subir_stop: "verde", salir: "rojo", antes_balance: "amar", cerca_stop: "amar", cancelar: "rojo", esperar: "" };
 function tarjeta(p) {
   const pl = p.plan, ok = p.decision === "pendiente";
   const sen = (p.senales || []).filter((s) => s.texto).map((s) =>
@@ -47,6 +49,7 @@ function tarjeta(p) {
     <div class="fila"><div><span class="tenue">${esc(fecha(p.fecha))} ${esc(p.hora)} · ${esc(p.sector || "")}</span>
       <div style="font-size:18px;font-weight:600">${esc(p.ticker)}</div></div>
       <span class="chip ${p.decision === "aprobada" ? "verde" : p.decision === "rechazada" ? "rojo" : ""}">${esc(p.decision)}</span></div>
+    ${seg.consejo ? `<div class="consejo ${CONSEJO_COL[seg.consejo.accion] || ""}"><b>${esc(CONSEJO_TXT[seg.consejo.accion] || seg.consejo.accion)}</b> ${esc(seg.consejo.texto)} <span class="tenue">(${esc(seg.consejo.hora || "")})</span></div>` : ""}
     <p>${esc(p.resumen_jefe || "")} <span class="chip ${p.confianza === "alta" ? "verde" : "amar"}">confianza ${esc(p.confianza)}</span></p>
     <div class="grilla">
       <div class="met"><span>Compra límite</span><b>${num(pl.entrada)}</b></div>
@@ -200,7 +203,9 @@ function pintarUsuario() {
     return `<div class="item"><div class="item-cab"><b class="link" data-abrir-debate="${esc(x.ticker)}">${esc(x.ticker)}</b>
         <span class="item-precio">${num(u)}${r === null ? "" : ` <span class="chip ${color(r)}">${pct(r)}</span>`}</span>
         <button class="quitar" data-quitar-cartera="${i}" aria-label="Quitar ${esc(x.ticker)}">✕</button></div>
-      <div class="item-det">${num(x.cantidad, 0)} nominales · compra ${num(x.precio)}${u ? "" : " · sin cotización en la ronda"}</div></div>`;
+      <div class="item-det">${num(x.cantidad, 0)} nominales · compra ${num(x.precio)}${u ? "" : " · sin cotización en la ronda"}</div>
+      ${(() => { const o = (ESTADO.estado?.opinion_cartera || {})[x.ticker.toUpperCase()]; if (!o) return "";
+        return `<div class="item-det"><span class="chip ${o.veredicto === "a favor" ? "verde" : o.veredicto === "en contra" ? "rojo" : ""}">La mesa: ${esc(o.veredicto)}</span> ${o.favor} a favor · ${o.contra} en contra${o.balance ? ` · <b>balance el ${esc(fecha(o.balance))}</b>` : ""}</div>${o.principal ? `<div class="item-det">${esc(o.principal)}</div>` : ""}`; })()}</div>`;
   }).join("") : '<p class="tenue">Sin posiciones cargadas.</p>';
   const cap = USUARIO.capital || {};
   $("#capital-info").textContent = cap.monto_ars ? `1R = ${num(cap.monto_ars * (cap.riesgo_pct || 1) / 100, 0)} pesos de pérdida máxima por operación.` : "Si no lo cargás, se usa el de la configuración.";
@@ -381,10 +386,17 @@ async function pintarSimulacion() {
 // ---------- ranking ----------
 async function pintarRanking() {
   const r = await api("ranking");
-  $("#ranking").innerHTML = r.tabla.length ? `<div class="tabla-scroll"><table><tr><th>Agente</th><th>Nivel</th><th class="n">Casos</th><th class="n">Aciertos</th><th class="n">Esperanza</th><th class="n">Plata sim.</th><th class="n">Peso</th></tr>
-    ${r.tabla.map((f) => `<tr><td>${esc(NOMBRES[f.agente] || f.agente)}</td><td><span class="chip ${f.nivel === "titular" ? "verde" : f.nivel === "banco" ? "rojo" : f.nivel === "a_prueba" ? "amar" : ""}">${esc(f.nivel.replace("_", " "))}</span></td>
-    <td class="n">${f.casos}</td><td class="n">${num(f.aciertos_pct, 0)}%</td><td class="n">${pct(f.esperanza_pct)}</td><td class="n">${f.sim_cerradas ? plata(f.sim_ganancia) : "—"}</td><td class="n">${num(f.peso, 1)}</td></tr>`).join("")}</table></div>`
-    : '<p class="tenue">El ranking arranca cuando los agentes juntan casos (se arma cada viernes).</p>';
+  const BANDA = { fuerte: "cuando dice fuerte", media: "media", debil: "débil" };
+  $("#ranking").innerHTML = r.tabla.length ? r.tabla.map((f) => {
+    const c = f.calibracion || {};
+    const niv = f.nivel === "sin_datos" ? "" : `<span class="chip ${f.nivel === "titular" ? "verde" : f.nivel === "banco" ? "rojo" : f.nivel === "a_prueba" ? "amar" : ""}">${esc(f.nivel.replace("_", " "))}</span>`;
+    const voto = (f.peso ?? 1) * (c.factor ?? 1);
+    return `<div class="item"><div class="item-cab"><b>${esc(nombreAg(f.agente))}</b>${niv}
+        <span class="item-precio"><span class="tenue">voto</span> <b style="color:var(--${voto >= 1 ? "verde" : voto >= 0.6 ? "amar" : "rojo"})">x${num(voto, 1)}</b></span></div>
+      <div class="item-det">${c.casos ? `Acierta <b>${num(c.acierto_pct, 0)}%</b> a 10 ruedas · ${pct(c.esperanza_pct, 1)} promedio · ${num(c.casos, 0)} casos (${esc(c.fuente)})` : f.casos ? `Acierta ${num(f.aciertos_pct, 0)}% en ${f.casos} casos` : "Juntando casos todavía"}${f.sim_cerradas ? ` · simulación ${plata(f.sim_ganancia)}` : ""}</div>
+      ${c.bandas && Object.keys(c.bandas).length ? `<div class="item-det">${Object.entries(c.bandas).map(([b, x]) => `${BANDA[b] || b}: ${num(x.acierto_pct, 0)}%`).join(" · ")}</div>` : ""}
+      ${f.motivo ? `<div class="item-det">${esc(f.motivo)}</div>` : ""}</div>`;
+  }).join("") : '<p class="tenue">El ranking arranca cuando los agentes juntan casos (se arma cada viernes).</p>';
   const pend = r.pendientes.filter((p) => p.estado === "pendiente");
   $("#capacitacion").innerHTML = pend.length ? pend.map((p) => `<div class="card"><b>${esc(NOMBRES[p.agente])}</b>
     <p class="tenue">Antes: ${esc(JSON.stringify(p.antes))}<br>Después: ${esc(JSON.stringify(p.despues))}</p>

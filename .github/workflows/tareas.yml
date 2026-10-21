@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       tarea:
-        description: "diario | calificadoras | semanal | mensual"
+        description: "diario | calificadoras | semanal | mensual | entrenar"
         default: "diario"
 
 concurrency:

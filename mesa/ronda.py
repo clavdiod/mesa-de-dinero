@@ -13,7 +13,7 @@ from datetime import date
 
 import yaml
 
-from .agentes import analistas, con_ia, informes as informes_mod, oportunidades, riesgo, supervisor
+from .agentes import analistas, con_ia, informes as informes_mod, oportunidades, riesgo, seguimiento, supervisor
 from .datos import gratis
 from .datos import eventos as eventos_mod
 from .datos.cache import CacheHistorico
@@ -179,6 +179,10 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     if cal.get("fecha") == hoy.isoformat():
         senales += con_ia.senales_calificadoras(ctx, cal)
 
+    # agentes nuevos (usan el historial guardado y el panel de la ronda: no gastan IOL)
+    senales += analistas.fuerza_relativa(ctx)
+    senales += analistas.volumen_flujo(ctx)
+
     # candidatos: lo que alguien marcó + Mi lista; con carga de historial una sola vez por ticker
     marcados = [s.ticker for s in senales if s.direccion != 0 and ctx.titulo(s.ticker)]
     candidatos = list(dict.fromkeys(foco + marcados))
@@ -321,6 +325,12 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
 
     # --- seguimiento de propuestas y señales ---
     reg.actualizar_seguimiento({k: v for k, v in ctx.por_simbolo.items()}, hoy)
+    try:  # seguimiento activo: mantener / subir stop / salir, con aviso si cambia
+        alertas_seg = seguimiento.revisar(reg, ctx, por_ticker, lambda ss: puntaje_ticker(ss, reg))
+        opinion_cartera = seguimiento.opinion_cartera(ctx, cartera, por_ticker, lambda ss: puntaje_ticker(ss, reg))
+    except Exception as ex:
+        print(f"[seguimiento] {ex}")
+        alertas_seg, opinion_cartera = [], {}
     reg.guardar_senales(hoy, [s.dict() for s in senales],
                         {k: v["ultimo"] for k, v in ctx.por_simbolo.items() if v.get("ultimo")})
     reg.guardar()
@@ -359,6 +369,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "oportunidades": {k: [o for o in v if o["mesa"]["aprobada"]] for k, v in ops.items()},
         "oportunidades_observadas": sum(1 for v in ops.values() for o in v if not o["mesa"]["aprobada"]),
         "aprendizajes": _aprendizajes(),
+        "opinion_cartera": opinion_cartera,
         "eventos": _calendario(almacen, ctx, hoy, ops, abiertas, cartera),
         "flujos_bonos": {k: v for k, v in eventos_mod.flujos_bonos().items()
                          if k in {c.get("ticker", "").upper() for c in cartera}},
@@ -371,7 +382,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         for tk, t in ctx.por_simbolo.items() if t.get("ultimo")}})
     previas = almacen.get("ui/alertas") or []
     ya_avisadas = {(a["fecha"], a["ticker"]) for a in previas}
-    alertas_lista = [a for a in _alertas_lista(ctx, lista) if (a["fecha"], a["ticker"]) not in ya_avisadas]
+    alertas_lista = [a for a in alertas_seg + _alertas_lista(ctx, lista) if (a["fecha"], a["ticker"]) not in ya_avisadas]
     if alertas_lista:
         almacen.put("ui/alertas", (alertas_lista + previas)[:60])
     consumo.guardar()

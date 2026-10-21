@@ -103,3 +103,7 @@ h2 .hora { font-weight: 400; font-size: 13px; color: var(--tenue); }
 label.check { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--txt); margin: 6px 0; }
 label.check input { width: auto; }
 #calendario table { font-size: 13px; } #calendario td, #calendario th { padding: 7px 4px; }
+.consejo { border-radius: 10px; padding: 8px 10px; margin: 8px 0; background: var(--azul-bg); font-size: 14px; }
+.consejo.verde { background: var(--verde-bg); } .consejo.verde b { color: var(--verde); }
+.consejo.rojo { background: var(--rojo-bg); } .consejo.rojo b { color: var(--rojo); }
+.consejo.amar { background: var(--amar-bg); } .consejo.amar b { color: var(--amar); }

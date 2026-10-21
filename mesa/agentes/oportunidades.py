@@ -144,7 +144,7 @@ def como_senales(ops: dict) -> list[Senal]:
 MISMO_CALCULO = {
     "CEDEAR barato por dólar implícito": {"cedears"},
     "Rebote en soporte": {"tecnico"},
-    "Quiebre con volumen": {"tecnico"},
+    "Quiebre con volumen": {"tecnico", "volumen_flujo"},
     "Tendencia alcista, retroceso a la media": {"tecnico"},
 }
 

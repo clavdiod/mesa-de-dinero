@@ -245,3 +245,74 @@ def historiador(ctx: Contexto, tickers: list[str]) -> list[Senal]:
 
 def sector_de(s: str) -> str:
     return sector(s)
+
+
+# 14. Fuerza relativa -----------------------------------------------------------------------------
+def fuerza_relativa(ctx: Contexto, tickers: list[str] | None = None) -> list[Senal]:
+    """Compara lo que subió cada papel en 20 ruedas contra el promedio de su grupo (acciones o CEDEARs).
+    Los más fuertes tienden a seguir fuertes un tiempo (momentum relativo); los más débiles, a seguir débiles."""
+    prm = {"ruedas": 20, "percentil": 0.2, **ctx.params.get("fuerza_relativa", {})}
+    n = int(prm["ruedas"])
+    tks = tickers if tickers is not None else list(ctx.cache.indice if ctx.cache else [])
+    grupos: dict[str, list[tuple]] = {}
+    for s in tks:
+        t = ctx.titulo(s)
+        velas = ctx.cache.velas(s) if ctx.cache else []
+        if not t or not t.get("ultimo") or len(velas) < 3 * n or t.get("grupo") not in ("acciones", "cedears"):
+            continue
+        cierres = [v["cierre"] for v in velas] + [t["ultimo"]]
+        r_n = (cierres[-1] / cierres[-1 - n] - 1) * 100
+        r_3n = (cierres[-1] / cierres[-1 - 3 * n] - 1) * 100
+        grupos.setdefault(t["grupo"], []).append((s, r_n, r_3n))
+    out = []
+    for g, xs in grupos.items():
+        if len(xs) < 8:
+            continue  # con pocos papeles el ranking no dice nada
+        med = st.median(x[1] for x in xs)
+        orden = sorted(xs, key=lambda x: -x[1])
+        k = max(1, int(len(orden) * prm["percentil"]))
+        nombre = "su grupo" if g == "acciones" else "los CEDEARs con historial"
+        for i, (s, r_n, r_3n) in enumerate(orden):
+            datos = {"ret": round(r_n, 2), "ret_largo": round(r_3n, 2), "mediana": round(med, 2), "puesto": i + 1, "de": len(orden)}
+            if i < k and r_n > med and r_n > 0 and r_3n > 0:
+                out.append(Senal("fuerza_relativa", s, +1, _clip(0.4 + (r_n - med) / 20, 0.4, 0.9),
+                                 f"Subió {r_n:+.1f}% en {n} ruedas contra {med:+.1f}% de {nombre}: puesto {i + 1} de {len(orden)}.", datos))
+            elif i >= len(orden) - k and r_n < med and r_n < 0:
+                out.append(Senal("fuerza_relativa", s, -1, _clip(0.4 + (med - r_n) / 20, 0.4, 0.9),
+                                 f"{r_n:+.1f}% en {n} ruedas contra {med:+.1f}% de {nombre}: de los más débiles (puesto {i + 1} de {len(orden)}).", datos))
+    return out
+
+
+# 15. Volumen y flujo -----------------------------------------------------------------------------
+def volumen_flujo(ctx: Contexto, tickers: list[str] | None = None, minuto: int | None = None) -> list[Senal]:
+    """Detecta temprano volumen fuera de lo normal: proyecta el volumen del día según la hora
+    (a las 12 ya se puede saber si va a ser un día de 3 veces el promedio) y mira si se opera cerca
+    del máximo (compradores apurados) o del mínimo (vendedores). Si hay puntas, suma quién empuja más."""
+    if minuto is None:
+        h, m = (int(x) for x in str(ctx.hora or "17:00").split(":")[:2])
+        minuto = h * 60 + m
+    frac = min(1.0, max(0.15, (minuto - 630) / 390))  # sesión 10:30-17:00
+    tks = tickers if tickers is not None else list(ctx.cache.indice if ctx.cache else [])
+    out = []
+    for s in tks:
+        t = ctx.titulo(s)
+        velas = ctx.cache.velas(s) if ctx.cache else []
+        vols = [v.get("volumen") or 0 for v in velas[-20:]]
+        if not t or not t.get("ultimo") or len(vols) < 15 or not (t.get("volumen") or 0) or not st.mean(vols):
+            continue
+        rel = (t["volumen"] / frac) / st.mean(vols)
+        hi, lo, ult = t.get("maximo") or t["ultimo"], t.get("minimo") or t["ultimo"], t["ultimo"]
+        pos = (ult - lo) / (hi - lo) if hi > lo else 0.5
+        var = t.get("variacion") or 0
+        comp = sum(p.get("cantidad") or 0 for p in t.get("puntas_compra") or [])
+        vent = sum(p.get("cantidad") or 0 for p in t.get("puntas_venta") or [])
+        lado = (f" En las puntas hay {comp / vent:.1f} veces más compra que venta." if comp and vent and comp >= 1.5 * vent else
+                f" En las puntas hay {vent / comp:.1f} veces más venta que compra." if comp and vent and vent >= 1.5 * comp else "")
+        datos = {"vol_rel_proyectado": round(rel, 2), "posicion_rango": round(pos, 2), "puntas_compra": comp, "puntas_venta": vent}
+        if rel >= 2 and var > 0.5 and pos >= 0.7 and not (vent >= 1.5 * comp > 0):
+            out.append(Senal("volumen_flujo", s, +1, _clip((rel - 1) / 4, 0.3, 0.9),
+                             f"Va camino a {rel:.1f} veces su volumen normal y se opera cerca del máximo del día: compradores apurados.{lado}", datos))
+        elif rel >= 2 and var < -0.5 and pos <= 0.3 and not (comp >= 1.5 * vent > 0):
+            out.append(Senal("volumen_flujo", s, -1, _clip((rel - 1) / 4, 0.3, 0.9),
+                             f"Va camino a {rel:.1f} veces su volumen normal y se opera cerca del mínimo del día: vendedores apurados.{lado}", datos))
+    return out
