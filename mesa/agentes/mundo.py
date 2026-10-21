@@ -92,7 +92,7 @@ TEMAS = [
      [_r(r"chip|semiconductor|nvidia"), _r(r"restric|prohib|\bban\b|export control|controles? (a la|de) export")],
      {"NVDA": -1, "AMD": -1, "TSM": -1, "AVGO": -1}, 0.35, "Menos ventas de chips a China: pierden los fabricantes."),
     ("vaca_muerta", "Buenas noticias de Vaca Muerta / energía",
-     [_r(r"vaca muerta|rigi|oleoducto|gasoducto|\bgnl\b|\blng\b"), _r(r"inversi[oó]n|descubr|r[eé]cord|aprob|inaugur|export|acuerdo|firm")],
+     [_r(r"vaca muerta|\brigi\b|neuqu[eé]n|argentina lng|\bypf\b"), _r(r"inversi[oó]n|descubr|r[eé]cord|aprob|inaugur|export|acuerdo|firm")],
      {"YPFD": 1, "VIST": 1, "PAMP": 1, "TGSU2": 1, "TGNO4": 1}, 0.35, "Más inversión y producción en Vaca Muerta: ganan YPF, Vista, Pampa y las transportadoras."),
     ("fmi", "Acuerdo o desembolso del FMI",
      [_r(r"\bfmi\b|\bimf\b|fondo monetario"), _r(r"desembols|acuerdo|aprob|approv|disburs|waiver|revisi[oó]n aprob")],
@@ -202,6 +202,21 @@ def detectar_empresas(titulares: list[dict], claves: dict[str, list[str]]) -> li
     return [e for e in out.values() if e["dir"] != 0]
 
 
+def marcar_novedad(temas: list[dict], conteos: dict, fecha: str) -> dict:
+    """Un tema que aparece todos los días (ruido de fondo) no es noticia: lo que mueve precios es el cambio.
+    Se compara la cantidad de titulares de hoy con el promedio de los días anteriores."""
+    for t in temas:
+        previos = [n for f, n in sorted((conteos.get(t["tema"]) or {}).items()) if f < fecha][-10:]
+        base = sum(previos) / len(previos) if previos else 0
+        t["base"] = round(base, 1)
+        t["nuevo"] = (not previos and t["n"] >= 2) or (base > 0 and t["n"] >= 1.5 * base) or (len(previos) < 10 and base == 0)
+        h = conteos.setdefault(t["tema"], {})
+        h[fecha] = max(h.get(fecha, 0), t["n"])
+    for k in list(conteos):
+        conteos[k] = dict(sorted(conteos[k].items())[-20:])
+    return conteos
+
+
 def factor_tema(stats: dict, tema: str) -> float:
     """Aprende de lo que ya pasó: con 10 casos o más, si el tema no anticipó bien el precio pesa menos (o se silencia)."""
     s = (stats or {}).get(tema) or {}
@@ -217,7 +232,7 @@ def senales(temas: list[dict], empresas: list[dict], existe, stats: dict | None 
     out = []
     for t in temas:
         f = factor_tema(stats, t["tema"])
-        if f == 0:
+        if f == 0 or t.get("nuevo") is False:  # tema de fondo que se repite todos los días: no es noticia
             continue
         tit = t["titulares"][0]["titulo"]
         for tk, d in t["efectos"].items():
@@ -257,7 +272,7 @@ def senales(temas: list[dict], empresas: list[dict], existe, stats: dict | None 
 def alertas_radar(temas: list[dict], empresas: list[dict], existe) -> list[dict]:
     out = []
     for t in temas:
-        if t["n"] >= 3:
+        if t["n"] >= 3 and t.get("nuevo") is not False:
             sube = [tk for tk, d in t["efectos"].items() if d > 0 and existe(tk)][:6]
             baja = [tk for tk, d in t["efectos"].items() if d < 0 and existe(tk)][:4]
             out.append({"tipo": "mundo", "tipos": ["mundo"], "ticker": t["nombre"].upper()[:40], "grupo": "macro", "valor": t["n"],

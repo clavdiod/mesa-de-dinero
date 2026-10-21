@@ -445,7 +445,8 @@ function pintarMundo() {
   if (!r) { $("#mundo").innerHTML = ""; return; }
   const link = (n) => n.link ? `<a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.titulo)}</a>` : esc(n.titulo);
   const chips = (ef) => Object.entries(ef).map(([tk, d]) => `<span class="chip ${d > 0 ? "verde" : "rojo"}">${esc(tk)} ${d > 0 ? "▲" : "▼"}</span>`).join(" ");
-  const temas = (r.temas || []).map((t) => `<div class="tema-mundo"><b>${esc(t.nombre)}</b> <span class="tenue">· ${t.n} titulares</span>
+  const temas = (r.temas || []).map((t) => `<div class="tema-mundo"><b>${esc(t.nombre)}</b> <span class="tenue">· ${t.n} titulares${t.base ? ` (lo normal: ${num(t.base, 0)})` : ""}</span>
+    ${t.nuevo === false ? '<span class="chip">tema de fondo: no vota</span>' : '<span class="chip verde">novedad: vota</span>'}
     <p class="tenue">${esc(t.explica)}</p><div class="tiras">${chips(t.efectos)}</div>
     ${t.titulares.slice(0, 3).map((n) => `<div class="evento"><span class="ev-ic">📰</span><span>${link(n)} <span class="tenue">${esc(n.fuente || "")}</span></span></div>`).join("")}</div>`).join("");
   const emp = (r.empresas || []).map((e) => `<div class="evento"><span class="ev-ic">${e.dir > 0 ? "🟢" : "🔴"}</span><span><b class="link" data-abrir-debate="${esc(e.ticker)}">${esc(e.ticker)}</b>

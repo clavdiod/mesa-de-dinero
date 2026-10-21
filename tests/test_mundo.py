@@ -39,3 +39,13 @@ def test_aprende_y_silencia():
     assert mundo.anotar(log, sen, lambda tk: 100.0, "2026-10-01") and not mundo.anotar(log, sen, lambda tk: 100.0, "2026-10-01")
     quedan, st = mundo.evaluar(log, {}, lambda tk: 103.0, "2026-10-09")
     assert quedan == [] and st["fmi"]["aciertos"] == 1
+
+
+def test_novedad():
+    t = [{"tema": "aranceles", "n": 12}]
+    c = {"aranceles": {f"2026-10-{d:02d}": 12 for d in range(1, 15)}}
+    mundo.marcar_novedad(t, c, "2026-10-21")
+    assert t[0]["nuevo"] is False
+    t2 = [{"tema": "aranceles", "n": 25}]
+    mundo.marcar_novedad(t2, c, "2026-10-22")
+    assert t2[0]["nuevo"] is True

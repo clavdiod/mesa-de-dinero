@@ -258,13 +258,15 @@ def _senales_mundo(ctx, almacen, hoy, minuto: int, refrescar: bool, simular: boo
         if refrescar or guardado.get("fecha") != hoy.isoformat():
             tit = mundo.leer()
             temas = mundo.detectar_temas(tit)
+            conteos = mundo.marcar_novedad(temas, guardado.get("conteos") or {}, hoy.isoformat())
             emp = mundo.detectar_empresas(tit, mundo.claves_empresas(emisores()))
-            guardado = {"fecha": hoy.isoformat(), "hora": ctx.hora, "titulares": len(tit), "temas": temas, "empresas": emp}
+            guardado = {"fecha": hoy.isoformat(), "hora": ctx.hora, "titulares": len(tit), "temas": temas, "empresas": emp,
+                        "conteos": conteos}
             almacen.put("mundo/ultimo", guardado)
         existe = lambda tk: ctx.titulo(tk) is not None
         stats = almacen.get("mundo/stats") or {}
         sens = mundo.senales(guardado.get("temas") or [], guardado.get("empresas") or [], existe, stats)
-        ctx.extra["mundo"] = {**guardado, "stats": stats}
+        ctx.extra["mundo"] = {**{k: v for k, v in guardado.items() if k != "conteos"}, "stats": stats}
         ctx.extra["mundo_alertas"] = mundo.alertas_radar(guardado.get("temas") or [], guardado.get("empresas") or [], existe)
         if minuto >= 11 * 60 + 5:  # anotación con precio de BYMA abierto, para la estadística propia
             log = almacen.get("mundo/log") or []
