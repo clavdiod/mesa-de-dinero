@@ -89,17 +89,17 @@ def entrenar_con_historia(series: dict[str, list[dict]], grupos: dict[str, str],
 
 
 def factor(d: dict) -> float | None:
-    """Acierto real contra lo que el agente "promete" con su fuerza (50% + 30% × fuerza)."""
+    """Cuánto vale el voto según la PLATA que deja la señal después de comisión (no solo el % de aciertos:
+    hay estrategias que aciertan apenas más de la mitad pero ganan mucho cuando aciertan, como el momentum).
+    Gana menos que la comisión o acierta la mitad o menos → x0,3. Cada 1% neto promedio suma medio punto (tope x1,5)."""
     casos = d.get("casos", 0)
     if not casos:
         return None
     hit = d["aciertos"] / casos
-    esperanza = d["suma_ret"] / casos
-    f_media = d.get("suma_fuerza", 0.6 * casos) / casos
-    # tiene que ganar más que la comisión de compra y venta: si no, operar esa señal pierde plata
-    if esperanza <= config()["capital"]["comision_ida_vuelta_pct"] or hit <= 0.5:
+    neta = d["suma_ret"] / casos - config()["capital"]["comision_ida_vuelta_pct"]
+    if neta <= 0 or hit <= 0.5:
         return 0.3
-    return round(max(0.3, min(1.5, (hit - 0.5) / (0.3 * f_media))), 2)
+    return round(max(0.3, min(1.5, 0.5 + neta / 2)), 2)
 
 
 def calibrar(vivo: dict, historico: dict) -> dict:

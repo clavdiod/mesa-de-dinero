@@ -11,7 +11,9 @@ def test_factor_castiga_al_que_promete_mas_de_lo_que_acierta():
     bueno = {"casos": 100, "aciertos": 66, "suma_ret": 150.0, "suma_fuerza": 50.0}
     perdedor = {"casos": 100, "aciertos": 60, "suma_ret": -30.0, "suma_fuerza": 60.0}
     assert calibracion.factor(flojo) == 0.3
-    assert calibracion.factor(bueno) == 1.07
+    assert calibracion.factor(bueno) == 0.65   # 1,5% promedio - 1,2% de comisión = 0,3% neto
+    # momentum: acierta 53,5% pero gana 2,9% promedio -> 1,7% neto
+    assert calibracion.factor({"casos": 3244, "aciertos": 1735, "suma_ret": 9310.0, "suma_fuerza": 1600.0}) == 1.33
     # acierta 60% pero gana 0,5% promedio: no alcanza para pagar la comisión de 1,2%
     assert calibracion.factor({"casos": 100, "aciertos": 60, "suma_ret": 50.0, "suma_fuerza": 50.0}) == 0.3
     assert calibracion.factor(perdedor) == 0.3
