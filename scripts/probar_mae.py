@@ -1,14 +1,28 @@
-"""Mira el calendario de colocaciones de A3 Mercados y busca de dónde salen los datos."""
+"""Prueba el calendario de licitaciones de MAE Market Data y busca su fuente de datos."""
 import re
 
 import requests
 
-UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64)"}
-url = "https://www.a3mercados.com.ar/productos/emisiones-primarias/colocaciones"
-r = requests.get(url, headers=UA, timeout=25)
-html = r.text
-t = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", re.sub(r"<script.*?</script>|<style.*?</style>", " ", html, flags=re.S)))
-urls = sorted(set(re.findall(r'(https?://[a-zA-Z0-9.-]*(?:a3|mae)[a-zA-Z0-9./_?=&-]*)', html)))
-endpoints = sorted(set(re.findall(r'["\'](/(?:api|servicios|ws)[^"\'\\]{0,100})', html)))
-rsc = [m for m in re.findall(r'(?:Clase|CLASE|licitaci|Licitaci|Fecha de licitaci)[^"\\]{0,160}', html)][:15]
-print("::notice::" + f"{r.status_code} {len(html)}b | urls={urls[:20]} | endpoints={endpoints[:15]} | rsc={rsc} | texto={t[:1800]}"[:3900])
+UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64)", "Accept": "text/html,application/json"}
+out = []
+url = "https://marketdata.mae.com.ar/calendario-licitaciones"
+try:
+    r = requests.get(url, headers=UA, timeout=30)
+    html = r.text
+    t = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", re.sub(r"<script.*?</script>|<style.*?</style>", " ", html, flags=re.S)))
+    eps = sorted(set(re.findall(r'["\']((?:https?://[^"\']*)?/(?:api|Api|API|servicios|ws|data)[^"\'\s]{0,120})["\']', html)))
+    js = sorted(set(re.findall(r'src="([^"]+\.js[^"]*)"', html)))[:8]
+    out.append(f"{r.status_code} {len(html)}b eps={eps[:12]} js={js} texto={t[:1500]}")
+    # buscar endpoints dentro de los JS
+    for j in js[:6]:
+        u = j if j.startswith("http") else "https://marketdata.mae.com.ar" + ("" if j.startswith("/") else "/") + j
+        try:
+            c = requests.get(u, headers=UA, timeout=30).text
+            found = sorted(set(re.findall(r'["\`]((?:https?://[^"\`]*)?/(?:api|Api|API)[^"\`\s]{0,100})["\`]', c)))[:15]
+            if found:
+                out.append(f"JS {j}: {found}")
+        except Exception as e:
+            out.append(f"JS {j}: ERROR {e}")
+except Exception as e:
+    out.append(f"ERROR {type(e).__name__}: {e}")
+print("::notice::" + " || ".join(out)[:3900])
