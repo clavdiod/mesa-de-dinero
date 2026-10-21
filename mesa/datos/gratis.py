@@ -391,3 +391,46 @@ def nombre_licitacion(e: dict) -> str:
     if det:
         partes.append(" · ".join(det))
     return " — ".join(partes)
+
+
+# ---------- MAE: panel y cierres de renta fija, avisos de pago y de licitaciones (gratis) ----------
+def ticker_mae_a_byma(cod: str, moneda: str | None, existentes=None) -> str:
+    """MAE informa el código y la moneda por separado; en BYMA la moneda va en la letra final.
+    AL30 + D -> AL30D; YM44O + D -> YM44D (ON: la O es la línea en pesos)."""
+    tk, m = cod.strip().upper(), (moneda or "$").strip().upper()
+    if m in ("$", "P", "ARS", ""):
+        return tk
+    suf = "D" if m == "D" else "C"
+    cands = ([tk[:-1] + suf] if tk.endswith("O") else []) + [tk if tk.endswith(suf) else tk + suf]
+    if existentes is not None:
+        for c in cands:
+            if c in existentes:
+                return c
+    return cands[0]
+
+
+def escala_mae(moneda: str | None) -> float:
+    """MAE da las líneas en dólares por 1 nominal; BYMA cada 100."""
+    return 100.0 if (moneda or "$").strip().upper() in ("D", "C") else 1.0
+
+
+def mae_panel_rf() -> list[dict]:
+    r = _S.get(_MAE + "mercado/datos/RF", headers=_MAE_H, timeout=30)
+    r.raise_for_status()
+    return r.json() or []
+
+
+def mae_cierres(desde, hasta) -> list[dict]:
+    """Precios de cierre de toda la renta fija operada en MAE entre dos fechas (una sola consulta)."""
+    import json as _json
+    o = _json.dumps({"fechaDesde": desde.isoformat(), "fechaHasta": hasta.isoformat()}, separators=(",", ":"))
+    r = _S.get(_MAE + f"mercado/historico/preciocierre?oTitulo={o}", headers=_MAE_H, timeout=120)
+    r.raise_for_status()
+    return r.json() or []
+
+
+def mae_documentos(ruta: str) -> list[dict]:
+    """Listados de documentos públicos: 'pagoamortizrenta' (avisos de pago), 'boletin-mpmae' (licitaciones), 'inforelevante'."""
+    r = _S.get(_MAE + f"mercado/{ruta}", headers=_MAE_H, timeout=30)
+    r.raise_for_status()
+    return r.json() or []

@@ -111,9 +111,18 @@ def armar(almacen, hoy: date, dias: int = 45, interes: set[str] | None = None) -
     ev = macro + cobros(hoy, dias, almacen.get("usuario/ons") or {}, interes)
     ev += [e for e in (almacen.get("eventos/eeuu") or {}).get("eventos", [])
            if hoy.isoformat() <= e["fecha"] <= hasta and (interes is None or e["ticker"] in interes)]
-    lic = almacen.get("eventos/licitaciones") or []
-    lic = lic.get("eventos", []) if isinstance(lic, dict) else lic
+    lic_todo = almacen.get("eventos/licitaciones") or []
+    lic = lic_todo.get("eventos", []) if isinstance(lic_todo, dict) else lic_todo
     ev += [{**e, "mio": True} for e in lic if hoy.isoformat() <= e.get("fecha", "") <= hasta]
+    # avisos de pago de ONs/bonos publicados en MAE: "mío" si el emisor es de mi cartera, lista u ONs cargadas
+    pagos_mae = lic_todo.get("pagos") if isinstance(lic_todo, dict) else None
+    if pagos_mae:
+        from ..agentes.mae import coincide_emisor
+        from ..nucleo.config import nombre_emisor
+        nombres = [n for n in {nombre_emisor(t) for t in (interes or set())} if n]
+        for e in pagos_mae:
+            if hoy.isoformat() <= e["fecha"] <= hasta:
+                ev.append({**e, "mio": coincide_emisor(e.get("empresa") or "", nombres)})
     ev.sort(key=lambda e: (e["fecha"], e.get("tipo", "")))
     return ev
 
@@ -150,7 +159,14 @@ def actualizar_licitaciones(almacen, hoy: date, hora: str = "", forzar: bool = F
                 noticias.append({"titulo": t, "link": n.get("link"), "fecha": n.get("fecha")})
     except Exception as ex:
         print(f"[licitaciones] noticias: {ex}")
+    avisos, pagos = {}, []
+    try:
+        from ..agentes import mae as _mae
+        avisos = _mae.avisos_licitacion(gratis.mae_documentos("boletin-mpmae"), hoy)
+        pagos = _mae.pagos(gratis.mae_documentos("pagoamortizrenta"), hoy, [])
+    except Exception as ex:
+        print(f"[licitaciones] avisos MAE: {ex}")
     nuevo = {"fecha": hoy.isoformat(), "hora": hora, "tarde": tarde, "fuente": "MAE / A3 Mercados", "eventos": evs,
-             "noticias": noticias[:8]}
+             "noticias": noticias[:8], "avisos": avisos, "pagos": pagos}
     almacen.put("eventos/licitaciones", nuevo)
     return nuevo

@@ -64,11 +64,33 @@ class CacheHistorico:
         self.agregar(ticker, historial_cedear(ticker, precio_hoy_ars)[:-1], fuente="eeuu_x_ccl")  # hoy lo pone el panel
         return self.velas(ticker)
 
+    def asegurar_mae(self, ticker: str, minimo: int = 20) -> bool:
+        """Carga el historial desde nuestro histórico de cierres de MAE (gratis). Precio de MAE, no de BYMA:
+        las diferencias suelen ser chicas (mediana < 1%) y alcanzan para tendencias y soportes."""
+        if not hasattr(self, "_mae_idx"):
+            self._mae_idx = set(self.almacen.get("mae/indice") or [])
+        if ticker.upper() not in self._mae_idx:
+            return False
+        if not hasattr(self, "_mae_hist"):
+            hoy = ahora().date()
+            self._mae_hist = {}
+            for a in (str(hoy.year - 1), str(hoy.year)):
+                for tk, s in (self.almacen.get(f"mae/hist/{a}") or {}).items():
+                    self._mae_hist.setdefault(tk, {}).update(s)
+        s = self._mae_hist.get(ticker.upper()) or {}
+        if len(s) < minimo:
+            return False
+        from ..agentes.mae import series_a_velas
+        return self.agregar(ticker, series_a_velas(s)[:-1] if max(s) == ahora().date().isoformat() else series_a_velas(s), fuente="mae") > 0
+
     def asegurar(self, ticker: str, max_consultas_restantes: int = 1, titulo: dict | None = None) -> list[dict]:
         """Si el ticker no tiene historial, lo carga una sola vez (acciones/bonos: IOL, 1 consulta; CEDEARs: gratis)."""
         velas = self.velas(ticker)
         if not velas and titulo and titulo.get("grupo") == "cedears":
             return self.asegurar_cedear(ticker, titulo.get("ultimo"))
+        if not velas and titulo and titulo.get("grupo") in ("soberanos", "ons", "letras", "bonos"):
+            if self.asegurar_mae(ticker):  # bonos y ONs: primero nuestro histórico de MAE (gratis)
+                return self.velas(ticker)
         if velas or self.iol is None or max_consultas_restantes <= 0:
             return velas
         if not self.iol.consumo.puede_consultar(1):

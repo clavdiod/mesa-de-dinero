@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import timedelta
 
 from .agentes import con_ia
 from .datos import gratis
@@ -36,11 +37,12 @@ def diario(simular: bool = False) -> dict:
     cache = CacheHistorico(a, iol)
     agregadas = 0
     precios = {}
-    for titulos in paneles.values():
+    for grupo_p, titulos in paneles.items():
         for t in titulos:
             s = t.get("simbolo")
             if not s or not t.get("ultimo"):
                 continue
+            t.setdefault("grupo", grupo_p)
             precios[s] = t
             # solo se arma vela si el ticker ya tiene historial (no se inflan miles de tickers sin uso)
             if cache.velas(s):
@@ -67,6 +69,28 @@ def diario(simular: bool = False) -> dict:
             cache.asegurar(t["simbolo"], 1)
             nuevos_acc += 1 if cache.velas(t["simbolo"]) else 0
         print(f"[cierre] historial nuevo: {nuevos_ced} CEDEARs (gratis) y {nuevos_acc} acciones (IOL)")
+
+    # MAE: histórico propio de cierres de bonos/ONs/letras, comparación de cierres con BYMA e historial gratis
+    if not simular:
+        try:
+            from .agentes import mae as _mae
+            from .datos.gratis import mae_cierres
+            rows = mae_cierres(hoy - timedelta(days=4), hoy)
+            nuevos = _mae.guardar_historico(a, rows, set(precios))
+            rf = {tk: t for tk, t in precios.items() if t.get("grupo") in _mae.GRUPOS_RF}
+            hoy_rows = [{**r, "monto": r.get("volumen")} for r in rows if r["fecha"][:10] == hoy.isoformat()]
+            pares = _mae.comparar(rf, hoy_rows)
+            if pares:
+                comp = a.get("mae/comparacion") or {"dias": []}
+                comp["dias"] = [d for d in comp["dias"] if d["fecha"] != hoy.isoformat()][-89:] + [
+                    {"fecha": hoy.isoformat(), "resumen": _mae.resumen(pares),
+                     "mayores": [p for p in pares if p["liquido"]][:8]}]
+                a.put("mae/comparacion", comp)
+            sin_hist = sorted((t for t in rf.values() if not cache.velas(t["simbolo"])), key=lambda t: -(t.get("monto") or 0))[:60]
+            cargados = sum(1 for t in sin_hist if cache.asegurar_mae(t["simbolo"]))
+            print(f"[cierre] MAE: {nuevos} cierres nuevos, {len(pares)} comparados con BYMA, {cargados} historiales gratis")
+        except Exception as ex:
+            print(f"[cierre] mae: {ex}")
 
     # calendario de balances y dividendos de EE.UU. para los CEDEARs (gratis, no usa IOL)
     if not simular:

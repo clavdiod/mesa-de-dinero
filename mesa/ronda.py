@@ -81,11 +81,18 @@ def _calendario(almacen, ctx, hoy, ops, abiertas, cartera, simular: bool = False
         top = sorted((t for t in ctx.grupo("cedears") if t.get("monto")), key=lambda t: -t["monto"])[:30]
         mios |= {t["simbolo"] for t in top if t.get("simbolo")}
         if not simular:
-            ctx.extra["licitaciones_noticias"] = eventos_mod.actualizar_licitaciones(almacen, hoy, ctx.hora or "").get("noticias")
+            _lic = eventos_mod.actualizar_licitaciones(almacen, hoy, ctx.hora or "")
+            ctx.extra["licitaciones_noticias"] = _lic.get("noticias")
+            ctx.extra["licitaciones_avisos"] = _lic.get("avisos")
         ev = eventos_mod.armar(almacen, hoy, 45, mios)
         for e in ev:
+            if e.get("fuente") == "mae" and e.get("tipo") == "cobro":
+                continue  # el "mío" de los pagos de MAE se decide por emisor (en armar)
             e["mio"] = e.get("ticker") in mios and e.get("ticker") not in {t["simbolo"] for t in top} or e.get("tipo") in ("macro", "licitacion")
-        return ev[:80]
+        # todo lo mío primero; del resto (pagos de ONs de otros emisores, etc.) hasta completar 140
+        mios_ev = [e for e in ev if e.get("mio") or e.get("tipo") in ("macro", "licitacion")]
+        otros = [e for e in ev if e not in mios_ev][: max(0, 140 - len(mios_ev))]
+        return sorted(mios_ev + otros, key=lambda e: (e["fecha"], e.get("tipo", "")))
     except Exception as ex:
         print(f"[calendario] {ex}")
         return []
@@ -154,6 +161,18 @@ def _radar_detectar(ctx, almacen, hoy, ya) -> list[dict]:
         ctx.extra["anticipos"] = atr
         ctx.extra["anticipo_diag"] = {"universo": len(universo), "con_precio_ny": len(vivo_us),
                                       "mayor_atraso": max((abs(x["atraso"]) for x in anticipo.atrasos(ctx, vivo_us, ccl_now, ccl_ay, minuto, 0)), default=None)}
+        # --- MAE contra BYMA: mismo bono/ON, distinto precio (gratis, una consulta por ronda) ---
+        try:
+            from .agentes import mae as _mae
+            if 11 * 60 <= minuto <= 17 * 60 + 15:
+                tit = {tk: t for tk, t in ctx.por_simbolo.items() if t.get("grupo") in _mae.GRUPOS_RF}
+                pares = _mae.comparar(tit, gratis.mae_panel_rf())
+                ctx.extra["mae"] = {"hora": ctx.hora, "resumen": _mae.resumen(pares),
+                                    "pares": [p for p in pares if p["liquido"]][:25], "comparados": len(pares)}
+                ya_tk = {a["ticker"] for a in alertas}
+                alertas += [a for a in _mae.alertas(pares) if a["ticker"] not in ya_tk]
+        except Exception as ex:
+            print(f"[mae] {ex}")
         ya_alertados = {a["ticker"] for a in alertas}
         for a in atr:
             if a["ticker"] in ya_alertados:
@@ -675,6 +694,10 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "radar": radar_inv,
         "anticipos": ctx.extra.get("anticipos"),
         "licitaciones_noticias": ctx.extra.get("licitaciones_noticias"),
+        "licitaciones_avisos": ctx.extra.get("licitaciones_avisos"),
+        "mae": ctx.extra.get("mae"),
+        "mae_dias": None if simular else [{"fecha": d["fecha"], "resumen": d["resumen"]}
+                                          for d in ((almacen.get("mae/comparacion") or {}).get("dias") or [])[-20:]],
         "anticipo_lista": ctx.extra.get("anticipo_lista"),
         "anticipo_estadistica": None if simular else almacen.get("anticipo/estadistica"),
         "eventos": _calendario(almacen, ctx, hoy, ops, abiertas, cartera, simular),

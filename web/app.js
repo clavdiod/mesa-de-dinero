@@ -268,6 +268,7 @@ function pintarCalendario() {
     ${filas.slice(0, 40).map((f) => `<tr><td>${fechaLarga(f.fecha)}</td><td>${esc(f.ticker)} <span class="tenue">${esc(f.moneda || "")}</span></td><td class="n">${num(f.interes)}</td><td class="n">${num(f.amortizacion)}</td><td class="n"><b>${num(f.total)}</b></td><td class="n">${dias(f.fecha)} d</td></tr>`).join("")}</table></div>`
     : '<p class="tenue">Cargá en "Lo que tengo" tus bonos (los soberanos AL/GD ya tienen sus pagos cargados) o tus ONs con sus flujos abajo.</p>';
   pintarEventos();
+  pintarMAE();
   $("#sim-on").innerHTML = Object.keys(USUARIO.ons).map((k) => `<option>${esc(k)}</option>`).join("") || "<option value=''>Primero cargá una ON abajo</option>";
   const sel = $("#sim-on").value; const p = ESTADO.estado?.precios?.[sel]?.ultimo; if (p && !$("#form-sim").precio.value) $("#form-sim").precio.value = p;
 }
@@ -418,6 +419,25 @@ function pintarCripto() {
     <p class="tenue">Agente a prueba: si con los datos no demuestra que aporta, se discontinúa.</p></div>`;
 }
 
+const NOMBRE_GRUPO = { soberanos: "Bonos soberanos", ons: "ONs", letras: "Letras", bonos: "Bonos" };
+function pintarMAE() {
+  const r = ESTADO.estado?.mae, dias = ESTADO.estado?.mae_dias || [];
+  if (!r && !dias.length) { $("#mae").innerHTML = ""; return; }
+  const res = r?.resumen || {};
+  const tablaRes = Object.keys(res).length ? `<div class="tabla-scroll"><table><tr><th>Ahora</th><th class="n">Diferencia típica</th><th class="n">9 de cada 10, menos de</th><th class="n">Más de 1%</th><th class="n">Papeles</th></tr>
+    ${Object.entries(res).map(([g, x]) => `<tr><td>${esc(NOMBRE_GRUPO[g] || g)}</td><td class="n">${num(x.mediana, 2)}%</td><td class="n">${num(x.p90, 2)}%</td><td class="n">${x.mayor_1pct}</td><td class="n">${x.n}</td></tr>`).join("")}</table></div>` : "";
+  const pares = (r?.pares || []).filter((p) => Math.abs(p.dif) >= 0.5).slice(0, 10);
+  const tablaPares = pares.length ? `<p class="tenue" style="margin-top:10px"><b>Mayores diferencias</b> (con volumen en los dos mercados). Negativo = más barato en MAE.</p>
+    <div class="tabla-scroll"><table><tr><th>Papel</th><th class="n">MAE</th><th class="n">BYMA</th><th class="n">Diferencia</th></tr>
+    ${pares.map((p) => `<tr><td><span class="link" data-abrir-debate="${esc(p.ticker)}">${esc(p.ticker)}</span> <span class="tenue">${esc(p.plazo_mae)}</span></td><td class="n">${num(p.mae, 2)}</td><td class="n">${num(p.byma, 2)}</td>
+      <td class="n" style="color:var(--${p.dif < 0 ? "verde" : "rojo"})"><b>${pct(p.dif, 2)}</b></td></tr>`).join("")}</table></div>` : '<p class="tenue">Ahora no hay diferencias de 0,5% o más con volumen en los dos mercados.</p>';
+  const hist = dias.length ? `<p class="tenue" style="margin-top:10px"><b>Al cierre de cada día</b> (diferencia típica): ${dias.slice(-10).reverse().map((d) =>
+    `${esc(fecha(d.fecha))}: ${Object.entries(d.resumen).map(([g, x]) => `${esc(NOMBRE_GRUPO[g] || g)} ${num(x.mediana, 2)}%`).join(", ")}`).join(" · ")}</p>` : "";
+  $("#mae").innerHTML = `<div class="card eco"><div class="fila"><b>⚖️ MAE contra BYMA</b><span class="tenue">${esc(r?.hora || "")}</span></div>
+    <p class="tenue">El mismo bono o la misma ON cotiza en los dos mercados. Si la diferencia es grande y hay volumen, el radar avisa: conviene comprar donde está más barato (o es un precio viejo: mirar las puntas).</p>
+    ${tablaRes}${tablaPares}${hist}</div>`;
+}
+
 function pintarADR() {
   const r = ESTADO.estado?.adr;
   if (!r || (!r.filas?.length && !r.vivo?.length)) { $("#adr").innerHTML = ""; return; }
@@ -443,7 +463,7 @@ function diaTxt(f) { const d = new Date(f + "T12:00:00"); const n = Math.round((
   return n === 0 ? "Hoy" : n === 1 ? "Mañana" : `${DIAS_TXT[d.getDay()]} ${fecha(f)}`; }
 function filaEvento(e) {
   return `<div class="evento ${e.fuerte ? "fuerte" : ""}"><span class="ev-ic">${ICONO_EV[e.tipo] || "•"}</span>
-    <span>${e.ticker && e.ticker !== "AL/GD" ? `<b class="link" data-abrir-debate="${esc(e.ticker)}">${esc(e.ticker)}</b> ` : ""}${esc(e.nombre)}${e.fuerte ? ' <span class="chip rojo">ese día no se abren posiciones</span>' : ""}</span></div>`;
+    <span>${e.ticker && e.ticker !== "AL/GD" ? `<b class="link" data-abrir-debate="${esc(e.ticker)}">${esc(e.ticker)}</b> ` : ""}${e.link ? `<a href="${esc(e.link)}" target="_blank" rel="noopener">${esc(e.nombre)}</a>` : esc(e.nombre)}${e.fuerte ? ' <span class="chip rojo">ese día no se abren posiciones</span>' : ""}</span></div>`;
 }
 function pintarEventos() {
   const evs = (ESTADO.estado?.eventos || []).filter((e) => !SOLO_MIO || e.mio || e.tipo === "cobro" || e.tipo === "macro");
@@ -466,7 +486,9 @@ function pintarLicitaciones(lim) {
   const ahora = new Date().toLocaleTimeString("en-GB", { timeZone: "America/Argentina/Buenos_Aires", hour: "2-digit", minute: "2-digit" });
   const xs = (ESTADO.estado?.eventos || []).filter((e) => e.tipo === "licitacion" && e.fecha >= hoy && e.fecha <= lim);
   const nots = ESTADO.estado?.licitaciones_noticias || [];
-  if (!xs.length && !nots.length) { $("#licitaciones-hoy").innerHTML = ""; return; }
+  const av = ESTADO.estado?.licitaciones_avisos || {};
+  if (!xs.length && !nots.length && !(av.anuncios || []).length && !(av.resultados || []).length) { $("#licitaciones-hoy").innerHTML = ""; return; }
+  const doc = (n, ic) => `<div class="evento"><span class="ev-ic">${ic}</span><span><b>${esc(fecha(n.fecha))}</b> · ${n.link ? `<a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.titulo)}</a>` : esc(n.titulo)}</span></div>`;
   const deHoy = xs.filter((e) => e.fecha === hoy), prox = xs.filter((e) => e.fecha > hoy);
   const estado = (e) => !e.hora_cierre ? "" : ahora < e.hora_inicio ? `<span class="chip">abre ${esc(e.hora_inicio)}</span>`
     : ahora <= e.hora_cierre ? `<span class="chip verde">abierta hasta ${esc(e.hora_cierre)}</span>` : '<span class="chip rojo">cerró</span>';
@@ -475,6 +497,8 @@ function pintarLicitaciones(lim) {
   $("#licitaciones-hoy").innerHTML = `<h2>🏦 Licitaciones${deHoy.length ? " de hoy" : " de la semana"}</h2><div class="card">` +
     (deHoy.length ? deHoy.map((e) => fila(e, false)).join("") : '<p class="tenue">Hoy no hay licitaciones.</p>') +
     (prox.length ? `<p class="tenue" style="margin-top:.6em">Próximas:</p>${prox.slice(0, 6).map((e) => fila(e, true)).join("")}` : "") +
+    ((av.anuncios || []).length ? `<p class="tenue" style="margin-top:.6em">Anunciadas en los últimos días (aviso de suscripción o colocación):</p>${av.anuncios.slice(0, 6).map((n) => doc(n, "📣")).join("")}` : "") +
+    ((av.resultados || []).length ? `<p class="tenue" style="margin-top:.6em">Resultados (a qué tasa o precio cortó):</p>${av.resultados.slice(0, 6).map((n) => doc(n, "✅")).join("")}` : "") +
     (nots.length ? `<p class="tenue" style="margin-top:.6em">En las noticias (ONs que se licitan por otros sistemas y no figuran en el MAE):</p>${nots.slice(0, 5).map((n) =>
       `<div class="evento"><span class="ev-ic">📰</span><span>${n.link ? `<a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.titulo)}</a>` : esc(n.titulo)}</span></div>`).join("")}` : "") +
     '<p class="tenue">Fuente: calendario público del MAE (A3 Mercados). Para participar se pide al colocador o al bróker antes del cierre.</p></div>';
