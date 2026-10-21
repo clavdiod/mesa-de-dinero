@@ -195,7 +195,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         if restantes_hist <= 0:
             break
         if not cache.velas(tk):
-            cache.asegurar(tk, 1)
+            cache.asegurar(tk, 1, None if simular else ctx.titulo(tk))
             restantes_hist -= 1
             cargas_hoy += 1
     almacen.put(clave_cargas, cargas_hoy)

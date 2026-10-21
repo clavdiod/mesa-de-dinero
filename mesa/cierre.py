@@ -56,13 +56,17 @@ def diario(simular: bool = False) -> dict:
                       if t.get("simbolo") and t.get("monto") and not es_linea_usd(t["simbolo"])
                       and not cache.velas(t["simbolo"])]
         candidatos.sort(key=lambda t: t["monto"], reverse=True)
-        nuevos = 0
-        for t in candidatos[:12]:
+        # CEDEARs: historial gratis (EE.UU. × CCL), hasta 40 por día. Acciones: IOL, hasta 12 por día.
+        nuevos_ced = nuevos_acc = 0
+        for t in [t for t in candidatos if t in paneles.get("cedears", [])][:40]:
+            cache.asegurar_cedear(t["simbolo"], t["ultimo"])
+            nuevos_ced += 1 if cache.velas(t["simbolo"]) else 0
+        for t in [t for t in candidatos if t in paneles.get("acciones", [])][:12]:
             if not consumo.puede_consultar(1):
                 break
             cache.asegurar(t["simbolo"], 1)
-            nuevos += 1 if cache.velas(t["simbolo"]) else 0
-        print(f"[cierre] historial nuevo: {nuevos} (más operados)")
+            nuevos_acc += 1 if cache.velas(t["simbolo"]) else 0
+        print(f"[cierre] historial nuevo: {nuevos_ced} CEDEARs (gratis) y {nuevos_acc} acciones (IOL)")
 
     # calendario de balances y dividendos de EE.UU. para los CEDEARs (gratis, no usa IOL)
     if not simular:

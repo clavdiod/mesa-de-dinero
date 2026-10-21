@@ -118,3 +118,87 @@ def data912(grupo: str) -> list[dict]:
                     "cierre_anterior": None, "fuente": "data912",
                     "puntas_compra": [], "puntas_venta": []})
     return out
+
+
+# ---------- historial de CEDEARs: precio en EE.UU. × CCL de cada día (gratis, sin IOL) ----------
+_UA_JSON = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64)", "Accept": "application/json"}
+_CCL: dict[str, float] | None = None
+
+
+def _num_usd(x) -> float | None:
+    try:
+        return float(str(x).replace("$", "").replace(",", "").strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def precios_eeuu(simbolo: str, dias: int = 420) -> list[dict]:
+    """Velas diarias en dólares de una acción de EE.UU. Nasdaq primero; si falla, Yahoo."""
+    from datetime import date, timedelta
+    hasta = date.today()
+    desde = hasta - timedelta(days=dias)
+    try:
+        r = _S.get(f"https://api.nasdaq.com/api/quote/{simbolo}/historical?assetclass=stocks&fromdate={desde}&todate={hasta}&limit=1000",
+                   headers=_UA_JSON, timeout=30)
+        filas = ((r.json().get("data") or {}).get("tradesTable") or {}).get("rows") or [] if r.ok else []
+        out = []
+        for f in filas:
+            m, d, y = str(f.get("date", "")).split("/") if f.get("date") else ("", "", "")
+            c = _num_usd(f.get("close"))
+            if y and c:
+                out.append({"fecha": f"{y}-{m}-{d}", "apertura": _num_usd(f.get("open")) or c, "maximo": _num_usd(f.get("high")) or c,
+                            "minimo": _num_usd(f.get("low")) or c, "cierre": c})
+        if len(out) > 100:
+            return sorted(out, key=lambda v: v["fecha"])
+    except Exception as e:
+        print(f"[eeuu] nasdaq {simbolo}: {e}")
+    try:
+        from datetime import datetime, timezone
+        r = _S.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{simbolo}?range=2y&interval=1d", headers=_UA_JSON, timeout=30)
+        res = ((r.json().get("chart") or {}).get("result") or [None])[0]
+        q = res["indicators"]["quote"][0]
+        out = []
+        for i, ts in enumerate(res["timestamp"]):
+            c = q["close"][i]
+            if c:
+                out.append({"fecha": datetime.fromtimestamp(ts, timezone.utc).date().isoformat(), "apertura": q["open"][i] or c,
+                            "maximo": q["high"][i] or c, "minimo": q["low"][i] or c, "cierre": c})
+        return [v for v in out if v["fecha"] >= desde.isoformat()]
+    except Exception as e:
+        print(f"[eeuu] yahoo {simbolo}: {e}")
+        return []
+
+
+def ccl_historico() -> dict[str, float]:
+    """fecha -> dólar CCL (venta), de argentinadatos. Se baja una vez por proceso."""
+    global _CCL
+    if _CCL is None:
+        try:
+            _CCL = {d["fecha"]: float(d["venta"]) for d in _json("https://api.argentinadatos.com/v1/cotizaciones/dolares/contadoconliqui")
+                    if d.get("venta")}
+        except Exception as e:
+            print(f"[ccl] {e}")
+            _CCL = {}
+    return _CCL
+
+
+def historial_cedear(simbolo: str, precio_hoy_ars: float) -> list[dict]:
+    """Historial en pesos de un CEDEAR = precio en EE.UU. × CCL de ese día, escalado para que el último
+    día coincida con el precio actual del CEDEAR (absorbe el ratio de conversión)."""
+    us, ccl = precios_eeuu(simbolo), ccl_historico()
+    if len(us) < 100 or not ccl or not precio_hoy_ars:
+        return []
+    fechas_ccl = sorted(ccl)
+    def ccl_de(f):
+        import bisect
+        i = bisect.bisect_right(fechas_ccl, f) - 1
+        return ccl[fechas_ccl[i]] if i >= 0 else None
+    crudo = [(v, ccl_de(v["fecha"])) for v in us]
+    crudo = [(v, c) for v, c in crudo if c]
+    if not crudo:
+        return []
+    ult, c_ult = crudo[-1]
+    k = precio_hoy_ars / (ult["cierre"] * c_ult)
+    return [{"fecha": v["fecha"], "apertura": round(v["apertura"] * c * k, 4), "maximo": round(v["maximo"] * c * k, 4),
+             "minimo": round(v["minimo"] * c * k, 4), "cierre": round(v["cierre"] * c * k, 4), "volumen": 0}
+            for v, c in crudo]

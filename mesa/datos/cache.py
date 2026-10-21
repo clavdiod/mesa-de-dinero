@@ -32,9 +32,20 @@ class CacheHistorico:
     def cierres(self, ticker: str) -> list[float]:
         return [v["cierre"] for v in self.velas(ticker) if v.get("cierre")]
 
-    def asegurar(self, ticker: str, max_consultas_restantes: int = 1) -> list[dict]:
-        """Si el ticker no tiene historial, lo carga una sola vez desde IOL (1 consulta)."""
+    def asegurar_cedear(self, ticker: str, precio_hoy_ars: float) -> list[dict]:
+        """CEDEARs: IOL no da su historial diario, así que se arma gratis con el precio en EE.UU. × CCL."""
         velas = self.velas(ticker)
+        if velas or not precio_hoy_ars:
+            return velas
+        from .gratis import historial_cedear
+        self.agregar(ticker, historial_cedear(ticker, precio_hoy_ars)[:-1], fuente="eeuu_x_ccl")  # hoy lo pone el panel
+        return self.velas(ticker)
+
+    def asegurar(self, ticker: str, max_consultas_restantes: int = 1, titulo: dict | None = None) -> list[dict]:
+        """Si el ticker no tiene historial, lo carga una sola vez (acciones/bonos: IOL, 1 consulta; CEDEARs: gratis)."""
+        velas = self.velas(ticker)
+        if not velas and titulo and titulo.get("grupo") == "cedears":
+            return self.asegurar_cedear(ticker, titulo.get("ultimo"))
         if velas or self.iol is None or max_consultas_restantes <= 0:
             return velas
         if not self.iol.consumo.puede_consultar(1):

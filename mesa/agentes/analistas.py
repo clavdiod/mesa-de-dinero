@@ -297,7 +297,7 @@ def volumen_flujo(ctx: Contexto, tickers: list[str] | None = None, minuto: int |
     for s in tks:
         t = ctx.titulo(s)
         velas = ctx.cache.velas(s) if ctx.cache else []
-        vols = [v.get("volumen") or 0 for v in velas[-20:]]
+        vols = [v["volumen"] for v in velas[-30:] if v.get("volumen")][-20:]  # solo días con volumen real del mercado local
         if not t or not t.get("ultimo") or len(vols) < 15 or not (t.get("volumen") or 0) or not st.mean(vols):
             continue
         rel = (t["volumen"] / frac) / st.mean(vols)
