@@ -1,17 +1,14 @@
-"""Mira la sección de emisiones primarias de A3 Mercados (ex MAE)."""
+"""Mira el calendario de colocaciones de A3 Mercados y busca de dónde salen los datos."""
 import re
 
 import requests
 
 UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64)"}
-out = []
-for url in ("https://www.a3mercados.com.ar/productos/emisiones-primarias",):
-    r = requests.get(url, headers=UA, timeout=25)
-    t = re.sub(r"<script.*?</script>|<style.*?</style>", " ", r.text, flags=re.S)
-    texto = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", t))
-    links = sorted(set(re.findall(r'href="([^"]+)"', r.text)))
-    rel = [l for l in links if re.search(r"licit|coloca|primari|emisi|calend|aviso", l, re.I)][:25]
-    apis = sorted(set(re.findall(r'["\'](/?(?:api|_next|wp-json|graphql)[^"\']{0,80})["\']', r.text)))[:15]
-    i = texto.lower().find("licit")
-    out.append(f"{r.status_code} {len(r.text)}b | links={rel} | apis={apis} | texto: {texto[max(0, i - 300):i + 1500]}")
-print("::notice::" + " || ".join(out)[:3900])
+url = "https://www.a3mercados.com.ar/productos/emisiones-primarias/colocaciones"
+r = requests.get(url, headers=UA, timeout=25)
+html = r.text
+t = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", re.sub(r"<script.*?</script>|<style.*?</style>", " ", html, flags=re.S)))
+urls = sorted(set(re.findall(r'(https?://[a-zA-Z0-9.-]*(?:a3|mae)[a-zA-Z0-9./_?=&-]*)', html)))
+endpoints = sorted(set(re.findall(r'["\'](/(?:api|servicios|ws)[^"\'\\]{0,100})', html)))
+rsc = [m for m in re.findall(r'(?:Clase|CLASE|licitaci|Licitaci|Fecha de licitaci)[^"\\]{0,160}', html)][:15]
+print("::notice::" + f"{r.status_code} {len(html)}b | urls={urls[:20]} | endpoints={endpoints[:15]} | rsc={rsc} | texto={t[:1800]}"[:3900])
