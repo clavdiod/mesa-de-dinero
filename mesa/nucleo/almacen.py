@@ -89,6 +89,7 @@ class AlmacenWorker(Almacen):
                        headers={"Content-Type": "application/json"})
         r.raise_for_status()
         self.escrituras += 1
+        self.escritas = getattr(self, "escritas", []) + [clave]
         self._cache[clave] = valor
         self._foto[clave] = nuevo
 

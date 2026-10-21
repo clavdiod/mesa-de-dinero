@@ -646,6 +646,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
             almacen.put("push/suscripciones", [s for s in subs if s.get("endpoint") not in res["vencidas"]])
     return {"corrio": True, "nuevas": len(nuevas), "senales": len(senales), "consumo": consumo.resumen(),
             "diagnostico": {"kv_escrituras": getattr(almacen, "escrituras", None), "kv_omitidas": getattr(almacen, "omitidas", None),
+                            "kv_claves": [k.split("/")[0] + "/" + k.split("/")[1][:12] for k in getattr(almacen, "escritas", [])],
                             "paneles": {g: len(t) for g, t in paneles.items()},
                             "riesgo_pais": ctx.riesgo_pais.get("valor"), "rp_ayer": ctx.riesgo_pais_ayer,
                             "dolares": sorted(k for k in ctx.dolares if not k.startswith("_")),
