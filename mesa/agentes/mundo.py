@@ -57,12 +57,12 @@ def _r(p: str) -> re.Pattern:
 # tema: (nombre, [patrones que deben aparecer TODOS], efectos {ticker: dirección}, fuerza base, explicación)
 TEMAS = [
     ("tension_golfo", "Clima de guerra en Medio Oriente / el Golfo",
-     [_r(r"guerra|ataque|atac|misil|bombarde|tensi[oó]n|conflicto|escalada|bloqueo|represalia|war\b|attack|strike|missile|tension|escalat|retaliat|drone"),
-      _r(r"ir[aá]n|israel|golfo p[eé]rsico|ormuz|hormuz|arabia saud|saudi|yemen|hut[ií]|houthi|medio oriente|middle east|persian gulf|red sea|mar rojo|hezbol|irak|iraq")],
+     [_r(r"guerra|ataque|atac|misil|bombarde|escalada|bloqueo|represalia|\bwar\b|attack|airstrike|strikes? on|missile|escalat|retaliat|drone|blockade|seiz"),
+      _r(r"ir[aá]n|golfo p[eé]rsico|ormuz|hormuz|arabia saud|saudi|hut[ií]|houthi|persian gulf|red sea|mar rojo|tanker|buque petrolero|petrolero")],
      {**{t: 1 for t in PETROLEO + ORO + DEFENSA}, **{t: -1 for t in INDICES}}, 0.45,
      "Si hay riesgo de que se corte el petróleo del Golfo, sube el crudo (petroleras), sube el oro y la defensa; las bolsas se cubren."),
     ("opep_recorta", "La OPEP recorta producción",
-     [_r(r"opep|opec"), _r(r"recort|reduc|cut|curb|lower output")], {t: 1 for t in PETROLEO}, 0.4,
+     [_r(r"opep|opec"), _r(r"recort\w* (de )?(la )?producci|recorte de producci|production cuts?|output cuts?|cuts? (output|production)|curb (output|production)")], {t: 1 for t in PETROLEO}, 0.4,
      "Menos oferta de petróleo: sube el crudo y las petroleras."),
     ("petroleo_baja", "Baja el petróleo (más oferta o se calma el conflicto)",
      [_r(r"petr[oó]leo|crudo|brent|wti|\boil\b|opep|opec|alto el fuego|ceasefire|tregua|acuerdo de paz|peace deal"),
@@ -86,7 +86,7 @@ TEMAS = [
      [_r(r"china|chin[ao]s|beijing|pek[ií]n"), _r(r"est[ií]mulo|stimulus|rescate|bazooka")], {"VALE": 1, "BABA": 1, "FXI": 1, "RIO": 1}, 0.35,
      "China gasta más: suben metales y acciones chinas."),
     ("recesion_eeuu", "Miedo a recesión en EE.UU.",
-     [_r(r"recesi[oó]n|recession"), _r(r"ee\.?\s?uu|estados unidos|\bu\.?s\.?\b|american|economy|econom[ií]a")],
+     [_r(r"recesi[oó]n|recession"), _r(r"ee\.?\s?uu|estados unidos|\bu\.?s\.?\b|american|wall street")],
      {**{t: -1 for t in INDICES}, **{t: 1 for t in ORO}}, 0.3, "Con miedo a recesión bajan las bolsas y sube el oro."),
     ("chips_restriccion", "Restricciones a chips / semiconductores",
      [_r(r"chip|semiconductor|nvidia"), _r(r"restric|prohib|\bban\b|export control|controles? (a la|de) export")],
@@ -120,8 +120,9 @@ EMPRESAS_CEDEAR = {
 NEGATIVO = _r(r"cierra (sus |las )?sucursal|cierre de (sus )?sucursal|cierra (su |la )?planta|cierre de (la )?planta|despid|cesant|concurso preventivo|"
               r"quiebra|default|incumpl|renunci[aó] (el|la) (ceo|presidente)|investigaci[oó]n|allanamiento|multa|demanda|sanci[oó]n|suspende|"
               r"huelga|paro\b|hackeo|ciberataque|retira del mercado|recall|ca[ií]da de (las )?ventas|pérdida|perdi[oó]|layoff|bankrupt|lawsuit|"
-              r"probe|fine[ds]?\b|recall|downgrade|rebaja (la )?calificaci|warns?|profit warning|cuts? jobs|closes? stores|plant closure|strike")
-POSITIVO = _r(r"nuevo desarrollo|descubr|inversi[oó]n de|invertir[aá]|adquiere|adquisici[oó]n|compra (de|a) |acuerdo con|contrato|r[eé]cord|"
+              r"probe|fine[ds]?\b|recall|downgrade|rebaja (la )?calificaci|profit warning|cuts? jobs|closes? stores|plant closure")
+POSITIVO = _r(r"nuevo desarrollo|descubr|inversi[oó]n de|invertir[aá]|adquiere|adquisici[oó]n|compra (de|a) |acuerdo con|contrato|"
+              r"(ganancias?|ventas|producci[oó]n|facturaci[oó]n) r[eé]cord|r[eé]cord de (ganancias|ventas|producci[oó]n)|"
               r"aprob|lanza|lanzamiento|expansi[oó]n|abre (nuevas|una nueva)|inaugur|dividendo|recompra|ganancia r[eé]cord|supera (las )?expectativas|"
               r"beats? (estimates|expectations)|record (profit|revenue|sales)|approval|breakthrough|buyback|acquires?|partnership|upgrade|raises guidance")
 RUMOR = _r(r"rumor|versiones|trascendi[oó]|seg[uú]n fuentes|analiza|evaluar[ií]a|podr[ií]a|reportedly|sources say|people familiar|considering|in talks")
@@ -136,7 +137,7 @@ def url_google(q: str, idioma: str = "es") -> str:
 def leer(horas: int = 12) -> list[dict]:
     from ..datos import gratis
     urls = FUENTES_RSS + [url_google(q, "en") for q in BUSQUEDAS_EN] + [url_google(q, "es") for q in BUSQUEDAS_ES]
-    return gratis.noticias(urls, horas=horas, max_items=600)
+    return gratis.noticias(urls, horas=horas, max_items=2000)
 
 
 def _texto(n: dict) -> str:
@@ -151,14 +152,14 @@ def _grande(n: dict) -> bool:
 def detectar_temas(titulares: list[dict]) -> list[dict]:
     out = []
     for clave, nombre, patrones, efectos, fuerza, explica in TEMAS:
-        hits = [n for n in titulares if all(p.search(_texto(n)) for p in patrones)]
+        hits = [n for n in titulares if all(p.search(n.get("titulo") or "") for p in patrones)]  # solo el título: el resumen mete ruido
         if not hits:
             continue
         unicos = list({n["titulo"][:70].lower(): n for n in hits}.values())
         if len(unicos) < 2 and not any(_grande(n) for n in unicos):
             continue
         out.append({"tema": clave, "nombre": nombre, "explica": explica, "efectos": efectos, "n": len(unicos),
-                    "fuerza": round(min(0.65, fuerza + 0.04 * (len(unicos) - 2)), 2),
+                    "fuerza": round(min(fuerza + 0.15, fuerza + 0.02 * (len(unicos) - 2)), 2),
                     "titulares": [{"titulo": n["titulo"], "link": n.get("link"), "fuente": n.get("fuente")} for n in unicos[:5]]})
     # si hay tensión en el Golfo, "sube el petróleo" queda incluido; "baja" y "sube" a la vez se anulan
     claves = {t["tema"] for t in out}
