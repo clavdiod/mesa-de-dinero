@@ -312,8 +312,12 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     informes = informes_mod.todos(ctx, ia if (forzar or minuto % 30 < 5) else None)
     previos = (estado_ui.get("informes") or {})
     for k, v in informes.items():
-        if "lectura_ia" not in v and (previos.get(k) or {}).get("lectura_ia"):
-            v["lectura_ia_previa"] = previos[k]["lectura_ia"]
+        pv = previos.get(k) or {}
+        if "lectura_ia" in v:
+            v["lectura_ia_hora"] = ctx.hora
+        elif pv.get("lectura_ia") or pv.get("lectura_ia_previa"):
+            v["lectura_ia_previa"] = pv.get("lectura_ia") or pv.get("lectura_ia_previa")
+            v["lectura_ia_hora"] = pv.get("lectura_ia_hora")
 
     # --- estado para la web ---
     resumen = {

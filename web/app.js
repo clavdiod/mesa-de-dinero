@@ -94,6 +94,16 @@ function pintarEstado() {
     ["GD30 vs AL30", pct(ind.spread_gd_al_30)], ["Brecha MEP", pct(ind.brecha_mep_pct)], ["Caución corta TNA", ind.caucion_tna == null ? "—" : num(ind.caucion_tna) + "%"],
     ["Oficial", num(d.oficial?.venta)], ["Reservas BCRA (M US$)", num(est.reservas?.valor, 0)]];
   $("#indicadores").innerHTML = mets.map(([a, b]) => `<div class="met"><span>${a}</span><b>${b}</b></div>`).join("");
+  // a qué hora son los datos del mercado
+  if (est.fecha) {
+    const hoyBA = HOY(), ahora = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" }));
+    const [hh, mm] = String(est.hora || "0:0").split(":").map(Number);
+    const min = est.fecha === hoyBA ? ahora.getHours() * 60 + ahora.getMinutes() - (hh * 60 + mm) : null;
+    const hace = min === null ? "" : min < 1 ? " · recién" : min < 60 ? ` · hace ${min} min` : ` · hace ${Math.floor(min / 60)} h ${min % 60} min`;
+    $("#hora-mercado").innerHTML = `Datos de la ronda de las <b>${esc(est.hora)}</b> ${est.fecha === hoyBA ? "de hoy" : `del ${esc(fecha(est.fecha))}`}${hace}`;
+    $("#hora-mercado").classList.toggle("vieja", min === null || min > 20);
+    document.querySelectorAll("[data-hora]").forEach((x) => (x.textContent = `· ${est.hora}`));
+  }
   pintarSenales();
   pintarInformes();
   pintarOportunidades();
@@ -152,7 +162,7 @@ function pintarInformes() {
   const html = orden.filter((k) => inf[k]).map((k, i) => { const x = inf[k];
     const lectura = x.lectura_ia || x.lectura_ia_previa;
     return `<details class="card" ${i === 0 ? "open" : ""}><summary><b>${esc(x.titulo)}</b></summary>
-      ${lectura ? `<p>${esc(lectura)}</p>` : ""}<p class="tenue">${esc(x.resumen)}</p>
+      ${lectura ? `<p>${esc(lectura)}${x.lectura_ia_hora ? ` <span class="tenue">(lectura de las ${esc(x.lectura_ia_hora)})</span>` : ""}</p>` : ""}<p class="tenue">${esc(x.resumen)}</p>
       <div class="tabla-scroll"><table><tr>${x.columnas.map((c, j) => `<th class="${j ? "n" : ""}">${esc(c)}</th>`).join("")}</tr>
       ${x.filas.map((f) => `<tr>${f.map((v, j) => `<td class="${j ? "n" : ""}">${esc(v)}</td>`).join("")}</tr>`).join("")}</table></div>
       ${x.nota ? `<p class="tenue">${esc(x.nota)}</p>` : ""}</details>`; }).join("");

@@ -44,12 +44,13 @@
 
   <!-- MERCADO: cómo está el mercado y qué dice cada analista -->
   <section id="v-mercado" class="vista">
+    <div id="hora-mercado" class="hora-datos"></div>
     <div id="clima" class="tiras"></div>
-    <h2>Indicadores</h2>
+    <h2>Indicadores <span class="hora" data-hora></span></h2>
     <div id="indicadores" class="grilla"></div>
-    <h2>Informe por mercado</h2>
+    <h2>Informe por mercado <span class="hora" data-hora></span></h2>
     <div id="informes"></div>
-    <h2>Señales de los analistas</h2>
+    <h2>Señales de los analistas <span class="hora" data-hora></span></h2>
     <input id="filtro-senales" placeholder="Filtrar por ticker o analista">
     <div id="senales"></div>
     <details><summary>Evaluados por Riesgo en la última ronda</summary><div id="evaluados"></div></details>
