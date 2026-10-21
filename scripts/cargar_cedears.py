@@ -16,6 +16,13 @@ ced = [t for t in paneles.get("cedears", []) if t.get("simbolo") and t.get("mont
        and not (t["simbolo"][-1:] in ("D", "C") and t["simbolo"][:-1] in simb)]
 ced.sort(key=lambda t: t["monto"], reverse=True)
 cache = CacheHistorico(a)
+from mesa.datos import gratis
+prueba = ced[0] if ced else None
+diag = f"cedears_panel={len(paneles.get('cedears', []))} candidatos={len(ced)} primeros={[t['simbolo'] for t in ced[:6]]}"
+if prueba:
+    us = gratis.precios_eeuu(prueba["simbolo"])
+    diag += f" | prueba {prueba['simbolo']}: eeuu={len(us)} ccl={len(gratis.ccl_historico())} hist={len(gratis.historial_cedear(prueba['simbolo'], prueba['ultimo']))}"
+print("::notice::" + diag)
 ok = []
 for t in ced[:40]:
     if cache.asegurar_cedear(t["simbolo"], t["ultimo"]):
