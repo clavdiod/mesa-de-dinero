@@ -65,16 +65,17 @@ def resistencia_cercana(velas: list[dict], precio: float) -> dict | None:
 
 
 def patrones_parecidos(cierres: list[float], ventana: int = 20, corr_min: float = 0.85,
-                       horizontes: tuple[int, ...] = (5, 10, 20)) -> dict:
+                       horizontes: tuple[int, ...] = (5, 10, 20), fechas: list[str] | None = None) -> dict:
     """Busca en la historia tramos con forma parecida a las últimas `ventana` ruedas (correlación de
-    precios normalizados) y mide qué pasó después. Devuelve casos, % de subas y rendimiento promedio."""
+    precios normalizados) y mide qué pasó después. Devuelve casos, % de subas y rendimiento promedio.
+    Si se pasan las fechas de cada cierre, también devuelve `detalle`: cuándo fue cada caso y qué pasó."""
     x = np.array(cierres, dtype=float)
     hmax = max(horizontes)
     if len(x) < ventana * 2 + hmax:
         return {"casos": 0, "horizontes": {}}
     actual = x[-ventana:]
     a = (actual - actual.mean()) / (actual.std() or 1)
-    casos = []
+    casos, corrs = [], {}
     ultimo_fin = -10 ** 9
     for fin in range(ventana, len(x) - hmax - ventana):  # no solapar con el tramo actual
         tramo = x[fin - ventana:fin]
@@ -85,6 +86,7 @@ def patrones_parecidos(cierres: list[float], ventana: int = 20, corr_min: float 
         c = float(np.dot(a, b) / ventana)
         if c >= corr_min and fin - ultimo_fin >= ventana // 2:  # evita contar el mismo episodio varias veces
             casos.append(fin)
+            corrs[fin] = c
             ultimo_fin = fin
     res = {}
     for h in horizontes:
@@ -92,7 +94,13 @@ def patrones_parecidos(cierres: list[float], ventana: int = 20, corr_min: float 
         if rets:
             res[h] = {"subas": int(sum(r > 0 for r in rets)), "promedio_pct": round(float(np.mean(rets)), 2),
                       "mediana_pct": round(float(np.median(rets)), 2)}
-    return {"casos": len(casos), "horizontes": res}
+    out = {"casos": len(casos), "horizontes": res}
+    if fechas and len(fechas) == len(x):
+        out["detalle"] = [{"desde": fechas[f - ventana], "hasta": fechas[f - 1], "correlacion": round(corrs[f], 2),
+                           "precio": round(float(x[f - 1]), 4),
+                           "despues": {str(h): round(float((x[f - 1 + h] / x[f - 1] - 1) * 100), 2) for h in horizontes}}
+                          for f in casos]
+    return out
 
 
 # ---------- renta fija ----------

@@ -216,7 +216,8 @@ def historiador(ctx: Contexto, tickers: list[str]) -> list[Senal]:
         if not t or not t.get("ultimo") or len(velas) < 80:
             continue
         cierres = [v["cierre"] for v in velas] + [t["ultimo"]]
-        res = calc.patrones_parecidos(cierres, cfg["ventana"], cfg["correlacion_min"], tuple(cfg["horizontes"]))
+        fechas = [v["fecha"] for v in velas] + [ctx.fecha.isoformat()]
+        res = calc.patrones_parecidos(cierres, cfg["ventana"], cfg["correlacion_min"], tuple(cfg["horizontes"]), fechas)
         h10 = res["horizontes"].get(10)
         sop = calc.soporte_cercano(velas, t["ultimo"])
         datos = {**res, "soporte": sop, "evidencia": "debil" if res["casos"] < cfg["casos_minimos"] else "ok"}
@@ -227,6 +228,12 @@ def historiador(ctx: Contexto, tickers: list[str]) -> list[Senal]:
                f"{h10['promedio_pct']:+.1f}% promedio a 10 ruedas.")
         if sop:
             txt += f" Soporte en {_ar(sop['nivel'], 2)} ({sop['toques']} toques)."
+        # cuándo fueron los gráficos parecidos (los más parecidos primero): da contexto
+        mejores = sorted(res.get("detalle") or [], key=lambda d: -d["correlacion"])[:4]
+        if mejores:
+            fx = lambda f: f"{f[8:10]}/{f[5:7]}/{f[:4]}"
+            txt += " Parecidos: " + "; ".join(
+                f"{fx(d['hasta'])} ({d['despues'].get('10', 0):+.1f}% a 10 ruedas)".replace(".", ",") for d in mejores) + "."
         if res["casos"] < cfg["casos_minimos"]:
             out.append(Senal("historiador", s, 0, 0.0, txt + " Evidencia débil: no pesa en la decisión.", datos))
         elif pct_subas >= 60 and h10["promedio_pct"] > 0:

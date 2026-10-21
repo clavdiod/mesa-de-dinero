@@ -392,6 +392,15 @@ async function verDebate(tk) {
       html += `<h2>A favor (${e.favor.length})</h2>${e.favor.length ? `<div class="card">${filasAgentes(e.favor)}</div>` : '<p class="tenue">Ningún analista a favor.</p>'}`;
       html += `<h2>En contra (${e.contra.length})</h2>${e.contra.length ? `<div class="card">${filasAgentes(e.contra)}</div>` : '<p class="tenue">Ningún analista en contra.</p>'}`;
       if (e.neutral.length) html += `<details><summary>Neutrales (${e.neutral.length})</summary><div class="card">${filasAgentes(e.neutral)}</div></details>`;
+      const det = (e.historiador?.detalle || []).slice().sort((a, b) => b.hasta.localeCompare(a.hasta));
+      if (det.length) {
+        const fx = (f) => `${f.slice(8, 10)}/${f.slice(5, 7)}/${f.slice(2, 4)}`;
+        const celda = (v) => v === undefined ? "<td class=\"n\">—</td>" : `<td class="n" style="color:var(--${v >= 0 ? "verde" : "rojo"})">${pct(v, 1)}</td>`;
+        html += `<h2>Gráficos parecidos (Historiador)</h2><div class="card"><p class="tenue">Momentos en que ${esc(tk)} dibujó una forma parecida a la de las últimas 20 ruedas, y qué hizo después. Sirve para recordar qué pasaba en el país o en la empresa en esas fechas.</p>
+          <div class="tabla-scroll"><table><tr><th>Tramo</th><th class="n">Parecido</th><th class="n">5 ruedas</th><th class="n">10</th><th class="n">20</th></tr>
+          ${det.map((d) => `<tr><td>${fx(d.desde)} → ${fx(d.hasta)}</td><td class="n">${num(d.correlacion * 100, 0)}%</td>${celda(d.despues["5"])}${celda(d.despues["10"])}${celda(d.despues["20"])}</tr>`).join("")}</table></div>
+          ${det.length < 5 ? '<p class="tenue">Pocos casos: tomalo como contexto, no como regla.</p>' : ""}</div>`;
+      }
       if (e.plan) {
         const r = e.riesgo || {};
         html += `<h2>Plan de Riesgo</h2><div class="card"><div class="grilla">
