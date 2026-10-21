@@ -2,11 +2,9 @@ name: ronda
 # Corre cada 5 minutos en horario de mercado (10:30-17:00 ART = 13:30-20:00 UTC), lunes a viernes.
 # El código decide si a esa ronda le toca (5 min en la primera y última hora, 10 al mediodía,
 # más espaciado si el cupo de IOL viene ajustado) y saltea feriados.
+# La dispara el reloj de Cloudflare (cron del Worker). El schedule propio de GitHub se quitó porque llegaba
+# tarde y duplicaba rondas (cada ronda extra gasta escrituras del plan gratis de Cloudflare KV).
 on:
-  schedule:
-    - cron: "30-59/5 13 * * 1-5"
-    - cron: "*/5 14-19 * * 1-5"
-    - cron: "0 20 * * 1-5"
   workflow_dispatch:
     inputs:
       forzar:

@@ -37,7 +37,7 @@ def noticias(ctx: Contexto, ia: IA, almacen=None) -> list[Senal]:
     if previo and previo.get("firma") == firma:
         return [Senal(**s) for s in previo["senales"]]
     out = _noticias(items, ia)
-    if almacen is not None:
+    if almacen is not None and ia.disponible:  # sin IA no hay nada caro que ahorrar: no gastar escrituras
         almacen.put("noticias/ultimo", {"firma": firma, "senales": [s.dict() for s in out]})
     return out
 
