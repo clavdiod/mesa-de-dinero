@@ -319,8 +319,9 @@ function pintarAviso() {
   const nuevas = PROPS.filter((p) => p.decision === "pendiente" && p.fecha === HOY() && !VISTOS.has(p.id));
   const consejos = PROPS.filter((p) => p.decision === "aprobada" && ["salir", "subir_stop", "antes_balance", "cancelar"].includes(p.seguimiento?.consejo?.accion)
     && !VISTOS.has(p.id + "|" + p.seguimiento.consejo.accion));
+  const radarAltas = (ESTADO.estado?.radar || []).filter((r) => r.severidad === "alta" && ESTADO.estado?.fecha === HOY() && !VISTOS.has("radar|" + HOY() + "|" + r.ticker));
   const box = $("#aviso-global");
-  if (!nuevas.length && !consejos.length) { box.style.display = "none"; document.title = "Mesa de dinero"; return; }
+  if (!nuevas.length && !consejos.length && !radarAltas.length) { box.style.display = "none"; document.title = "Mesa de dinero"; return; }
   const items = nuevas.map((p) => {
     const pl = p.plan, ult = precios[p.ticker]?.ultimo, min = minutosDesde(p.fecha, p.hora);
     const lejos = ult && ult > pl.entrada * 1.01;
@@ -330,15 +331,38 @@ function pintarAviso() {
       <div class="fila-form" style="margin-top:6px"><button class="chico prim" data-ir-prop="${esc(p.id)}">Ver y decidir</button><button class="chico" data-visto="${esc(p.id)}">Entendido</button></div></div>`;
   }).concat(consejos.map((p) => `<div class="aviso-item"><div><b>⚠️ ${esc(p.ticker)}: ${esc(CONSEJO_TXT[p.seguimiento.consejo.accion])}</b></div>
       <div class="tenue">${esc(p.seguimiento.consejo.texto)} (${esc(p.seguimiento.consejo.hora || "")})</div>
-      <div class="fila-form" style="margin-top:6px"><button class="chico prim" data-ir-prop="${esc(p.id)}">Ver</button><button class="chico" data-visto="${esc(p.id + "|" + p.seguimiento.consejo.accion)}">Entendido</button></div></div>`));
+      <div class="fila-form" style="margin-top:6px"><button class="chico prim" data-ir-prop="${esc(p.id)}">Ver</button><button class="chico" data-visto="${esc(p.id + "|" + p.seguimiento.consejo.accion)}">Entendido</button></div></div>`))
+    .concat(radarAltas.slice(0, 3).map((r) => `<div class="aviso-item"><div><b>📡 Radar: ${esc(r.texto)}</b></div>
+      <div class="tenue">${esc(r.conclusion)} · desde las ${esc(r.primera || r.hora)}</div>
+      <div class="fila-form" style="margin-top:6px"><button class="chico prim" data-ir-radar="1">Ver análisis</button><button class="chico" data-visto="${esc("radar|" + HOY() + "|" + r.ticker)}">Entendido</button></div></div>`));
   box.innerHTML = items.join("");
   box.style.display = "block";
   document.title = `(${items.length}) Mesa de dinero`;
-  const ids = [...nuevas.map((p) => p.id), ...consejos.map((p) => p.id + "|" + p.seguimiento.consejo.accion)].join(",");
+  const ids = [...nuevas.map((p) => p.id), ...consejos.map((p) => p.id + "|" + p.seguimiento.consejo.accion), ...radarAltas.map((r) => "radar|" + r.ticker)].join(",");
   if (AVISADOS !== null && ids !== AVISADOS && ids) sonar();  // llegó algo nuevo con la web abierta
   AVISADOS = ids;
   box.querySelectorAll("[data-visto]").forEach((b) => b.onclick = () => { VISTOS.add(b.dataset.visto); guardarVistos(); pintarAviso(); });
+  box.querySelectorAll("[data-ir-radar]").forEach((b) => b.onclick = () => { irA("propuestas"); setTimeout(() => $("#radar")?.scrollIntoView({ behavior: "smooth" }), 100); });
   box.querySelectorAll("[data-ir-prop]").forEach((b) => b.onclick = () => { irA("propuestas"); setTimeout(() => document.querySelector(`[data-tarjeta="${b.dataset.irProp}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 100); });
+}
+
+// ---------- radar del mercado ----------
+const TIPO_RADAR = { volumen: "volumen anormal", precio: "movimiento fuerte", adr: "ADR despegado", macro: "macro" };
+function pintarRadar() {
+  const rs = ESTADO.estado?.radar || [];
+  if (!rs.length) { $("#radar").innerHTML = ""; return; }
+  $("#radar").innerHTML = `<h2>📡 Radar del mercado <span class="hora">· ${esc(ESTADO.estado?.hora || "")}</span></h2>
+    <p class="tenue">Todo lo anormal que vieron los analistas en esta ronda, con su análisis.</p>` + rs.map((r) => `
+    <details class="grupo radar ${r.severidad}"><summary><span class="chip ${r.severidad === "alta" ? "rojo" : "amar"}">${r.severidad === "alta" ? "Alta" : "Media"}</span>
+      <b>${esc(r.ticker)}</b> <span class="tenue">${(r.tipos || [r.tipo]).map((t) => TIPO_RADAR[t] || t).join(" + ")} · desde las ${esc(r.primera || r.hora)}</span></summary>
+      <p>${esc(r.texto)}</p>
+      <p><b>¿Qué pasa?</b> ${esc(r.conclusion)}</p>
+      ${r.grupo !== "macro" ? `<p class="tenue">${esc(r.lectura)} (${r.favor} a favor, ${r.contra} en contra)</p>` : ""}
+      ${(r.opiniones || []).map((o) => `<div class="agente"><b>${esc(o.agente)}</b><span><span class="chip ${o.dir > 0 ? "verde" : o.dir < 0 ? "rojo" : ""}">${o.dir > 0 ? "▲" : o.dir < 0 ? "▼" : "="}</span> ${esc(o.texto)}</span></div>`).join("")}
+      ${(r.noticias || []).length ? `<p class="tenue"><b>Noticias:</b></p>${r.noticias.map((n) => `<p class="tenue">• ${n.link ? `<a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.titulo)}</a>` : esc(n.titulo)}</p>`).join("")}` : ""}
+      ${(r.eventos || []).map((e) => `<p class="tenue">📅 ${esc(fecha(e.fecha))}: ${esc(e.nombre)}</p>`).join("")}
+      ${r.grupo !== "macro" ? `<button class="chico" data-abrir-debate="${esc(r.ticker)}">Ver debate completo</button>` : ""}
+    </details>`).join("");
 }
 
 // ---------- economista ----------
@@ -708,7 +732,7 @@ async function cargar() {
   try {
     [ESTADO, PROPS, USUARIO.lista, USUARIO.cartera, USUARIO.ons, USUARIO.capital] = await Promise.all([
       api("estado"), api("propuestas"), api("usuario/lista"), api("usuario/cartera"), api("usuario/ons"), api("usuario/capital")]);
-    pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes(); pintarAviso();
+    pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes(); pintarRadar(); pintarAviso();
     $("#login").style.display = "none"; document.querySelector("main").style.display = "";
   } catch (e) {
     if (String(e.message).includes("sin acceso")) {

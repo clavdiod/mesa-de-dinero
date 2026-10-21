@@ -13,7 +13,7 @@ from datetime import date, timedelta
 
 import yaml
 
-from .agentes import adr, analistas, con_ia, cripto, economista, panico, informes as informes_mod, oportunidades, riesgo, seguimiento, supervisor, wallstreet
+from .agentes import adr, analistas, con_ia, cripto, economista, panico, radar, informes as informes_mod, oportunidades, riesgo, seguimiento, supervisor, wallstreet
 from .datos import gratis
 from .datos import eventos as eventos_mod
 from .datos.cache import CacheHistorico
@@ -128,6 +128,65 @@ def _senales_ws(ctx, ws_datos: dict, tickers: list[str]) -> list[Senal]:
         return []
 
 
+def _ccl_ayer(almacen, hoy):
+    ccl = ((almacen.get("macro/series") or {}).get("series") or {}).get("ccl") or {}
+    return next((v for f, v in sorted(ccl.items(), reverse=True) if f < hoy.isoformat()), None), ccl
+
+
+def _radar_detectar(ctx, almacen, hoy, ya) -> list[dict]:
+    try:
+        ccl_ay, _ = _ccl_ayer(almacen, hoy)
+        vivo = {a: gratis.yahoo_vivo(a) for a in set(adr.ADRS.values())}
+        ctx.extra["adr_vivo"] = vivo
+        ccl_now = (ctx.dolares.get("contadoconliqui") or {}).get("venta")
+        fo = adr.foto(ctx, vivo, ccl_now)
+        brechas = {loc: adr.brecha_vivo(f, ccl_now, ccl_ay) for loc, f in fo["filas"].items()}
+        return radar.detectar(ctx, ya.hour * 60 + ya.minute, brechas, ctx.riesgo_pais_ayer, ccl_ay)
+    except Exception as ex:
+        print(f"[radar] {ex}")
+        return []
+
+
+def _radar_investigar(ctx, almacen, hoy, alertas: list[dict], por_ticker: dict) -> tuple[list[dict], list[dict]]:
+    """Investiga cada alerta (máx. 10) y devuelve (investigaciones, avisos para el celular de las graves y nuevas)."""
+    from .nucleo.config import emisores
+    nombres = {"tecnico": "Técnico", "historiador": "Historiador", "fuerza_relativa": "Fuerza relativa", "volumen_flujo": "Volumen y flujo",
+               "economista": "Economista", "wallstreet": "Wall Street", "cripto": "Cripto", "adr": "Noche de Nueva York", "panico": "Comprador de pánico",
+               "acciones": "Acciones", "cedears": "CEDEARs", "soberanos": "Soberanos", "ons": "ONs", "macro_dolar": "Macro / dólar",
+               "noticias": "Noticias", "hechos_emisor": "Hechos del emisor", "calificadoras": "Calificadoras",
+               "oportunidades_corto": "Oportunidades (corto)", "oportunidades_mediano": "Oportunidades (mediano)"}
+    cache_n = almacen.get(f"radar/noticias/{hoy.isoformat()}") or {}
+    busquedas = 0
+    out = []
+    for a in alertas[:10]:
+        tk = a["ticker"]
+        em = emisores().get(tk[:-1] if tk.endswith("D") and tk[:-1] in emisores() else tk) or {}
+        clave = (em.get("clave") or em.get("nombre") or "").lower()
+        notis = [n for n in ctx.noticias if clave and clave in n.get("titulo", "").lower()]
+        if not notis and a["grupo"] != "macro" and a["severidad"] == "alta" and busquedas < 3:
+            if tk not in cache_n:
+                q = em.get("nombre") or tk
+                cache_n[tk] = [{"titulo": n["titulo"], "link": n.get("link")} for n in gratis.buscar_noticias(f'"{q}"', horas=48, max_items=5)]
+                busquedas += 1
+            notis = cache_n.get(tk) or []
+        out.append(radar.investigar(a, ctx, por_ticker, notis, nombres))
+    if busquedas:
+        almacen.put(f"radar/noticias/{hoy.isoformat()}", cache_n)
+    # historial del día (primera vez que se vio cada alerta) y avisos de las graves nuevas
+    hist = almacen.get(f"radar/{hoy.isoformat()}") or {}
+    avisos = []
+    for r in out:
+        k = r["ticker"]
+        if k not in hist:
+            hist[k] = {"primera": ctx.hora, "texto": r["texto"], "severidad": r["severidad"]}
+            if r["severidad"] == "alta":
+                avisos.append({"fecha": hoy.isoformat(), "hora": ctx.hora, "ticker": f"{k} (radar)",
+                               "texto": f"📡 {r['texto']} {r['conclusion']}"})
+        r["primera"] = hist[k]["primera"]
+    almacen.put(f"radar/{hoy.isoformat()}", hist)
+    return out, avisos
+
+
 def _senales_panico(ctx, almacen, ws_datos, simular) -> list[Senal]:
     """Comprador de pánico: CEDEARs (dólares, con VIX y S&P) y acciones locales (con el riesgo país)."""
     if simular:
@@ -161,7 +220,7 @@ def _senales_adr(ctx, almacen, hoy, ya, simular) -> list[Senal]:
         ccl = ((almacen.get("macro/series") or {}).get("series") or {}).get("ccl") or {}
         sen, tabla = adr.senales_en(ctx, datos, ccl, ya.hour * 60 + ya.minute)
         # histórico propio: una foto por ronda (ADR en vivo, acción local, CCL) para armar estadística
-        vivo = {a: gratis.yahoo_vivo(a) for a in set(adr.ADRS.values())}
+        vivo = ctx.extra.get("adr_vivo") or {a: gratis.yahoo_vivo(a) for a in set(adr.ADRS.values())}
         # mismo CCL que la serie histórica (dolarapi/argentinadatos), para no mezclar fuentes en la brecha
         ccl_now = (ctx.dolares.get("contadoconliqui") or {}).get("venta") or ctx.extra.get("ccl_al30")
         fo = adr.foto(ctx, vivo, ccl_now)
@@ -328,7 +387,10 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
 
     # candidatos: lo que alguien marcó + Mi lista; con carga de historial una sola vez por ticker
     marcados = [s.ticker for s in senales if s.direccion != 0 and ctx.titulo(s.ticker)]
-    candidatos = list(dict.fromkeys(foco + marcados))
+    # --- Radar: todo lo anormal del mercado entra al análisis de TODOS los analistas en esta ronda ---
+    alertas_radar = [] if simular else _radar_detectar(ctx, almacen, hoy, ya)
+    radar_tks = [a["ticker"] for a in alertas_radar if a["grupo"] != "macro" and ctx.titulo(a["ticker"])][:15]
+    candidatos = list(dict.fromkeys(foco + radar_tks + marcados))
     # cargas iniciales de historial: máx. 2 por ronda y 15 por día (cuida el cupo de IOL);
     # primero Mi lista y posiciones abiertas, después lo que marcaron los agentes
     clave_cargas = f"cache/cargas/{hoy.isoformat()}"
@@ -499,6 +561,11 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
 
     # --- seguimiento de propuestas y señales ---
     reg.actualizar_seguimiento({k: v for k, v in ctx.por_simbolo.items()}, hoy)
+    try:  # Radar: investigación de cada alerta con lo que dijo cada analista, noticias y calendario
+        radar_inv, avisos_radar = _radar_investigar(ctx, almacen, hoy, alertas_radar, por_ticker) if alertas_radar else ([], [])
+    except Exception as ex:
+        print(f"[radar] {ex}")
+        radar_inv, avisos_radar = [], []
     try:  # seguimiento activo: mantener / subir stop / salir, con aviso si cambia
         alertas_seg = seguimiento.revisar(reg, ctx, por_ticker, lambda ss: puntaje_ticker(ss, reg, ctx))
         opinion_cartera = seguimiento.opinion_cartera(ctx, cartera, por_ticker, lambda ss: puntaje_ticker(ss, reg, ctx))
@@ -548,6 +615,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "wallstreet": ctx.extra.get("wallstreet"),
         "cripto": {k: v for k, v in (ctx.extra.get("cripto") or {}).items() if k != "ens"},
         "adr": ctx.extra.get("adr_tabla"),
+        "radar": radar_inv,
         "eventos": _calendario(almacen, ctx, hoy, ops, abiertas, cartera),
         "flujos_bonos": {k: v for k, v in eventos_mod.flujos_bonos().items()
                          if k in {c.get("ticker", "").upper() for c in cartera}},
@@ -560,7 +628,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         for tk, t in ctx.por_simbolo.items() if t.get("ultimo")}})
     previas = almacen.get("ui/alertas") or []
     ya_avisadas = {(a["fecha"], a["ticker"]) for a in previas}
-    alertas_lista = [a for a in alertas_seg + _alertas_lista(ctx, lista) if (a["fecha"], a["ticker"]) not in ya_avisadas]
+    alertas_lista = [a for a in alertas_seg + avisos_radar + _alertas_lista(ctx, lista) if (a["fecha"], a["ticker"]) not in ya_avisadas]
     if alertas_lista:
         almacen.put("ui/alertas", (alertas_lista + previas)[:60])
     consumo.guardar()
