@@ -193,7 +193,8 @@ async function api(req, env, url) {
   }
   if (p === "/api/historico") {
     const t = (url.searchParams.get("t") || "").toUpperCase().replace(/[^A-Z0-9.]/g, "");
-    return json(await leer(env, `cache/diario/${t}`, []));
+    const lote = await leer(env, `cache/lote/${t.slice(0, 1) || "_"}`, {});
+    return json(lote[t] || (await leer(env, `cache/diario/${t}`, [])));
   }
   if (p === "/api/analizar" && req.method === "POST") {
     // Sin token de GitHub: se anota el pedido y la próxima ronda (≤5 min en horario de mercado) lo corre completo.

@@ -47,7 +47,7 @@ async function ejecutar(env, nombre, input) {
   }
   if (nombre === "historial") {
     const t = String(input.ticker || "").toUpperCase().replace(/[^A-Z0-9.]/g, "");
-    const v = await leer(`cache/diario/${t}`, []);
+    const v = (await leer(`cache/lote/${t.slice(0, 1) || "_"}`, {}))[t] || (await leer(`cache/diario/${t}`, []));
     const n = Math.min(input.ruedas || 120, 400);
     return v.length ? v.slice(-n).map((x) => [x.fecha, x.cierre, x.maximo, x.minimo, x.volumen]) : { error: "sin historial guardado" };
   }

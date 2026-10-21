@@ -46,7 +46,7 @@ class IOL:
         self._token = data["access_token"]
         self._refresh = data.get("refresh_token")
         self._vence = time.time() + int(data.get("expires_in", 900)) - 120
-        if self.almacen is not None:
+        if False:  # ya no se guarda: cuidaba 1 llamada a IOL pero gastaba 1 escritura de Cloudflare por ronda
             self.almacen.put("iol/token", {"access": self._token, "refresh": self._refresh, "vence": self._vence,
                                            "refresh_vence": time.time() + 3600 * 12})
 

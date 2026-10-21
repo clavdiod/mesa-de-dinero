@@ -340,11 +340,11 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     minuto_dia = ya.hour * 60 + ya.minute
     cada30 = bool(forzar or simular or minuto_dia % 30 < 5 or minuto_dia >= 16 * 60 + 55)
     if not simular and not forzar:
-        ultima = almacen.get("ronda/ultima") or {}
+        ultima = {}  # (antes: ronda/ultima; ya no hay rondas duplicadas y ahorraba una escritura por ronda)
         if ultima.get("ts") and ya.timestamp() - ultima["ts"] < 170:
             return {"corrio": False, "motivo": "ya corrió una ronda hace menos de 3 minutos"}
     if not simular:
-        almacen.put("ronda/ultima", {"ts": ya.timestamp(), "hora": ya.strftime("%H:%M")})
+        pass
 
     iol = None
     if not simular:
@@ -353,6 +353,9 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     cache = CacheHistorico(almacen, iol)
     reg = Registro(almacen)
     estado_ui = almacen.get("ui/estado") or {}
+    from .nucleo.almacen import AlmacenDelDia
+    dia = dict(estado_ui.get("dia") or {}) if (estado_ui.get("dia") or {}).get("fecha") == hoy.isoformat() else {"fecha": hoy.isoformat()}
+    almacen = AlmacenDelDia(almacen, dia)
     lista = almacen.get("usuario/lista") or []
     cartera = almacen.get("usuario/cartera") or []
     params = almacen.get("params/agentes") or {}
@@ -675,7 +678,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "flujos_bonos": {k: v for k, v in eventos_mod.flujos_bonos().items()
                          if k in {c.get("ticker", "").upper() for c in cartera}},
     }
-    almacen.put("ui/estado", {**estado_ui, **resumen})
+    almacen.put("ui/estado", {**estado_ui, **resumen, "dia": dia})
     # foto compacta de TODOS los paneles para el Asistente (sin gastar consultas extra)
     if cada30 or ya.minute % 15 < 5:
       almacen.put("ui/panel", {"fecha": hoy.isoformat(), "hora": ctx.hora, "titulos": {

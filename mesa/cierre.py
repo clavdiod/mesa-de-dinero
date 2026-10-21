@@ -91,7 +91,8 @@ def diario(simular: bool = False) -> dict:
     if not simular:
         try:
             from .agentes import adr as _adr
-            fotos = a.get(f"adr/fotos/{hoy.isoformat()}") or []
+            dia_ui = (a.get("ui/estado") or {}).get("dia") or {}
+            fotos = dia_ui.get(f"adr/fotos/{hoy.isoformat()}") or a.get(f"adr/fotos/{hoy.isoformat()}") or []
             ccl_s = ((a.get("macro/series") or {}).get("series") or {}).get("ccl") or {}
             ccl_ant = next((v for f, v in sorted(ccl_s.items(), reverse=True) if f < hoy.isoformat()), None)
             if fotos:
@@ -136,7 +137,7 @@ def diario(simular: bool = False) -> dict:
     if not simular:
         try:
             from .agentes import anticipo as _ant
-            reg_a = a.get(f"anticipo/{hoy.isoformat()}") or {}
+            reg_a = ((a.get("ui/estado") or {}).get("dia") or {}).get(f"anticipo/{hoy.isoformat()}") or {}
             if reg_a:
                 dia = _ant.evaluar_dia(reg_a, {tk: t.get("ultimo") for tk, t in precios.items()})
                 est = a.get("anticipo/estadistica") or {"desde": hoy.isoformat(), "dias": 0, "plazos": {}}

@@ -99,6 +99,32 @@ class AlmacenWorker(Almacen):
         return r.json()
 
 
+class AlmacenDelDia:
+    """Envuelve al almacén: las claves "del día" (fotos de ADRs, registro de anticipos, historial del radar)
+    no se escriben aparte sino dentro de ui/estado, que la ronda escribe igual. Ahorra 3 escrituras por ronda."""
+    PREFIJOS = ("adr/fotos/", "anticipo/2", "radar/2")
+
+    def __init__(self, base, dia: dict):
+        self.base, self.dia = base, dia
+
+    def _propia(self, clave: str) -> bool:
+        return clave.startswith(self.PREFIJOS)
+
+    def get(self, clave, defecto=None):
+        if self._propia(clave):
+            return self.dia.get(clave, defecto)
+        return self.base.get(clave, defecto)
+
+    def put(self, clave, valor):
+        if self._propia(clave):
+            self.dia[clave] = valor
+        else:
+            self.base.put(clave, valor)
+
+    def __getattr__(self, nombre):
+        return getattr(self.base, nombre)
+
+
 def almacen_por_defecto() -> Almacen:
     url = env("MESA_WORKER_URL")
     token = env("MESA_INGESTA_TOKEN")

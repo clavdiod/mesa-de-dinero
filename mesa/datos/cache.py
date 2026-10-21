@@ -18,15 +18,38 @@ class CacheHistorico:
         self.iol = iol
         self._mem: dict[str, list[dict]] = {}
         self._sucio: set[str] = set()
+        self._lotes: dict[str, dict] = {}
         self.indice = almacen.get("cache/indice") or {}
 
-    def _clave(self, ticker: str) -> str:
+    # Los historiales se guardan agrupados por la primera letra del ticker ("lotes"): el cierre escribe
+    # como mucho ~26 claves por día en vez de una por papel (Cloudflare KV gratis: ~1.000 escrituras/día).
+    @staticmethod
+    def lote_de(ticker: str) -> str:
+        return f"cache/lote/{ticker.upper()[:1] or '_'}"
+
+    def _clave(self, ticker: str) -> str:  # formato viejo (un papel por clave): solo para migrar
         return f"cache/diario/{ticker.upper()}"
+
+    def _lote(self, ticker: str) -> dict:
+        k = self.lote_de(ticker)
+        if k not in self._lotes:
+            self._lotes[k] = self.almacen.get(k) or {}
+        return self._lotes[k]
 
     def velas(self, ticker: str) -> list[dict]:
         t = ticker.upper()
         if t not in self._mem:
-            self._mem[t] = self.almacen.get(self._clave(t)) or []
+            lote = self._lote(t)
+            if t in lote:
+                self._mem[t] = lote[t]
+            elif t in self.indice:  # todavía en el formato viejo: se lee una vez y pasa al lote
+                v = self.almacen.get(self._clave(t)) or []
+                self._mem[t] = v
+                if v:
+                    lote[t] = v
+                    self._sucio.add(t)
+            else:
+                self._mem[t] = []
         return self._mem[t]
 
     def cierres(self, ticker: str) -> list[float]:
@@ -88,8 +111,12 @@ class CacheHistorico:
                 "cierre": titulo["ultimo"], "volumen": titulo.get("volumen") or 0}
 
     def guardar(self) -> None:
-        for t in sorted(self._sucio):
-            self.almacen.put(self._clave(t), self._mem[t])
+        lotes = set()
+        for t in self._sucio:
+            self._lote(t)[t] = self._mem[t]
+            lotes.add(self.lote_de(t))
+        for k in sorted(lotes):
+            self.almacen.put(k, self._lotes[k])
         if self._sucio:
             self.almacen.put("cache/indice", self.indice)
         self._sucio.clear()
