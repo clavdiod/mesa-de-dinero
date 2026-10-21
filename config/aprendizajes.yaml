@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: "2026-10-21"
+  caso: "Llegó el Estratega de Wall Street (CEDEARs), entrenado con 5 años"
+  que_paso: "Se probaron las reglas con más evidencia de Wall Street sobre el precio en dólares de 57 CEDEARs, de 2021 a hoy (incluye la baja de 2022). Comprar los que están sobre su promedio de 200 ruedas y entre los que más subieron en 12 meses (sin el último) rindió +2,9% promedio a 3 meses, acertando 53,5% (3.244 casos). A 10 ruedas no servía (+0,3%): es una estrategia de meses, no de días. Y comprar CEDEARs con clima de miedo en Wall Street rindió +3,7% a 10 ruedas contra +0,9% con clima de euforia."
+  leccion: "Hay estrategias que aciertan apenas más de la mitad pero ganan mucho cuando aciertan; hay que medirlas en su plazo y por la plata que dejan, no solo por el % de aciertos. Y en CEDEARs, 'ser codicioso cuando los demás tienen miedo' tuvo respaldo en los datos."
+  cambio: "El Estratega vota x1,33 (el primero con ventaja demostrada) y sus ideas apuntan a mediano plazo. Enseña al resto: con miedo en Wall Street, a las compras de CEDEARs se les cree más; con euforia, un poco menos. El voto de cada agente ahora depende de la plata neta de comisión que deja su señal."
+- fecha: "2026-10-21"
   caso: "Llegó el Economista (contexto macro argentino)"
   que_paso: "Se probó con la historia de 56 papeles la regla de manual: si el riesgo país baja, comprar bancos, acciones y bonos; si el dólar se acelera, CEDEARs. Su opinión propia acertó 41% (1.043 casos). Y las señales de los demás que iban a favor de su contexto rindieron -1,7% a 10 ruedas, contra +0,8% de las que iban en contra."
   leccion: "En este último año, cuando el contexto ya era bueno el mercado ya lo había descontado: después de un mes de riesgo país en baja, los papeles tendieron a devolver. Las reglas de manual no alcanzan si el precio ya las reflejó."
