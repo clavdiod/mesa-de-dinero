@@ -34,7 +34,7 @@ def url_descarga(u: str) -> str:
     return u + ("&" if "?" in u else "?") + "download=1"
 
 
-def texto_pdf(contenido: bytes, paginas: int = 10) -> str:
+def texto_pdf(contenido: bytes, paginas: int = 25) -> str:
     from pypdf import PdfReader
     r = PdfReader(io.BytesIO(contenido))
     t = " ".join((p.extract_text() or "") for p in r.pages[:paginas])
@@ -143,7 +143,7 @@ def documentos_de(ev: dict, docs: list[dict]) -> list[dict]:
     return sorted(out, key=lambda d: d["fecha"], reverse=True)[:8]
 
 
-def completar(evs: list[dict], docs: list[dict], fichas: dict, hoy_iso: str, dias: int = 10, max_pdfs: int = 4) -> bool:
+def completar(evs: list[dict], docs: list[dict], fichas: dict, hoy_iso: str, dias: int = 10, max_pdfs: int = 8) -> bool:
     """Agrega a cada ON/fideicomiso cercano sus documentos, la ficha (aviso de suscripción + adendas) y el resumen."""
     from datetime import date, timedelta
     lim = (date.fromisoformat(hoy_iso) + timedelta(days=dias)).isoformat()
@@ -156,7 +156,9 @@ def completar(evs: list[dict], docs: list[dict], fichas: dict, hoy_iso: str, dia
         base = next((d for d in dd if re.search(r"aviso de suscrip", d["titulo"], re.I)), None)
         adendas = [d for d in dd if re.search(r"adenda|complementario", d["titulo"], re.I)]
         fi = {"campos": {}, "extra": {}}
-        for d in ([base] if base else []) + list(reversed(adendas)):
+        sup = next((d for d in dd if re.search(r"suplemento", d["titulo"], re.I)), None)
+        # el suplemento tiene todas las condiciones: se lee primero (si hay) y el aviso y las adendas lo corrigen
+        for d in ([sup] if sup else []) + ([base] if base else []) + list(reversed(adendas)):
             f = fichas.get(d["url"])
             if f is None and bajados < max_pdfs:
                 bajados += 1

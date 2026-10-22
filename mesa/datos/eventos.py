@@ -186,9 +186,9 @@ def actualizar_licitaciones(almacen, hoy: date, hora: str = "", forzar: bool = F
         from . import prospectos
         boletin = gratis.mae_documentos("boletin-mpmae")
         avisos = _mae.avisos_licitacion(boletin, hoy)
-        fichas = almacen.get("licitaciones/fichas") or {}
+        fichas = almacen.get("licitaciones/fichas2") or {}
         if prospectos.completar(evs, boletin, fichas, hoy.isoformat()):
-            almacen.put("licitaciones/fichas", dict(list(fichas.items())[-80:]))
+            almacen.put("licitaciones/fichas2", dict(list(fichas.items())[-80:]))
         pagos = _mae.pagos(gratis.mae_documentos("pagoamortizrenta"), hoy, [])
     except Exception as ex:
         print(f"[licitaciones] avisos MAE: {ex}")
