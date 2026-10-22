@@ -817,6 +817,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "mae": ctx.extra.get("mae"),
         "mundo": ctx.extra.get("mundo"),
         "pronosticos": libreta[:200],
+        "alertas_disparadas": None if simular else (almacen.get("alertas/disparadas") or {}),
         "mae_dias": None if simular else [{"fecha": d["fecha"], "resumen": d["resumen"]}
                                           for d in ((almacen.get("mae/comparacion") or {}).get("dias") or [])[-20:]],
         "anticipo_lista": ctx.extra.get("anticipo_lista"),
@@ -834,7 +835,13 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         for tk, t in ctx.por_simbolo.items() if t.get("ultimo")}})
     previas = almacen.get("ui/alertas") or []
     ya_avisadas = {(a["fecha"], a["ticker"]) for a in previas}
+    try:
+        alertas_niv = _alertas_niveles(ctx, lista, almacen, simular)
+    except Exception as ex:
+        print(f"[alertas de nivel] {ex}")
+        alertas_niv = []
     alertas_lista = [a for a in alertas_seg + avisos_radar + _alertas_lista(ctx, lista) if (a["fecha"], a["ticker"]) not in ya_avisadas]
+    alertas_lista += alertas_niv  # las de nivel avisan siempre (cada una una sola vez)
     if alertas_lista:
         almacen.put("ui/alertas", (alertas_lista + previas)[:60])
     consumo.guardar()
@@ -858,6 +865,46 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
 
 def _ar(x: float) -> str:
     return f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _alertas_niveles(ctx: Contexto, lista: list[dict], almacen, simular: bool) -> list[dict]:
+    """Alertas de nivel que cargás en la app para cada favorito: "avisame si baja de X / sube de Y",
+    en pesos (precio de BYMA) o en dólares (precio de la acción en EE.UU., para CEDEARs). Cada una avisa una vez."""
+    items = [(it, al) for it in lista for al in (it.get("alertas") or []) if al.get("id") and al.get("nivel")]
+    if not items:
+        return []
+    disparadas = almacen.get("alertas/disparadas") or {}
+    usd_tks = {it["ticker"][:-1] if it["ticker"][-1:] in ("D", "C") and ctx.titulo(it["ticker"][:-1]) else it["ticker"]
+               for it, al in items if al.get("moneda") == "USD" and al["id"] not in disparadas}
+    vivo = {} if simular or not usd_tks else gratis.yahoo_varios(list(usd_tks), prepost=False)
+    out, cambio = [], False
+    for it, al in items:
+        if al["id"] in disparadas:
+            continue
+        tk = it["ticker"]
+        nivel = float(al["nivel"])
+        if al.get("moneda") == "USD":
+            base = tk[:-1] if tk[-1:] in ("D", "C") and ctx.titulo(tk[:-1]) else tk
+            p = (vivo.get(base) or {}).get("precio")
+            lo = hi = p
+            mon = "US$ "
+        else:
+            t = ctx.titulo(tk) or {}
+            p = t.get("ultimo")
+            lo, hi = t.get("minimo") or p, t.get("maximo") or p
+            mon = "$"
+        if not p:
+            continue
+        toca = lo <= nivel if al.get("tipo") == "baja" else hi >= nivel
+        if toca:
+            disparadas[al["id"]] = {"fecha": ctx.fecha.isoformat(), "hora": ctx.hora, "precio": round(p, 4)}
+            cambio = True
+            out.append({"fecha": ctx.fecha.isoformat(), "hora": ctx.hora, "ticker": tk, "id": al["id"],
+                        "texto": f"🔔 {tk} {'bajó de' if al.get('tipo') == 'baja' else 'superó'} {mon}{_ar(nivel)} (ahora {mon}{_ar(p)})."
+                                 + (f" {al['nota']}" if al.get("nota") else "")})
+    if cambio and not simular:
+        almacen.put("alertas/disparadas", disparadas)
+    return out
 
 
 def _alertas_lista(ctx: Contexto, lista: list[dict]) -> list[dict]:

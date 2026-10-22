@@ -245,6 +245,21 @@ function pintarPronosticos() {
   box.querySelectorAll("[data-fpron]").forEach((b) => b.onclick = () => { FILTRO_PRON = b.dataset.fpron; pintarPronosticos(); });
 }
 
+// ---------- alertas de nivel de cada favorito ----------
+function alertasItem(x, i) {
+  const disp = ESTADO.estado?.alertas_disparadas || {};
+  const filas = (x.alertas || []).map((a, j) => { const d = disp[a.id], mon = a.moneda === "USD" ? "US$ " : "$";
+    return `<div class="alerta-niv ${d ? "hecha" : ""}">🔔 ${a.tipo === "baja" ? "Si baja de" : "Si sube de"} <b>${mon}${num(a.nivel)}</b>${a.moneda === "USD" ? ' <span class="tenue">(en EE.UU.)</span>' : ""}
+      ${d ? `<span class="chip verde">avisó el ${esc(fecha(d.fecha))} ${esc(d.hora)} a ${mon}${num(d.precio)}</span>` : '<span class="chip">activa</span>'}${a.nota ? ` <span class="tenue">${esc(a.nota)}</span>` : ""}
+      <button class="quitar" data-quitar-alerta="${i},${j}" aria-label="Borrar alerta">✕</button></div>`; }).join("");
+  return `<div class="item-det">${filas}
+    <details class="nueva-alerta"><summary>＋ Avisarme si…</summary>
+      <form class="fila-form" data-form-alerta="${i}"><select name="tipo"><option value="baja">baja de</option><option value="sube">sube de</option></select>
+        <input name="nivel" placeholder="Precio" inputmode="decimal" required>
+        <select name="moneda"><option value="ARS">$ (BYMA)</option><option value="USD">US$ (en EE.UU.)</option></select><button>Guardar</button></form>
+    </details></div>`;
+}
+
 // ---------- Mi lista, cartera, capital ----------
 function pintarUsuario() {
   const precios = ESTADO.estado?.precios || {};
@@ -256,6 +271,7 @@ function pintarUsuario() {
         <button class="quitar" data-quitar-lista="${i}" aria-label="Quitar ${esc(x.ticker)}">✕</button></div>
       ${(() => { const pr = ultimoPronostico(x.ticker); if (!pr) return ""; const [c, e] = ESTADO_PRON[pr.estado] || ["", pr.estado];
         return `<div class="item-det"><span class="chip ${c}">${e}</span> ${esc(ORIGEN_PRON[pr.origen] || pr.origen)} (${esc(fecha(pr.fecha))}): ${pr.dir > 0 ? "sube" : "baja"} ${num(pr.objetivo_pct, 1)}%${pr.ref ? ` · va ${pct(pr.ahora_pct, 1)}` : ""}</div>`; })()}
+      ${alertasItem(x, i)}
       <div class="item-det">${x.precio ? `Tu precio ${num(x.precio)} · ${dist === null ? "sin cotización" : Math.abs(dist) < 0.3 ? "<b>¡en tu precio!</b>" : `está ${num(Math.abs(dist), 1)}% ${dist > 0 ? "arriba" : "abajo"}`}` : "Sin precio objetivo"}${x.nota ? ` · ${esc(x.nota)}` : ""}</div></div>`;
   }).join("") : '<p class="tenue">Agregá tickers para que la mesa los siga.</p>';
   $("#cartera").innerHTML = USUARIO.cartera.length ? USUARIO.cartera.map((x, i) => {
@@ -269,6 +285,14 @@ function pintarUsuario() {
   }).join("") : '<p class="tenue">Sin posiciones cargadas.</p>';
   const cap = USUARIO.capital || {};
   $("#capital-info").textContent = cap.monto_ars ? `1R = ${num(cap.monto_ars * (cap.riesgo_pct || 1) / 100, 0)} pesos de pérdida máxima por operación.` : "Si no lo cargás, se usa el de la configuración.";
+  document.querySelectorAll("[data-quitar-alerta]").forEach((b) => b.onclick = async () => {
+    const [i, j] = b.dataset.quitarAlerta.split(",").map(Number); USUARIO.lista[i].alertas.splice(j, 1);
+    await put("usuario/lista", USUARIO.lista); pintarUsuario(); toast("Alerta borrada"); });
+  document.querySelectorAll("[data-form-alerta]").forEach((f) => f.onsubmit = async (ev) => {
+    ev.preventDefault(); const i = +f.dataset.formAlerta, d = leerForm(f), nivel = aNum(d.nivel);
+    if (!nivel) return toast("Poné el precio");
+    (USUARIO.lista[i].alertas ||= []).push({ id: Date.now().toString(36), tipo: d.tipo, nivel, moneda: d.moneda, creada: HOY() });
+    await put("usuario/lista", USUARIO.lista); pintarUsuario(); toast("Alerta guardada: la mesa la revisa en cada ronda y te avisa al celular"); });
   document.querySelectorAll("[data-quitar-lista]").forEach((b) => b.onclick = async () => { USUARIO.lista.splice(+b.dataset.quitarLista, 1); await put("usuario/lista", USUARIO.lista); pintarUsuario(); });
   document.querySelectorAll("[data-quitar-cartera]").forEach((b) => b.onclick = async () => { USUARIO.cartera.splice(+b.dataset.quitarCartera, 1); await put("usuario/cartera", USUARIO.cartera); pintarUsuario(); pintarCalendario(); });
   pintarCalendario();

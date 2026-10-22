@@ -130,3 +130,9 @@ h2.ir { cursor: pointer; }
 .resaltar { animation: resaltar 1.6s ease-out; border-radius: var(--r); }
 
 #v-propuestas [id], #v-mercado [id], #v-ranking [id], #v-lista [id] { scroll-margin-top: 90px; }
+
+.alerta-niv { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 4px 0; }
+.alerta-niv.hecha { opacity: .75; }
+.alerta-niv .quitar { margin-left: auto; }
+.nueva-alerta summary { cursor: pointer; color: var(--azul); font-size: 13px; margin-top: 4px; }
+.nueva-alerta .fila-form { margin-top: 6px; }
