@@ -77,16 +77,17 @@ def ficha(texto: str) -> dict:
     m = re.search(r"tasa (?:nominal anual )?fija (?:del? )?(\d+(?:,\d+)?) ?%", texto, re.I)
     if m:
         extra["tasa_fija"] = m.group(1)
-    for ref in ("TAMAR", "BADLAR", "UVA", "CER", "dollar linked", "Dólar Linked"):
-        if re.search(rf"\b{re.escape(ref)}\b", texto, re.I):
-            extra.setdefault("referencias", []).append(ref.upper().replace("DÓLAR", "DOLLAR"))
+    for m in re.finditer(r"[Tt]asa[^.]{0,160}?\b(TAMAR|BADLAR|CER|UVA|[Dd][oó]lar [Ll]inked)\b", texto):
+        ref = m.group(1).upper().replace("Ó", "O")
+        if ref not in extra.get("referencias", []):
+            extra.setdefault("referencias", []).append(ref)
     m = re.search(r"vencimiento a los (\d+) (?:\(\w+\) )?meses", texto, re.I)
     if m:
         extra["plazo_meses"] = int(m.group(1))
     m = re.search(r"\b([A-D]{1,3}\d?[+\-]?(?:sf)?\s?\(arg\)|[A-D]{1,3}\d?[+\-]?\.ar)", texto)
     if m:
         extra["nota"] = m.group(1)
-    m = re.search(r"([A-ZÁÉÍÓÚ][\w .]+S\.G\.R\.)", texto)
+    m = re.search(r"\b([A-ZÁÉÍÓÚ][a-záéíóúñ]+(?: [A-ZÁÉÍÓÚ][a-záéíóúñ]+){0,3} S\.G\.R\.)", texto)
     if m:
         extra["sgr"] = m.group(1).strip()
     return {"campos": campos, "extra": extra}
@@ -113,12 +114,13 @@ def resumen(ev: dict, fi: dict | None) -> str:
         partes.append(f"garantizada por {ex['sgr']}")
     if ex.get("nota"):
         partes.append(f"calificación {ex['nota']}")
-    frase = ", ".join(partes) + "."
+    frase = ", ".join(partes).rstrip(".") + "."
     if ev.get("hora_cierre"):
         frase += (f" Se oferta el {ev['fecha'][8:10]}/{ev['fecha'][5:7]} de {ev.get('hora_inicio')} a {ev['hora_cierre']} h por tu bróker"
                   + (f" (colocadores: {ev['colocador'][:90]})" if ev.get("colocador") else "") + ".")
-    if ca.get("minimo"):
-        frase += f" Mínimo: {re.split(r' \(|,', ca['minimo'])[0][:60]}."
+    m = re.search(r"(?:U\$S|US\$|V/N\s?\$?|\$)\s?[\d.,]+", ca.get("minimo") or "")
+    if m:
+        frase += f" Mínimo: {m.group(0)}."
     return frase
 
 
