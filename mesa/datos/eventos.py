@@ -149,6 +149,15 @@ def actualizar_licitaciones(almacen, hoy: date, hora: str = "", forzar: bool = F
     except Exception as ex:
         print(f"[licitaciones] {ex}")
         return guardado
+    # si un detalle falló, se completa con lo que ya sabíamos de esa misma licitación
+    previos = {e.get("id"): e for e in guardado.get("eventos") or []}
+    for e in evs:
+        p = previos.get(e.get("id"))
+        if p and not e.get("emisor") and p.get("emisor"):
+            for k in ("emisor", "moneda", "monto", "licita", "liquidacion", "estado", "modalidad", "colocador", "segmento"):
+                if p.get(k) is not None:
+                    e[k] = p[k]
+            e["nombre"] = gratis.nombre_licitacion(e)
     # si vino con menos ONs/fideicomisos que la foto anterior del día, se conservan los que faltan
     if guardado.get("fecha") == hoy.isoformat():
         ids = {e.get("id") for e in evs}

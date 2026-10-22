@@ -347,13 +347,22 @@ def licitaciones_mae(desde, hasta, detalle_dias: int = 10, max_detalles: int = 2
         clase = _clase_licitacion(titulo)
         fecha, hora_ini = _hora_art(e.get("start"))
         _, hora_fin = _hora_art(e.get("end"))
+        if not (desde.isoformat() <= fecha <= hasta.isoformat()):
+            continue  # a veces la API devuelve eventos de otras fechas: se descartan
         ev = {"fecha": fecha, "tipo": "licitacion", "clase": clase, "id": e.get("id"), "titulo": titulo,
               "hora_inicio": hora_ini if clase not in ("Tesoro", "Provincia") else "",
               "hora_cierre": hora_fin if clase not in ("Tesoro", "Provincia") else ""}
         if clase not in ("Tesoro", "Provincia") and fecha <= lim_det and pedidos < max_detalles:
             pedidos += 1
             try:
-                d = _S.get(_MAE + f"mercado/licitacion/{e['id']}", headers=_MAE_H, timeout=20).json()
+                d = {}
+                for _ in range(2):  # la API a veces falla: un reintento
+                    try:
+                        d = _S.get(_MAE + f"mercado/licitacion/{e['id']}", headers=_MAE_H, timeout=20).json() or {}
+                        if d.get("emisor") or d.get("moneda"):
+                            break
+                    except Exception:
+                        pass
                 ev.update({"emisor": " ".join(str(d.get("emisor") or "").split()), "moneda": d.get("moneda"),
                            "monto": d.get("montoaLicitar"), "licita": (d.get("variableLicitar") or "").lower(),
                            "liquidacion": _hora_art(d.get("fechaLiquidacion"))[0], "estado": d.get("estado"),
