@@ -266,6 +266,7 @@ def _senales_mundo(ctx, almacen, hoy, minuto: int, refrescar: bool, simular: boo
         existe = lambda tk: ctx.titulo(tk) is not None
         stats = almacen.get("mundo/stats") or {}
         sens = mundo.senales(guardado.get("temas") or [], guardado.get("empresas") or [], existe, stats)
+        ctx.extra["mundo_senales"] = sens
         ctx.extra["mundo"] = {**{k: v for k, v in guardado.items() if k != "conteos"}, "stats": stats}
         ctx.extra["mundo_alertas"] = mundo.alertas_radar(guardado.get("temas") or [], guardado.get("empresas") or [], existe)
         if minuto >= 11 * 60 + 5:  # anotación con precio de BYMA abierto, para la estadística propia
@@ -670,6 +671,32 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     except Exception as ex:  # nunca frena la ronda
         print(f"[simulacion] {ex}")
 
+    # --- libreta de pronósticos: todo lo que la mesa anticipa, controlado solo (¿se dio o no?) ---
+    libreta = []
+    try:
+        from .nucleo import pronosticos as pron
+        libreta = [] if simular else (almacen.get("pronosticos/libreta") or [])
+        minuto = ya.hour * 60 + ya.minute
+        nuevos_p = pron.desde_anticipador(ctx.extra.get("anticipo_lista") or {}, hoy, ctx.hora)
+        nuevos_p += pron.desde_anticipos(ctx.extra.get("anticipos") or [], hoy, ctx.hora)
+        nuevos_p += pron.desde_mundo(ctx.extra.get("mundo_senales") or [], hoy, ctx.hora, lambda tk: (ctx.titulo(tk) or {}).get("ultimo") if minuto >= 11 * 60 else None)
+        for e in nuevas:
+            x = pron.desde_plan("jefe", e["ticker"], e["plan"], hoy, ctx.hora, e.get("resumen_jefe") or "Propuesta del Jefe", e.get("id"))
+            nuevos_p += [x] if x else []
+        for plazo, lista_o in (ops or {}).items():
+            for o in lista_o:
+                if (o.get("mesa") or {}).get("aprobada"):
+                    x = pron.desde_plan("oportunidad", o["ticker"], o["plan"], hoy, ctx.hora, f"{o.get('setup', '')} ({plazo})")
+                    nuevos_p += [x] if x else []
+        hubo = sum(pron.anotar(libreta, p) for p in nuevos_p) > 0
+        hubo = pron.actualizar(libreta, ctx.por_simbolo, hoy, minuto >= 11 * 60) or hubo
+        if minuto >= 17 * 60:
+            hubo = pron.cerrar_dia(libreta, hoy) or hubo
+        if not simular and (hubo or cada30):
+            almacen.put("pronosticos/libreta", libreta)
+    except Exception as ex:
+        print(f"[pronosticos] {ex}")
+
     # --- seguimiento de propuestas y señales ---
     reg.actualizar_seguimiento({k: v for k, v in ctx.por_simbolo.items()}, hoy)
     try:  # Radar: investigación de cada alerta con lo que dijo cada analista, noticias y calendario
@@ -733,6 +760,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "licitaciones_avisos": ctx.extra.get("licitaciones_avisos"),
         "mae": ctx.extra.get("mae"),
         "mundo": ctx.extra.get("mundo"),
+        "pronosticos": libreta[:200],
         "mae_dias": None if simular else [{"fecha": d["fecha"], "resumen": d["resumen"]}
                                           for d in ((almacen.get("mae/comparacion") or {}).get("dias") or [])[-20:]],
         "anticipo_lista": ctx.extra.get("anticipo_lista"),

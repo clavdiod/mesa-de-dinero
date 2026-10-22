@@ -92,8 +92,8 @@
 
   <!-- MI CARTERA: lo que sigo, lo que tengo y lo que voy a cobrar -->
   <section id="v-lista" class="vista">
-    <h2>Mi lista</h2>
-    <p class="tenue">La mesa analiza primero estos tickers y te avisa si tocan tu precio. Tocá un ticker para ver su debate.</p>
+    <h2>⭐ Mis favoritos</h2>
+    <p class="tenue">La mesa analiza primero estos papeles y te avisa si tocan tu precio. Agregalos acá o con la ☆ que aparece al lado de cada papel en toda la app. Tocá un ticker para ver su debate.</p>
     <form id="form-lista" class="fila-form">
       <input name="ticker" placeholder="GGAL" required maxlength="12" autocapitalize="characters">
       <input name="precio" placeholder="Precio que te interesa" inputmode="decimal">
@@ -156,6 +156,9 @@
 
   <!-- RESULTADOS: cómo le va a la mesa y qué aprendió -->
   <section id="v-ranking" class="vista">
+    <h2 id="titulo-pronosticos">📋 ¿Se dan los pronósticos?</h2>
+    <p class="tenue">Todo lo que la mesa anticipa queda anotado con el precio de ese momento y se controla solo en cada ronda. Tocá ☆ en cualquier papel para seguirlo en favoritos.</p>
+    <div id="pronosticos"></div>
     <h2>Simulación: ¿qué hubiera pasado?</h2>
     <p class="tenue">Cada propuesta y oportunidad confirmada se "compra" en papel (1.000 nominales) y se sigue hasta el objetivo, el stop o el plazo, con comisiones.</p>
     <div id="simulacion"></div>

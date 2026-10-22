@@ -110,6 +110,7 @@ function pintarEstado() {
   pintarEconomista();
   pintarWallStreet();
   pintarMundo();
+  pintarPronosticos();
   pintarCripto();
   pintarADR();
   pintarSenales();
@@ -192,6 +193,58 @@ function pintarSenales() {
 }
 $("#filtro-senales").addEventListener("input", pintarSenales);
 
+// ---------- favoritos (★): se agregan/quitan desde cualquier papel ----------
+const esFav = (tk) => (USUARIO.lista || []).some((x) => x.ticker === String(tk).toUpperCase());
+function estrella(tk, origen = "") {
+  const on = esFav(tk);
+  return `<button class="fav ${on ? "on" : ""}" data-fav="${esc(tk)}" data-fav-origen="${esc(origen)}" aria-label="${on ? "Quitar de" : "Agregar a"} favoritos ${esc(tk)}" title="${on ? "Quitar de favoritos" : "Agregar a favoritos"}">${on ? "★" : "☆"}</button>`;
+}
+document.addEventListener("click", async (ev) => {
+  const b = ev.target.closest("[data-fav]"); if (!b) return;
+  ev.preventDefault(); ev.stopPropagation();
+  const tk = b.dataset.fav.toUpperCase(), i = USUARIO.lista.findIndex((x) => x.ticker === tk);
+  if (i >= 0) USUARIO.lista.splice(i, 1);
+  else USUARIO.lista.push({ ticker: tk, precio: null, nota: b.dataset.favOrigen ? `Desde ${b.dataset.favOrigen} (${fecha(HOY())})` : "" });
+  try { await put("usuario/lista", USUARIO.lista); } catch (x) { toast("No se pudo guardar: " + x.message); return; }
+  document.querySelectorAll(`[data-fav="${CSS.escape(b.dataset.fav)}"]`).forEach((x) => { const on = i < 0; x.classList.toggle("on", on); x.textContent = on ? "★" : "☆"; });
+  toast(i >= 0 ? `${tk} salió de favoritos` : `${tk} en favoritos: la mesa lo sigue desde la próxima ronda`);
+  pintarUsuario(); pintarPronosticos();
+}, true);
+
+// ---------- libreta de pronósticos ----------
+const ESTADO_PRON = { se_dio: ["verde", "✅ Se dio"], fallo: ["rojo", "❌ Falló"], no_se_dio: ["", "➖ No se dio"], en_curso: ["amar", "⏳ En curso"], esperando: ["", "🕒 Espera apertura"] };
+const ORIGEN_PRON = { anticipador: "Anticipador", anticipo: "Anticipo NY", mundo: "Corresponsal", jefe: "Jefe", oportunidad: "Oportunidad" };
+let FILTRO_PRON = "fav";
+function ultimoPronostico(tk) { return (ESTADO.estado?.pronosticos || []).find((x) => x.ticker === tk); }
+function filaPron(x) {
+  const [col, eti] = ESTADO_PRON[x.estado] || ["", x.estado];
+  const dir = x.dir > 0 ? "sube" : "baja";
+  return `<div class="item pron"><div class="item-cab">${estrella(x.ticker, ORIGEN_PRON[x.origen])}<b class="link" data-abrir-debate="${esc(x.ticker)}">${esc(x.ticker)}</b>
+      <span class="tenue">${esc(ORIGEN_PRON[x.origen] || x.origen)} · ${esc(fecha(x.fecha))}</span><span class="chip ${col}">${eti}</span></div>
+    <div class="item-det">Dijo: <b>${dir} ${num(x.objetivo_pct, 1)}%</b>${x.stop_pct ? ` (stop -${num(x.stop_pct, 1)}%)` : ""} hasta el ${esc(fecha(x.vence))}
+      ${x.ref ? ` · desde ${num(x.ref)} → ahora ${num(x.ultimo ?? x.ref)} (<b style="color:var(--${x.ahora_pct > 0 ? "verde" : x.ahora_pct < 0 ? "rojo" : "texto"})">${pct(x.ahora_pct, 1)}</b> a favor) · mejor ${pct(x.mejor, 1)} · peor ${pct(x.peor, 1)}` : " · toma el precio en la primera ronda con BYMA abierto"}</div>
+    ${x.texto ? `<div class="item-det tenue">${esc(x.texto)}</div>` : ""}</div>`;
+}
+function pintarPronosticos() {
+  const box = $("#pronosticos"); if (!box) return;
+  const xs = ESTADO.estado?.pronosticos || [];
+  if (!xs.length) { box.innerHTML = '<p class="tenue">Todavía no hay pronósticos anotados: la libreta arranca con la próxima ronda.</p>'; return; }
+  const res = {};
+  for (const x of xs) { const r = (res[x.origen] ||= { se_dio: 0, fallo: 0, no_se_dio: 0, abiertos: 0, suma: 0 });
+    if (["se_dio", "fallo", "no_se_dio"].includes(x.estado)) { r[x.estado]++; r.suma += x.estado === "se_dio" ? x.objetivo_pct : x.estado === "fallo" ? -(x.stop_pct || 0) : x.ahora_pct || 0; } else r.abiertos++; }
+  const tabla = `<div class="tabla-scroll"><table><tr><th>Quién</th><th class="n">Se dio</th><th class="n">No / falló</th><th class="n">Acierto</th><th class="n">Prom.</th><th class="n">Abiertos</th></tr>
+    ${Object.entries(res).map(([o, r]) => { const c = r.se_dio + r.fallo + r.no_se_dio; return `<tr><td>${esc(ORIGEN_PRON[o] || o)}</td><td class="n">${r.se_dio}</td><td class="n">${r.no_se_dio + r.fallo}</td>
+      <td class="n">${c ? num(r.se_dio / c * 100, 0) + "%" : "—"}</td><td class="n">${c ? pct(r.suma / c, 1) : "—"}</td><td class="n">${r.abiertos}</td></tr>`; }).join("")}</table></div>`;
+  const filtros = [["fav", "⭐ Favoritos"], ["abiertos", "⏳ En curso"], ["cerrados", "Cerrados"], ["todos", "Todos"]];
+  const pasa = (x) => FILTRO_PRON === "fav" ? esFav(x.ticker) : FILTRO_PRON === "abiertos" ? ["en_curso", "esperando"].includes(x.estado)
+    : FILTRO_PRON === "cerrados" ? ["se_dio", "fallo", "no_se_dio"].includes(x.estado) : true;
+  const lista = xs.filter(pasa);
+  box.innerHTML = `<div class="card">${tabla}<p class="tenue">Acierto = llegó al objetivo dentro del plazo. Prom. = resultado promedio a favor del pronóstico.</p></div>
+    <div class="tiras" id="filtro-pron">${filtros.map(([k, t]) => `<button class="chico ${FILTRO_PRON === k ? "prim" : ""}" data-fpron="${k}">${t}</button>`).join("")}</div>
+    ${lista.length ? lista.slice(0, 60).map(filaPron).join("") : `<p class="tenue">${FILTRO_PRON === "fav" ? "Ninguno de tus favoritos tiene pronósticos todavía. Marcá ☆ en los papeles que te interesen." : "Nada para mostrar con este filtro."}</p>`}`;
+  box.querySelectorAll("[data-fpron]").forEach((b) => b.onclick = () => { FILTRO_PRON = b.dataset.fpron; pintarPronosticos(); });
+}
+
 // ---------- Mi lista, cartera, capital ----------
 function pintarUsuario() {
   const precios = ESTADO.estado?.precios || {};
@@ -201,6 +254,8 @@ function pintarUsuario() {
     return `<div class="item"><div class="item-cab"><b class="link" data-abrir-debate="${esc(x.ticker)}">${esc(x.ticker)}</b>
         <span class="item-precio">${num(q.ultimo)} <span class="chip ${color(q.variacion)}">${pct(q.variacion)}</span></span>
         <button class="quitar" data-quitar-lista="${i}" aria-label="Quitar ${esc(x.ticker)}">✕</button></div>
+      ${(() => { const pr = ultimoPronostico(x.ticker); if (!pr) return ""; const [c, e] = ESTADO_PRON[pr.estado] || ["", pr.estado];
+        return `<div class="item-det"><span class="chip ${c}">${e}</span> ${esc(ORIGEN_PRON[pr.origen] || pr.origen)} (${esc(fecha(pr.fecha))}): ${pr.dir > 0 ? "sube" : "baja"} ${num(pr.objetivo_pct, 1)}%${pr.ref ? ` · va ${pct(pr.ahora_pct, 1)}` : ""}</div>`; })()}
       <div class="item-det">${x.precio ? `Tu precio ${num(x.precio)} · ${dist === null ? "sin cotización" : Math.abs(dist) < 0.3 ? "<b>¡en tu precio!</b>" : `está ${num(Math.abs(dist), 1)}% ${dist > 0 ? "arriba" : "abajo"}`}` : "Sin precio objetivo"}${x.nota ? ` · ${esc(x.nota)}` : ""}</div></div>`;
   }).join("") : '<p class="tenue">Agregá tickers para que la mesa los siga.</p>';
   $("#cartera").innerHTML = USUARIO.cartera.length ? USUARIO.cartera.map((x, i) => {
@@ -355,12 +410,16 @@ function pintarAnticipos() {
   const col = (v) => (v > 0 ? "verde" : "rojo");
   const tablaAt = at.length ? `<p class="tenue">Lo que su acción ya hizo en Nueva York (incluye el pre-market) y el CEDEAR todavía no. ${at.some((a) => a.antes_de_abrir) ? "<b>BYMA todavía no abrió:</b> esto es lo que debería pasar a las 11." : ""}</p>
     <div class="tabla-scroll"><table><tr><th>CEDEAR</th><th class="n">En NY</th><th class="n">CEDEAR</th><th class="n">Le falta</th></tr>
-    ${at.slice(0, 12).map((a) => `<tr><td><span class="link" data-abrir-debate="${esc(a.ticker)}">${esc(a.ticker)}</span></td><td class="n">${pct(a.us, 1)}</td>
+    ${at.slice(0, 12).map((a) => `<tr><td>${estrella(a.ticker, "Anticipo NY")}<span class="link" data-abrir-debate="${esc(a.ticker)}">${esc(a.ticker)}</span></td><td class="n">${pct(a.us, 1)}</td>
       <td class="n">${a.antes_de_abrir ? "<span class='tenue'>sin abrir</span>" : pct(a.cedear, 1)}</td><td class="n" style="color:var(--${col(a.atraso)})"><b>${pct(a.atraso, 1)}</b></td></tr>`).join("")}</table></div>` : "";
   const p = li.prueba || {};
   const tablaLi = (li.lista || []).length ? `<p class="tenue" style="margin-top:10px"><b>Para los próximos días</b> (lista del cierre ${esc(fecha(li.fecha))}): papeles con las señales que suelen aparecer antes de una suba de 5% o más en la semana.
       ${p.base_pct ? `En la prueba con datos que no vio, de cada 100 marcados subieron así ${num(p.top10_pct, 0)}, contra ${num(p.base_pct, 0)} al azar.` : ""}${li.activo ? "" : " (todavía no supera la prueba: solo informativo)"}</p>
-    ${li.lista.slice(0, 10).map((x) => `<div class="agente"><b class="link" data-abrir-debate="${esc(x.ticker)}">${esc(x.ticker)}<br><span class="tenue">${num(x.prob * 100, 0)}%</span></b><span>${esc((x.razones || []).join(" · ") || "combinación de precursores")}</span></div>`).join("")}` : "";
+    ${li.lista.slice(0, 10).map((x) => { const pr = (ESTADO.estado?.pronosticos || []).find((p) => p.origen === "anticipador" && p.ticker === x.ticker && p.fecha === li.fecha);
+      const [c, e] = pr ? ESTADO_PRON[pr.estado] || ["", ""] : ["", ""];
+      return `<div class="agente"><b>${estrella(x.ticker, "Anticipador")}<span class="link" data-abrir-debate="${esc(x.ticker)}">${esc(x.ticker)}</span><br><span class="tenue">${num(x.prob * 100, 0)}%</span></b>
+        <span>${esc((x.razones || []).join(" · ") || "combinación de precursores")}${pr ? `<br><span class="chip ${c}">${e}</span> ${pr.ref ? `desde ${num(pr.ref)}: va ${pct(pr.ahora_pct, 1)}, mejor ${pct(pr.mejor, 1)}` : ""}` : ""}</span></div>`; }).join("")}
+    <p><button class="chico" data-ir-pron>📋 Ver cómo van todos los pronósticos</button></p>` : "";
   const pl = es?.plazos?.al_cierre;
   const est = pl?.casos ? `<p class="tenue" style="margin-top:8px">Estadística propia de los anticipos (desde ${esc(fecha(es.desde))}): acertaron ${num(pl.aciertos / pl.casos * 100, 0)}% de ${pl.casos}, ${pct(pl.suma_ret / pl.casos, 2)} promedio hasta el cierre.</p>` : "";
   $("#anticipos").innerHTML = `<h2>⏩ Anticipos <span class="hora">· ${esc(e.hora || "")}</span></h2><div class="card eco">${tablaAt}${tablaLi}${est}</div>`;
@@ -374,7 +433,7 @@ function pintarRadar() {
   $("#radar").innerHTML = `<h2>📡 Radar del mercado <span class="hora">· ${esc(ESTADO.estado?.hora || "")}</span></h2>
     <p class="tenue">Todo lo anormal que vieron los analistas en esta ronda, con su análisis.</p>` + rs.map((r) => `
     <details class="grupo radar ${r.severidad}"><summary><span class="chip ${r.severidad === "alta" ? "rojo" : "amar"}">${r.severidad === "alta" ? "Alta" : "Media"}</span>
-      <b>${esc(r.ticker)}</b> <span class="tenue">${(r.tipos || [r.tipo]).map((t) => TIPO_RADAR[t] || t).join(" + ")} · desde las ${esc(r.primera || r.hora)}</span></summary>
+      ${r.grupo !== "macro" ? estrella(r.ticker, "Radar") : ""}<b>${esc(r.ticker)}</b> <span class="tenue">${(r.tipos || [r.tipo]).map((t) => TIPO_RADAR[t] || t).join(" + ")} · desde las ${esc(r.primera || r.hora)}</span></summary>
       <p>${esc(r.texto)}</p>
       <p><b>¿Qué pasa?</b> ${esc(r.conclusion)}</p>
       ${r.grupo !== "macro" ? `<p class="tenue">${esc(r.lectura)} (${r.favor} a favor, ${r.contra} en contra)</p>` : ""}
@@ -449,7 +508,7 @@ function pintarMundo() {
     ${t.nuevo === false ? '<span class="chip">tema de fondo: no vota</span>' : '<span class="chip verde">novedad: vota</span>'}
     <p class="tenue">${esc(t.explica)}</p><div class="tiras">${chips(t.efectos)}</div>
     ${t.titulares.slice(0, 3).map((n) => `<div class="evento"><span class="ev-ic">📰</span><span>${link(n)} <span class="tenue">${esc(n.fuente || "")}</span></span></div>`).join("")}</div>`).join("");
-  const emp = (r.empresas || []).map((e) => `<div class="evento"><span class="ev-ic">${e.dir > 0 ? "🟢" : "🔴"}</span><span><b class="link" data-abrir-debate="${esc(e.ticker)}">${esc(e.ticker)}</b>
+  const emp = (r.empresas || []).map((e) => `<div class="evento"><span class="ev-ic">${e.dir > 0 ? "🟢" : "🔴"}</span><span>${estrella(e.ticker, "Corresponsal")}<b class="link" data-abrir-debate="${esc(e.ticker)}">${esc(e.ticker)}</b>
     ${e.rumor ? '<span class="chip">rumor</span> ' : ""}${link(e.titulares[0])}</span></div>`).join("");
   const st = Object.entries(r.stats || {}).filter(([, x]) => x.casos);
   const tablaSt = st.length ? `<p class="tenue" style="margin-top:10px"><b>Cómo le fue</b> (a 5 ruedas, lo que el tema anticipaba): con 10 casos o más, si no acierta se silencia solo.</p>
@@ -703,7 +762,7 @@ async function verDebate(tk) {
     }
     const ult = e?.precio?.ultimo ?? t?.[0], vari = e?.precio?.variacion ?? t?.[1];
     const tec = t ? lecturaTecnica(t, hist) : null;
-    let html = `<div class="card"><div class="fila"><div><div style="font-size:20px;font-weight:700">${esc(tk)}</div>
+    let html = `<div class="card"><div class="fila"><div><div style="font-size:20px;font-weight:700">${estrella(tk, "Debate")}${esc(tk)}</div>
       <span class="tenue">${e ? `Debate de la ronda ${esc(fecha(e.fecha))} ${esc(e.hora)}` : `Precio de la ronda ${esc(fecha(p.fecha))} ${esc(p.hora)}`}</span></div>
       <div style="text-align:right"><b style="font-size:18px">${num(ult)}</b><br><span class="chip ${vari > 0 ? "verde" : vari < 0 ? "rojo" : ""}">${pct(vari)}</span></div></div></div>`;
     if (e) {
@@ -752,6 +811,7 @@ async function verDebate(tk) {
 }
 function abrirDebate(tk) { document.querySelector('.tabs button[data-v="asistente"]').click(); verDebate(tk); }
 document.addEventListener("click", (ev) => { const b = ev.target.closest("[data-abrir-debate]"); if (b) abrirDebate(b.dataset.abrirDebate); });
+document.addEventListener("click", (ev) => { if (ev.target.closest("[data-ir-pron]")) { irA("ranking"); setTimeout(() => $("#titulo-pronosticos")?.scrollIntoView({ behavior: "smooth" }), 100); } });
 $("#form-debate").addEventListener("submit", (ev) => { ev.preventDefault(); verDebate(ev.target.ticker.value.trim().toUpperCase()); });
 $("#form-letras").addEventListener("submit", async (ev) => {
   ev.preventDefault(); const mes = ev.target.mes.value; const box = $("#lista-letras");
