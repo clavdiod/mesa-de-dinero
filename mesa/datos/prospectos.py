@@ -27,10 +27,10 @@ CAMPOS = [  # (clave, título para mostrar, patrón del rótulo en el aviso)
     ("calificacion", "Calificación", r"Calificaci[oó]n(?: de [Rr]iesgo)?"),
     ("garantia", "Garantía", r"Entidad de [Gg]arant[ií]a|Garant[ií]a"),
     # resultados de la licitación
-    ("vn_emitido", "Monto emitido", r"Valor [Nn]ominal (?:a [Ee]mitir|[Ee]mitido|[Aa]djudicado)|Monto (?:a [Ee]mitir|[Ee]mitido|[Aa]djudicado)|V/N (?:a [Ee]mitir|[Ee]mitido)"),
-    ("ofertado", "Ofertas recibidas", r"Valor [Nn]ominal (?:de las [Oo]fertas [Rr]ecibidas|[Oo]fertado)|Monto (?:total )?[Oo]fertado|Cantidad de [Oo]fertas(?: [Rr]ecibidas)?"),
+    ("vn_emitido", "Monto emitido", r"Valor [Nn]ominal (?:a [Ee]mitir(?:se)?|[Ee]mitido|[Aa]djudicado)|Monto (?:total )?(?:a [Ee]mitir(?:se)?|[Ee]mitido|[Aa]djudicado)|V/N (?:a [Ee]mitir(?:se)?|[Ee]mitido)"),
+    ("ofertado", "Ofertas recibidas", r"Valor [Nn]ominal (?:de (?:las )?[Oo]fertas [Rr]ecibidas|[Oo]fertado)|Monto (?:total )?[Oo]fertado|Cantidad de [Oo]fertas(?: [Rr]ecibidas)?"),
     ("margen_corte", "Margen de corte", r"Margen (?:de [Cc]orte|[Aa]plicable|[Dd]iferencial)"),
-    ("tasa_corte", "Tasa de corte", r"Tasa (?:de [Cc]orte|[Aa]plicable|[Ff]ija|[Ii]nterna de [Rr]etorno|de [Ii]nter[eé]s [Ff]ija)"),
+    ("tasa_corte", "Tasa de corte", r"Tasa (?:de [Cc]orte|[Aa]plicable|[Ff]ija|[Ii]nterna de [Rr]etorno(?: \(TIR\))?|de [Ii]nter[eé]s [Ff]ija)"),
     ("factor_prorrateo", "Prorrateo", r"Factor de [Pp]rorrateo"),
     ("duration", "Duration", r"Duration"),
 ]
@@ -67,11 +67,15 @@ def _valor(texto: str, patron: str) -> str | None:
     resto = texto[m.end(): m.end() + 420]
     sig = _ROTULO.search(resto, 25)  # corta en el próximo "Rótulo: "
     v = resto[: sig.start()] if sig else resto
-    # si es muy largo, hasta el primer punto después de 60 caracteres
-    if len(v) > 260:
-        p = v.find(". ", 60)
-        v = v[: p + 1] if 0 < p < 300 else v[:260] + "…"
-    return v.strip(" ;,") or None
+    # corta en el próximo punto numerado ("7.", "k.", "12)") o viñeta: los avisos son listas
+    m2 = re.search(r"\s(?:\d{1,2}[.)]|[a-zA-Z][.)]|•)\s", v[3:])
+    if m2:
+        v = v[: m2.start() + 3]
+    if len(v) > 140:  # si sigue largo, hasta el primer punto
+        p = v.find(". ", 20)
+        v = v[: p + 1] if 0 < p < 220 else v[:180] + "…"
+    v = re.split(r",? (?:de no ser|o,? de no ser|si (?:dicha|cualquier))", v)[0]
+    return v.strip(" ;,.") or None
 
 
 def ficha(texto: str) -> dict:
@@ -187,10 +191,10 @@ def completar(evs: list[dict], docs: list[dict], fichas: dict, hoy_iso: str, dia
 def resumen_resultado(titulo: str, fi: dict) -> str:
     ca = fi.get("campos") or {}
     partes = []
-    for k, t in (("vn_emitido", "se emitieron"), ("ofertado", "ofertas"), ("tasa_corte", "tasa de corte"), ("margen_corte", "margen de corte"),
-                 ("precio", "precio"), ("vencimiento", "vence"), ("factor_prorrateo", "prorrateo")):
+    for k, t in (("vn_emitido", "se emiten"), ("ofertado", "ofertas:"), ("tasa_corte", "tasa de corte"), ("margen_corte", "margen de corte"),
+                 ("precio", "precio"), ("vencimiento", "vence el"), ("factor_prorrateo", "prorrateo"), ("duration", "duration")):
         if ca.get(k):
-            partes.append(f"{t}: {ca[k][:90]}")
+            partes.append(f"{t} {ca[k][:90]}")
     return "Resultado: " + "; ".join(partes) + "." if partes else ""
 
 
