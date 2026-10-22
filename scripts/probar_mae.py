@@ -1,4 +1,4 @@
-"""¿Se pueden bajar los PDF de MAE (SharePoint) y leer las condiciones?"""
+"""Texto de los avisos de suscripción (para diseñar el resumen)."""
 import io
 import re
 
@@ -7,21 +7,13 @@ from pypdf import PdfReader
 
 H = {"User-Agent": "Mozilla/5.0", "Accept": "application/json", "Origin": "https://marketdata.mae.com.ar", "Referer": "https://marketdata.mae.com.ar/"}
 docs = requests.get("https://api.marketdata.mae.com.ar/api/mercado/boletin-mpmae", headers=H, timeout=30).json()
-out = []
-for d in docs[:40]:
-    if not re.search(r"COLGAS|AGROCAP", d["titulo"], re.I) or not re.search(r"Aviso|Suplemento", d["titulo"], re.I):
+for pat in (r"COLGAS.*Suscrip", r"AGROCAP.*Suscrip"):
+    d = next((d for d in docs if re.search(pat, d["titulo"], re.I)), None)
+    if not d:
+        print(f"::notice::{pat}: no está")
         continue
-    u = d["url"]
-    for url in (u + ("&" if "?" in u else "?") + "download=1", u):
-        r = requests.get(url, timeout=60, headers={"User-Agent": "Mozilla/5.0"}, allow_redirects=True)
-        ct = r.headers.get("content-type", "")
-        ok = r.content[:4] == b"%PDF"
-        out.append(f"{d['titulo'][:60]} | {url[-30:]} -> {r.status_code} {ct[:30]} pdf={ok} {len(r.content)}B final={r.url[:80]}")
-        if ok:
-            txt = " ".join((p.extract_text() or "") for p in PdfReader(io.BytesIO(r.content)).pages[:6])
-            txt = re.sub(r"\s+", " ", txt)
-            out.append("TXT " + txt[:1500])
-            break
-    if len(out) > 8:
-        break
-print("::notice::" + " ||| ".join(out)[:3950])
+    u = d["url"] + ("&" if "?" in d["url"] else "?") + "download=1"
+    pdf = requests.get(u, timeout=60, headers={"User-Agent": "Mozilla/5.0"}).content
+    txt = re.sub(r"\s+", " ", " ".join((p.extract_text() or "") for p in PdfReader(io.BytesIO(pdf)).pages[:8]))
+    for i in range(0, min(len(txt), 11000), 3800):
+        print(f"::notice::{pat} [{i}] " + txt[i:i + 3800])
