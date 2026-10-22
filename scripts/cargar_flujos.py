@@ -1,11 +1,16 @@
-"""BAO27 (Municipalidad de Córdoba, deuda proveedores 2025 S1, TAMAR): flujo de Bull Market que pasó el usuario (1.084.872 nominales)."""
+"""SXC3O (ON de Mercado Libre, TAMAR + 3,5%): el ticker estaba cargado como SCX3O. Flujo de Bull Market (82.703 nominales)."""
 from mesa.nucleo.almacen import almacen_por_defecto
 
-vn = 1084872
-filas = [("2027-02-01", 85596.40, 0), ("2027-06-01", 85596.40, 0), ("2027-10-01", 85596.40, 1084872)]
+vn = 82703
+filas = [("2026-11-23", 5681.70, 0), ("2027-02-23", 5681.70, 82703)]
 a = almacen_por_defecto()
+cart = a.get("usuario/cartera") or []
+for x in cart:
+    if x.get("ticker", "").upper() == "SCX3O":
+        x["ticker"] = "SXC3O"
+a.put("usuario/cartera", cart)
 ons = a.get("usuario/ons") or {}
-ons["BAO27"] = {"emisor": "Municipalidad de Córdoba deuda proveedores 2025 S.1 (TAMAR) · fuente Bull Market (renta estimada)", "moneda": "ARS",
-                "lamina_minima": 1, "flujos": [{"fecha": f, "interes": round(r / vn * 100, 6), "amortizacion": round(am / vn * 100, 6)} for f, r, am in filas]}
+ons["SXC3O"] = {"emisor": "ON Mercado Libre (TAMAR + 3,5%) · fuente Bull Market (renta estimada)", "moneda": "ARS", "lamina_minima": 1,
+                "flujos": [{"fecha": f, "interes": round(r / vn * 100, 6), "amortizacion": round(am / vn * 100, 6)} for f, r, am in filas]}
 a.put("usuario/ons", ons)
-print("::notice::BAO27 " + str(ons["BAO27"]["flujos"]) + " || ONs: " + ", ".join(ons))
+print("::notice::" + str([x["ticker"] for x in cart]) + " || SXC3O " + str(ons["SXC3O"]["flujos"]))
