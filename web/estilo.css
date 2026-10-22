@@ -136,3 +136,11 @@ h2.ir { cursor: pointer; }
 .alerta-niv .quitar { margin-left: auto; }
 .nueva-alerta summary { cursor: pointer; color: var(--azul); font-size: 13px; margin-top: 4px; }
 .nueva-alerta .fila-form { margin-top: 6px; }
+
+details.lic > summary { list-style: none; cursor: pointer; }
+details.lic > summary::-webkit-details-marker { display: none; }
+.lic-mas { white-space: nowrap; margin-left: auto; color: var(--azul); font-size: 12px; }
+details.lic[open] .lic-mas { display: none; }
+.lic-det { padding: 4px 0 10px 30px; }
+table.ficha td { vertical-align: top; font-size: 13px; }
+table.ficha td:first-child { white-space: nowrap; padding-right: 10px; }

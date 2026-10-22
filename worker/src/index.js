@@ -243,6 +243,18 @@ async function api(req, env, url) {
     if ((await leer(env, "auth/passkeys", [])).length) r.headers.append("set-cookie", await cookieDesbloqueo(env));  // mientras la app está abierta no se bloquea
     return r;
   }
+  // documentos públicos de A3/MAE (SharePoint): se sirven desde acá para que el celular los abra directo
+  if (p === "/api/doc") {
+    let u;
+    try { u = new URL(url.searchParams.get("u") || ""); } catch (_) { return nope("documento inválido", 400); }
+    if (u.protocol !== "https:" || u.hostname !== "mercadoabierto.sharepoint.com") return nope("solo documentos de A3", 400);
+    u.searchParams.set("download", "1");
+    const r = await fetch(u.toString(), { headers: { "user-agent": "Mozilla/5.0" }, redirect: "follow" });
+    if (!r.ok) return nope(`A3 respondió ${r.status}`, 502);
+    const nombre = (url.searchParams.get("n") || "documento").replace(/[^\w .\-áéíóúñÁÉÍÓÚÑ]/g, "").slice(0, 80) || "documento";
+    return new Response(r.body, { headers: { "content-type": r.headers.get("content-type") || "application/pdf",
+      "content-disposition": `inline; filename="${nombre}.pdf"`, "cache-control": "private, max-age=86400" } });
+  }
   if (p === "/api/propuestas") {
     const [props, dec] = await Promise.all([leer(env, "registro/propuestas", []), leer(env, "usuario/decisiones", {})]);
     for (const x of props) if (dec[x.id]) x.decision = dec[x.id].decision;

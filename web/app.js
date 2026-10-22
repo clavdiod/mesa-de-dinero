@@ -227,6 +227,9 @@ function pintarSenales() {
 }
 $("#filtro-senales").addEventListener("input", pintarSenales);
 
+// documentos de A3/MAE: se abren a través de la mesa (el link directo de SharePoint falla en el celular)
+const docUrl = (u, n = "") => (u && u.includes("mercadoabierto.sharepoint.com") ? `/api/doc?u=${encodeURIComponent(u)}&n=${encodeURIComponent(n)}` : u);
+
 // ---------- favoritos (★): se agregan/quitan desde cualquier papel ----------
 const esFav = (tk) => (USUARIO.lista || []).some((x) => x.ticker === String(tk).toUpperCase());
 function estrella(tk, origen = "") {
@@ -624,7 +627,7 @@ function diaTxt(f) { const d = new Date(f + "T12:00:00"); const n = Math.round((
   return n === 0 ? "Hoy" : n === 1 ? "Mañana" : `${DIAS_TXT[d.getDay()]} ${fecha(f)}`; }
 function filaEvento(e) {
   return `<div class="evento ${e.fuerte ? "fuerte" : ""}"><span class="ev-ic">${ICONO_EV[e.tipo] || "•"}</span>
-    <span>${e.ticker && e.ticker !== "AL/GD" ? `<b class="link" data-abrir-debate="${esc(e.ticker)}">${esc(e.ticker)}</b> ` : ""}${e.link ? `<a href="${esc(e.link)}" target="_blank" rel="noopener">${esc(e.nombre)}</a>` : esc(e.nombre)}${e.fuerte ? ' <span class="chip rojo">ese día no se abren posiciones</span>' : ""}</span></div>`;
+    <span>${e.ticker && e.ticker !== "AL/GD" ? `<b class="link" data-abrir-debate="${esc(e.ticker)}">${esc(e.ticker)}</b> ` : ""}${e.link ? `<a href="${esc(docUrl(e.link, e.nombre))}" target="_blank" rel="noopener">${esc(e.nombre)}</a>` : esc(e.nombre)}${e.fuerte ? ' <span class="chip rojo">ese día no se abren posiciones</span>' : ""}</span></div>`;
 }
 function pintarEventos() {
   const evs = (ESTADO.estado?.eventos || []).filter((e) => !SOLO_MIO || e.mio || e.tipo === "cobro" || e.tipo === "macro");
@@ -649,12 +652,30 @@ function pintarLicitaciones(lim) {
   const nots = ESTADO.estado?.licitaciones_noticias || [];
   const av = ESTADO.estado?.licitaciones_avisos || {};
   if (!xs.length && !nots.length && !(av.anuncios || []).length && !(av.resultados || []).length) { $("#licitaciones-hoy").innerHTML = ""; return; }
-  const doc = (n, ic) => `<div class="evento"><span class="ev-ic">${ic}</span><span><b>${esc(fecha(n.fecha))}</b> · ${n.link ? `<a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.titulo)}</a>` : esc(n.titulo)}</span></div>`;
+  const doc = (n, ic) => `<div class="evento"><span class="ev-ic">${ic}</span><span><b>${esc(fecha(n.fecha))}</b> · ${n.link ? `<a href="${esc(docUrl(n.link, n.titulo))}" target="_blank" rel="noopener">${esc(n.titulo)}</a>` : esc(n.titulo)}</span></div>`;
   const deHoy = xs.filter((e) => e.fecha === hoy), prox = xs.filter((e) => e.fecha > hoy);
   const estado = (e) => !e.hora_cierre ? "" : ahora < e.hora_inicio ? `<span class="chip">abre ${esc(e.hora_inicio)}</span>`
     : ahora <= e.hora_cierre ? `<span class="chip verde">abierta hasta ${esc(e.hora_cierre)}</span>` : '<span class="chip rojo">cerró</span>';
-  const fila = (e, conDia) => `<div class="evento"><span class="ev-ic">🏦</span><span>${conDia ? `<b>${diaTxt(e.fecha)}</b> · ` : ""}<span class="chip ${CHIP_LIC[e.clase] || ""}">${esc(e.clase)}</span> ${esc(e.nombre)}
-    ${e.emisor ? `<span class="tenue"> · Emisor: ${esc(e.emisor)}</span>` : ""} ${e.fecha === hoy ? estado(e) : ""}</span></div>`;
+  const TIT = { moneda: "Moneda", integracion: "Se paga con", pago: "Paga en", tasa: "Tasa", margen: "Margen", vencimiento: "Vencimiento", amortizacion: "Amortización",
+    intereses: "Pago de intereses", emision: "Emisión y liquidación", periodo: "Período de licitación", minimo: "Monto mínimo", precio: "Precio de emisión",
+    calificacion: "Calificación", garantia: "Garantía" };
+  const detalle = (e) => {
+    const ca = e.ficha?.campos || {};
+    const filas = Object.entries(TIT).filter(([k]) => ca[k]).map(([k, t]) => `<tr><td><b>${t}</b></td><td>${esc(ca[k])}</td></tr>`).join("");
+    const docs = (e.documentos || []).map((d) => `<div class="evento"><span class="ev-ic">📄</span><span><a href="${esc(docUrl(d.url, d.titulo))}" target="_blank" rel="noopener">${esc(d.titulo)}</a> <span class="tenue">${esc(fecha(d.fecha))}</span></span></div>`).join("");
+    if (!e.resumen && !filas && !docs) return "";
+    return `${e.resumen ? `<p style="margin:6px 0"><b>En resumen:</b> ${esc(e.resumen)}</p>` : ""}
+      ${filas ? `<div class="tabla-scroll"><table class="ficha">${filas}</table></div>` : ""}
+      ${docs ? `<p class="tenue" style="margin:8px 0 2px">Documentos (aviso, suplemento, prospecto):</p>${docs}` : ""}
+      <p class="tenue">Resumen armado con el aviso de suscripción publicado en A3. Antes de ofertar, confirmá las condiciones en el suplemento.</p>`;
+  };
+  const fila = (e, conDia) => {
+    const cab = `<span class="ev-ic">🏦</span><span>${conDia ? `<b>${diaTxt(e.fecha)}</b> · ` : ""}<span class="chip ${CHIP_LIC[e.clase] || ""}">${esc(e.clase)}</span> ${esc(e.nombre)}
+      ${e.emisor ? `<span class="tenue"> · Emisor: ${esc(e.emisor)}</span>` : ""} ${e.fecha === hoy ? estado(e) : ""}</span>`;
+    const det = detalle(e);
+    return det ? `<details class="lic"><summary class="evento">${cab}<span class="tenue lic-mas">ver condiciones ›</span></summary><div class="lic-det">${det}</div></details>`
+      : `<div class="evento">${cab}</div>`;
+  };
   $("#licitaciones-hoy").innerHTML = `<h2>🏦 Licitaciones${deHoy.length ? " de hoy" : " de la semana"}</h2><div class="card">` +
     (deHoy.length ? deHoy.map((e) => fila(e, false)).join("") : '<p class="tenue">Hoy no hay licitaciones.</p>') +
     (prox.length ? `<p class="tenue" style="margin-top:.6em">Próximas:</p>${prox.slice(0, 6).map((e) => fila(e, true)).join("")}` : "") +
