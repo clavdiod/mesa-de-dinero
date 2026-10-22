@@ -279,6 +279,53 @@ def _senales_mundo(ctx, almacen, hoy, minuto: int, refrescar: bool, simular: boo
         return []
 
 
+def _noticias_papeles(ctx, almacen, hoy, tks: list[str], simular: bool) -> list[Senal]:
+    """Corresponsal en el debate: busca las noticias de cada papel que se debate (máx. 6 búsquedas por ronda,
+    cada papel se vuelve a buscar a las 2 horas). Gratis: Google Noticias + nombre de la empresa en Yahoo."""
+    if simular or not tks:
+        return []
+    try:
+        from .agentes import mundo
+        from .nucleo.config import emisores, ticker_base
+        cache = almacen.get("mundo/papeles") or {}
+        if cache.get("fecha") != hoy.isoformat():
+            cache = {"fecha": hoy.isoformat(), "papeles": {}}
+        nombres = almacen.get("mundo/nombres") or {}
+        ahora_min = int(ctx.hora[:2]) * 60 + int(ctx.hora[3:5]) if ctx.hora else 0
+        busquedas, cambio_n = 0, False
+        out = []
+        for tk in tks:
+            t = ctx.titulo(tk) or {}
+            base = ticker_base(tk)
+            if t.get("grupo") == "cedears" and tk[-1:] in ("D", "C") and ctx.titulo(tk[:-1]):
+                base = tk[:-1]
+            if t.get("grupo") not in ("acciones", "cedears", "ons"):
+                continue
+            info = cache["papeles"].get(base)
+            vieja = not info or ahora_min - info.get("minuto", 0) >= 120
+            if vieja and busquedas < 6:
+                local = t.get("grupo") in ("acciones", "ons") or base in emisores()
+                nombre = (emisores().get(base) or {}).get("nombre") or nombres.get(base)
+                if not nombre and not local:
+                    nombre = mundo.nombre_yahoo(base)
+                    if nombre:
+                        nombres[base], cambio_n = nombre, True
+                info = {**mundo.noticias_papel(base, nombre, local), "minuto": ahora_min, "hora": ctx.hora}
+                cache["papeles"][base] = info
+                busquedas += 1
+            if info:
+                s = mundo.senal_papel(base, info, almacen.get("mundo/stats") or {})
+                out.append(Senal(s.agente, tk, s.direccion, s.fuerza, s.texto, s.datos, evaluable=s.evaluable))
+        if busquedas:
+            almacen.put("mundo/papeles", cache)
+        if cambio_n:
+            almacen.put("mundo/nombres", nombres)
+        return out
+    except Exception as ex:
+        print(f"[mundo papeles] {ex}")
+        return []
+
+
 def _senales_panico(ctx, almacen, ws_datos, simular) -> list[Senal]:
     """Comprador de pánico: CEDEARs (dólares, con VIX y S&P) y acciones locales (con el riesgo país)."""
     if simular:
@@ -535,6 +582,15 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     # --- hechos del emisor (solo preseleccionados, 1 búsqueda por emisor por día) ---
     hechos = [] if simular else con_ia.hechos_emisor(ctx, ia, preseleccion, almacen)
     senales += hechos
+    # --- Corresponsal en el debate: noticias de cada papel que se debate (incluye la lista del Anticipador) ---
+    lista_anticip = [x["ticker"] for x in (ctx.extra.get("anticipo_lista") or {}).get("lista") or []][:10]
+    tks_notis = list(dict.fromkeys(pedidos + ctx.tickers_lista() + preseleccion + lista_anticip))
+    ya_mundo = {s.ticker for s in senales if s.agente == "mundo"}
+    for s in _noticias_papeles(ctx, almacen, hoy, tks_notis, simular):
+        if s.ticker in ya_mundo and s.direccion == 0:
+            continue  # ya opinó por un tema del mundo: el "sin novedades" no agrega
+        senales.append(s)
+        por_ticker.setdefault(s.ticker, []).append(s)
     vetos = {s.ticker for s in hechos if s.veto}
 
     # --- Riesgo ---
@@ -638,7 +694,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
             if e["ticker"] in pedidos and "debate" not in e:
                 e["debate"] = con_ia.debate(ia, {"ticker": e["ticker"], "plan": e["plan"], "senales": e["senales"],
                                                  "hechos": ctx.hechos.get(e["ticker"]), "clima": ctx.extra.get("clima_estado")})
-        tks = list(dict.fromkeys(pedidos + preseleccion + ctx.tickers_lista() + list(ya_propuestos)))
+        tks = list(dict.fromkeys(pedidos + preseleccion + ctx.tickers_lista() + list(ya_propuestos) + lista_anticip))
         previos_deb = almacen.get("ui/debates") or {}
         nuevos_deb = {tk: supervisor.expediente(tk, ctx, por_tk.get(tk, []), puntajes.get(tk, 0.0), ev_por.get(tk),
                                                 el_por.get(tk), ctx.hora) for tk in tks if ctx.titulo(tk)}

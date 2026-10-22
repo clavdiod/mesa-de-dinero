@@ -1,13 +1,10 @@
-"""Lectura real del Corresponsal (sin guardar nada)."""
-from collections import Counter
-
+"""Noticias de papeles puntuales, como las ve el debate."""
 from mesa.agentes import mundo
-from mesa.nucleo.config import emisores
 
-tit = mundo.leer()
-fu = Counter(n["fuente"] for n in tit)
-temas = mundo.detectar_temas(tit)
-emp = mundo.detectar_empresas(tit, mundo.claves_empresas(emisores()))
-print("::notice::" + f"{len(tit)} titulares de {len(fu)} fuentes: " + ", ".join(f"{k} {v}" for k, v in fu.most_common(25)))
-print("::notice::TEMAS || " + " || ".join(f"{t['nombre']} ({t['n']}): " + " | ".join(x["titulo"][:90] for x in t["titulares"][:3]) for t in temas)[:3900])
-print("::notice::EMPRESAS || " + " || ".join(f"{e['ticker']} {'+' if e['dir'] > 0 else '-'}{' rumor' if e['rumor'] else ''}: {e['titulares'][0]['titulo'][:100]} [{e['titulares'][0]['motivo']}]" for e in emp)[:3900])
+out = []
+for tk, local in (("IREN", False), ("SATL", False), ("RIOT", False), ("LOMA", True)):
+    nombre = {"LOMA": "Loma Negra"}.get(tk) or mundo.nombre_yahoo(tk)
+    info = mundo.noticias_papel(tk, nombre, local)
+    s = mundo.senal_papel(tk, info)
+    out.append(f"{tk} [{nombre}] {len(info['titulares'])} tit. -> dir {s.direccion} f {s.fuerza}: {s.texto[:300]}")
+print("::notice::" + " ||| ".join(out)[:3900])

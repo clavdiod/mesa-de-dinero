@@ -314,3 +314,67 @@ def evaluar(log: list[dict], stats: dict, precio, hoy: str, dias: int = 7) -> tu
         if p and x.get("precio"):
             _sumar(stats.setdefault(x["tema"], {}), (p / x["precio"] - 1) * 100 * x["dir"], 0.5)
     return quedan, stats
+
+
+# ---------- noticias de un papel puntual (para el debate) ----------
+def nombre_yahoo(simbolo_us: str) -> str | None:
+    """Nombre de la empresa en Yahoo (gratis), para buscar sus noticias. Ej.: IREN -> 'IREN Limited'."""
+    from ..datos.gratis import _S, _UA_JSON
+    try:
+        r = _S.get("https://query2.finance.yahoo.com/v1/finance/search", params={"q": simbolo_us, "quotesCount": 3, "newsCount": 0},
+                   headers=_UA_JSON, timeout=15).json()
+        for q in r.get("quotes") or []:
+            if (q.get("symbol") or "").upper() == simbolo_us.upper():
+                return q.get("longname") or q.get("shortname")
+    except Exception as ex:
+        print(f"[mundo] nombre {simbolo_us}: {ex}")
+    return None
+
+
+def _limpiar_nombre(n: str) -> str:
+    return re.sub(r",?\s+(inc\.?|corp(oration)?\.?|ltd\.?|limited|plc|s\.a\.?|holdings?|co\.?|group|n\.v\.?|class [a-c])\b.*$", "", n, flags=re.I).strip() or n
+
+
+def noticias_papel(ticker: str, nombre: str | None, local: bool) -> dict:
+    """Busca titulares de los últimos 3 días del papel y los clasifica (buenos / malos / sin impacto claro)."""
+    from ..datos import gratis
+    base = _limpiar_nombre(nombre) if nombre else ticker
+    if local:
+        urls = [url_google(f'"{base}"', "es").replace("when:1d", "when:3d")]
+    else:
+        urls = [url_google(f'"{base}" OR "{ticker} stock"', "en").replace("when:1d", "when:3d"),
+                url_google(f'"{base}"', "es").replace("when:1d", "when:3d")]
+    tit = gratis.noticias(urls, horas=72, max_items=25)
+    clave = base.lower().split()[0] if base else ticker.lower()
+    tit = [n for n in tit if clave in n["titulo"].lower() or ticker.lower() in n["titulo"].lower()]
+    clas = []
+    for n in tit[:12]:
+        t = n["titulo"]
+        neg, pos = NEGATIVO.search(t), POSITIVO.search(t)
+        d = 0 if (neg and pos) or not (neg or pos) else (-1 if neg else 1)
+        clas.append({"titulo": t, "link": n.get("link"), "fuente": n.get("fuente"), "fecha": n.get("fecha"), "dir": d,
+                     "rumor": bool(RUMOR.search(t)), "motivo": (neg or pos).group(0) if d else None})
+    return {"nombre": base, "titulares": clas}
+
+
+def senal_papel(ticker: str, info: dict, stats: dict | None = None) -> Senal:
+    tits = info.get("titulares") or []
+    con = [t for t in tits if t["dir"]]
+    neto = sum(t["dir"] * (0.5 if t["rumor"] else 1) for t in con)
+    nombre = info.get("nombre") or ticker
+    if not tits:
+        return Senal("mundo", ticker, 0, 0.0, f"Busqué noticias de {nombre} de los últimos 3 días: no encontré nada. Sin novedades que muevan el precio.",
+                     {"tema": "papel", "titulares": []}, evaluable=False)
+    if abs(neto) < 1:
+        ej = "; ".join(f"«{t['titulo'][:90]}»" for t in tits[:2])
+        return Senal("mundo", ticker, 0, 0.0, f"Noticias de {nombre} en los últimos 3 días ({len(tits)}), sin impacto claro: {ej}.",
+                     {"tema": "papel", "titulares": tits[:4]}, evaluable=False)
+    d = 1 if neto > 0 else -1
+    principales = [t for t in con if t["dir"] == d]
+    f = factor_tema(stats, "empresa_rumor" if all(t["rumor"] for t in principales) else "empresa_hecho") or 0.5
+    fuerza = round(min(0.6, (0.25 + 0.08 * (abs(neto) - 1)) * f), 2)
+    ej = principales[0]
+    return Senal("mundo", ticker, d, fuerza,
+                 f"Noticias de {nombre} ({len(tits)} en 3 días, {len(principales)} {'buenas' if d > 0 else 'malas'}): «{ej['titulo'][:130]}»"
+                 + (" (rumor)" if ej["rumor"] else "") + ".",
+                 {"tema": "empresa_rumor" if all(t["rumor"] for t in principales) else "empresa_hecho", "titulares": tits[:4]})
