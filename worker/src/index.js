@@ -249,8 +249,21 @@ async function api(req, env, url) {
     try { u = new URL(url.searchParams.get("u") || ""); } catch (_) { return nope("documento inválido", 400); }
     if (u.protocol !== "https:" || u.hostname !== "mercadoabierto.sharepoint.com") return nope("solo documentos de A3", 400);
     u.searchParams.set("download", "1");
-    const r = await fetch(u.toString(), { headers: { "user-agent": "Mozilla/5.0" }, redirect: "follow" });
-    if (!r.ok) return nope(`A3 respondió ${r.status}`, 502);
+    // SharePoint redirige y pide la cookie FedAuth que da en el primer paso: se siguen las redirecciones a mano con esa cookie
+    let r, destino = u.toString();
+    const galletas = {};
+    for (let i = 0; i < 6; i++) {
+      const cookie = Object.entries(galletas).map(([k, v]) => `${k}=${v}`).join("; ");
+      r = await fetch(destino, { headers: { "user-agent": "Mozilla/5.0", ...(cookie ? { cookie } : {}) }, redirect: "manual" });
+      const sc = r.headers.getSetCookie ? r.headers.getSetCookie() : [r.headers.get("set-cookie")].filter(Boolean);
+      for (const c of sc) { const [kv] = c.split(";"); const j = kv.indexOf("="); if (j > 0) galletas[kv.slice(0, j).trim()] = kv.slice(j + 1); }
+      if (![301, 302, 303, 307, 308].includes(r.status)) break;
+      const loc = r.headers.get("location") || "";
+      const sig = new URL(loc, destino);
+      if (sig.hostname !== "mercadoabierto.sharepoint.com") return nope("A3 pidió iniciar sesión: el documento no es público", 502);
+      destino = sig.toString();
+    }
+    if (!r.ok || !(r.headers.get("content-type") || "").includes("pdf")) return nope(`A3 no devolvió el PDF (${r.status})`, 502);
     const nombre = (url.searchParams.get("n") || "documento").replace(/[^\w .\-áéíóúñÁÉÍÓÚÑ]/g, "").slice(0, 80) || "documento";
     return new Response(r.body, { headers: { "content-type": r.headers.get("content-type") || "application/pdf",
       "content-disposition": `inline; filename="${nombre}.pdf"`, "cache-control": "private, max-age=86400" } });
