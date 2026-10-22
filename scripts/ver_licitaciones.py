@@ -8,3 +8,4 @@ est = a.get("ui/estado") or {}
 ev = est.get("eventos") or []
 print("::notice::ESTADO hora " + str(est.get("hora")) + f" eventos {len(ev)} licitacion {[e['fecha'] + ' ' + e['nombre'][:40] for e in ev if e.get('tipo') == 'licitacion']} "
       + f"avisos {bool(est.get('licitaciones_avisos'))} noticias {len(est.get('licitaciones_noticias') or [])} tipos {sorted({e.get('tipo') for e in ev})}")
+print("::notice::KVEV " + " | ".join(f"{e['fecha']} {e['clase']} {e['nombre'][:50]}" for e in (lic.get("eventos") or [])))
