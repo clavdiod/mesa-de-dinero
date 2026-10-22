@@ -132,7 +132,7 @@ def resumen(ev: dict, fi: dict | None) -> str:
 
 
 PALABRAS_VACIAS = {"ON", "FF", "BAJO", "MEDIANO", "IMPACTO", "AMPLIADO", "CLASE", "SERIE", "PYME", "GAR", "GARANTIZADA", "VCP", "LICITACION",
-                   "FACTURAS", "SA", "S.A.", "ADICIONALES", "ADICIONAL", "EMISOR", "FRECUENTE", "TITULOS", "DEUDA", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "BI", "MI", "CNV", "DE", "LA", "DEL", "Y"}
+                   "FACTURAS", "SA", "S.A.", "MIA", "TP", "ADICIONALES", "ADICIONAL", "EMISOR", "FRECUENTE", "TITULOS", "DEUDA", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "BI", "MI", "CNV", "DE", "LA", "DEL", "Y"}
 
 
 def clave_emisor(titulo: str) -> str | None:
@@ -140,7 +140,7 @@ def clave_emisor(titulo: str) -> str | None:
     titulo = re.split(r"\s*-\s*(?:Aviso|Adenda|Suplemento|Prospecto|Anuncio|Resultado)", titulo, flags=re.I)[0]
     titulo = re.sub(r"^MP\s*A3\s*-\s*(?:RES|ANU|ADE)\s*-\s*", "", titulo, flags=re.I)
     titulo = re.sub(r"(?i)clase", " ", titulo)
-    palabras = [w for w in re.split(r"[\s\-]+", titulo.upper()) if w and w not in PALABRAS_VACIAS and not w.isdigit() and len(w) >= 4]
+    palabras = [w for w in re.split(r"[\s\-]+", titulo.upper()) if w and w not in PALABRAS_VACIAS and not w.isdigit() and len(w) >= 3 and not re.fullmatch(r"[IVXLC]+|\(?\d+\w*\)?", w)]
     return palabras[0] if palabras else None
 
 
