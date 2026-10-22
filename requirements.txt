@@ -5,3 +5,4 @@ anthropic>=0.40
 feedparser>=6.0
 cryptography>=42
 pytest>=8
+pypdf>=4
