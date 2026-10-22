@@ -785,6 +785,25 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
             v["lectura_ia_hora"] = pv.get("lectura_ia_hora")
 
     # --- estado para la web ---
+    # --- tus cobros: cuánto cobrás, de qué y cuándo (renta y amortización de tu cartera) ---
+    mis_cobros, flujos_cartera, avisos_cobro = [], {}, []
+    try:
+        from .datos import cobros as cob
+        tks_cart = [c.get("ticker", "").upper() for c in cartera if c.get("ticker")]
+        propios = {**{k: v for k, v in eventos_mod.flujos_bonos().items() if k in tks_cart},
+                   **{k: {**v, "fuente": "cargado"} for k, v in (ctx.extra.get("ons_usuario") or {}).items() if k in tks_cart}}
+        mae_f = {} if simular else cob.asegurar_flujos(almacen, tks_cart, hoy, ya_tienen=set(propios))
+        flujos_cartera = {**mae_f, **propios}
+        mis_cobros = cob.proximos(cartera, flujos_cartera, hoy, 60) + cob.vencimientos_lecap(cartera, ctx, hoy, 60)
+        mis_cobros.sort(key=lambda c: (c["fecha"], c["ticker"]))
+        avisados = almacen.get("cobros/avisados") or {}
+        if not simular and avisados.get("fecha") != hoy.isoformat():
+            avisos_cobro = [{"fecha": hoy.isoformat(), "hora": ctx.hora, "ticker": "COBROS-" + a["cuando"], "texto": a["texto"]}
+                            for a in cob.avisos(mis_cobros, hoy)]
+            almacen.put("cobros/avisados", {"fecha": hoy.isoformat(), "n": len(avisos_cobro)})
+    except Exception as ex:
+        print(f"[cobros] {ex}")
+
     resumen = {
         "fecha": hoy.isoformat(), "hora": ctx.hora, "clima": ctx.extra.get("clima_estado"),
         "indicadores": {k: ctx.extra.get(k) for k in ("mep_al30", "ccl_al30", "canje_pct", "spread_gd_al_30",
@@ -823,8 +842,9 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "anticipo_lista": ctx.extra.get("anticipo_lista"),
         "anticipo_estadistica": None if simular else almacen.get("anticipo/estadistica"),
         "eventos": _calendario(almacen, ctx, hoy, ops, abiertas, cartera, simular),
-        "flujos_bonos": {k: v for k, v in eventos_mod.flujos_bonos().items()
-                         if k in {c.get("ticker", "").upper() for c in cartera}},
+        "flujos_bonos": flujos_cartera or {k: v for k, v in eventos_mod.flujos_bonos().items()
+                                           if k in {c.get("ticker", "").upper() for c in cartera}},
+        "cobros": mis_cobros,
     }
     almacen.put("ui/estado", {**estado_ui, **resumen, "dia": dia})
     # foto compacta de TODOS los paneles para el Asistente (sin gastar consultas extra)
@@ -842,6 +862,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         alertas_niv = []
     alertas_lista = [a for a in alertas_seg + avisos_radar + _alertas_lista(ctx, lista) if (a["fecha"], a["ticker"]) not in ya_avisadas]
     alertas_lista += alertas_niv  # las de nivel avisan siempre (cada una una sola vez)
+    alertas_lista += avisos_cobro  # cobros de hoy / mañana / la semana (una vez por día)
     if alertas_lista:
         almacen.put("ui/alertas", (alertas_lista + previas)[:60])
     consumo.guardar()

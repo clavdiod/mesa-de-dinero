@@ -110,6 +110,7 @@ function pintarEstado() {
   pintarEconomista();
   pintarWallStreet();
   pintarMundo();
+  pintarCobros();
   pintarPronosticos();
   pintarCripto();
   pintarADR();
@@ -142,6 +143,27 @@ function pintarResumenHoy() {
       <button class="met ir" data-ir="ranking|#simulacion"><span>Simulación (cerradas) ›</span><b style="color:var(--${(t.ganancia || 0) >= 0 ? "verde" : "rojo"})">${t.cerradas ? plata(t.ganancia) : "—"}</b></button>
       <button class="met ir" data-ir="ranking|#simulacion"><span>Abiertas en papel ›</span><b>${SIM_RES ? SIM_RES.abiertas || 0 : "—"}</b></button>
     </div></div>`;
+}
+
+// ---------- tus cobros (hoy, mañana, esta semana, el mes) ----------
+const plataMon = (v, m) => (m === "USD" ? "US$ " : "$") + num(v);
+function pintarCobros() {
+  const cs = ESTADO.estado?.cobros || [], box = $("#cobros-hoy");
+  if (!box) return;
+  if (!cs.length) { box.innerHTML = USUARIO.cartera.length ? "" : ""; return; }
+  const hoy = HOY(), d = (n) => new Date(Date.now() + n * 864e5).toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
+  const finSem = (() => { const x = new Date(hoy + "T12:00:00"); x.setDate(x.getDate() + (7 - x.getDay()) % 7); return x.toISOString().slice(0, 10); })();
+  const grupos = [["Hoy", (c) => c.fecha === hoy], ["Mañana", (c) => c.fecha === d(1)], ["Esta semana", (c) => c.fecha > d(1) && c.fecha <= finSem],
+    ["Próximos 30 días", (c) => c.fecha > finSem && c.fecha <= d(30)]];
+  const tot = (xs) => { const t = {}; for (const c of xs) if (c.total != null) t[c.moneda] = (t[c.moneda] || 0) + c.total;
+    return Object.entries(t).map(([m, v]) => plataMon(v, m)).join(" + ") || "—"; };
+  const fila = (c) => `<div class="evento"><span class="ev-ic">💵</span><span><b>${diaTxt(c.fecha)}</b> · <b class="link" data-abrir-debate="${esc(c.ticker)}">${esc(c.ticker)}</b>
+    ${c.total != null ? `<b>${plataMon(c.total, c.moneda)}</b> <span class="tenue">(${c.renta ? "renta " + plataMon(c.renta, c.moneda) : ""}${c.renta && c.amortizacion ? " + " : ""}${c.amortizacion ? "amortización " + plataMon(c.amortizacion, c.moneda) : ""} · ${num(c.nominales, 0)} nominales)</span>`
+      : `<span class="tenue">${esc(c.descripcion)}</span>`}</span></div>`;
+  const bloques = grupos.map(([t, f]) => { const xs = cs.filter(f); return xs.length ? `<p style="margin:10px 0 4px"><b>${t}</b> · ${tot(xs)}</p>${xs.map(fila).join("")}` : ""; }).join("");
+  if (!bloques) { box.innerHTML = ""; return; }
+  box.innerHTML = `<h2 class="ir" data-ir="lista|#cal-vista">💵 Tus cobros <span class="tenue">· ver calendario ›</span></h2><div class="card">${bloques}
+    <p class="tenue">Calculado con tus nominales de "Lo que tengo" y los flujos de cada papel (MAE / cargados). Te aviso al celular el día antes y el día del pago.</p></div>`;
 }
 
 let PLAZO = "corto";
@@ -344,9 +366,9 @@ function pintarCalendario() {
   const porMes = {}; for (const f of filas) { const m = f.fecha.slice(0, 7); porMes[m] = (porMes[m] || 0) + f.total; }
   const dias = (f) => Math.round((new Date(f) - new Date(HOY())) / 864e5);
   $("#calendario").innerHTML = filas.length ? `<div class="tiras">${Object.entries(porMes).slice(0, 6).map(([m, v]) => `<span class="chip">${MESES_TXT[+m.slice(5, 7) - 1]} ${m.slice(2, 4)}: ${num(v)}</span>`).join("")}</div>
-    <div class="tabla-scroll"><table><tr><th>Fecha</th><th>ON</th><th class="n">Interés</th><th class="n">Amort.</th><th class="n">Total</th><th class="n">Faltan</th></tr>
+    <div class="tabla-scroll"><table><tr><th>Fecha</th><th>Papel</th><th class="n">Renta</th><th class="n">Amort.</th><th class="n">Total</th><th class="n">Faltan</th></tr>
     ${filas.slice(0, 40).map((f) => `<tr><td>${fechaLarga(f.fecha)}</td><td>${esc(f.ticker)} <span class="tenue">${esc(f.moneda || "")}</span></td><td class="n">${num(f.interes)}</td><td class="n">${num(f.amortizacion)}</td><td class="n"><b>${num(f.total)}</b></td><td class="n">${dias(f.fecha)} d</td></tr>`).join("")}</table></div>`
-    : '<p class="tenue">Cargá en "Lo que tengo" tus bonos (los soberanos AL/GD ya tienen sus pagos cargados) o tus ONs con sus flujos abajo.</p>';
+    : '<p class="tenue">Cargá en "Lo que tengo" tus bonos, ONs y letras con sus nominales: la mesa baja sola sus flujos de pago (MAE) y calcula cuánto cobrás.</p>';
   pintarEventos();
   pintarMAE();
   $("#sim-on").innerHTML = Object.keys(USUARIO.ons).map((k) => `<option>${esc(k)}</option>`).join("") || "<option value=''>Primero cargá una ON abajo</option>";
