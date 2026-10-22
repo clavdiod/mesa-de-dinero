@@ -120,11 +120,12 @@ EMPRESAS_CEDEAR = {
 NEGATIVO = _r(r"cierra (sus |las )?sucursal|cierre de (sus )?sucursal|cierra (su |la )?planta|cierre de (la )?planta|despid|cesant|concurso preventivo|"
               r"quiebra|default|incumpl|renunci[aó] (el|la) (ceo|presidente)|investigaci[oó]n|allanamiento|multa|demanda|sanci[oó]n|suspende|"
               r"huelga|paro\b|hackeo|ciberataque|retira del mercado|recall|ca[ií]da de (las )?ventas|pérdida|perdi[oó]|layoff|bankrupt|lawsuit|"
-              r"probe|fine[ds]?\b|recall|downgrade|rebaja (la )?calificaci|profit warning|cuts? jobs|closes? stores|plant closure")
+              r"probe|fine[ds]?\b|recall|downgrade|cuts? (its |the )?(price )?target|lowers? (its |the )?(price )?target|(fell|falls|plunges?|sinks?|tumbles?) \d+%|"
+              r"recorta (el |su )?precio objetivo|baja (el |su )?precio objetivo|se desploma|rebaja (la )?calificaci|profit warning|cuts? jobs|closes? stores|plant closure")
 POSITIVO = _r(r"nuevo desarrollo|descubr|inversi[oó]n de|invertir[aá]|adquiere|adquisici[oó]n|compra (de|a) |acuerdo con|contrato|"
               r"(ganancias?|ventas|producci[oó]n|facturaci[oó]n) r[eé]cord|r[eé]cord de (ganancias|ventas|producci[oó]n)|"
               r"aprob|lanza|lanzamiento|expansi[oó]n|abre (nuevas|una nueva)|inaugur|dividendo|recompra|ganancia r[eé]cord|supera (las )?expectativas|"
-              r"beats? (estimates|expectations)|record (profit|revenue|sales)|approval|breakthrough|buyback|acquires?|partnership|upgrade|raises guidance")
+              r"beats? (estimates|expectations)|raises? (its |the )?(price )?target|(jumps?|soars?|surges?|rallies) \d+%|sube (el |su )?precio objetivo|record (profit|revenue|sales)|approval|breakthrough|buyback|acquires?|partnership|upgrade|raises guidance")
 RUMOR = _r(r"rumor|versiones|trascendi[oó]|seg[uú]n fuentes|analiza|evaluar[ií]a|podr[ií]a|reportedly|sources say|people familiar|considering|in talks")
 
 
