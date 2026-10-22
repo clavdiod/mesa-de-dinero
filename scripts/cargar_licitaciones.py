@@ -17,3 +17,6 @@ if est:
 for e in r.get("eventos") or []:
     if e.get("resumen"):
         print(f"::notice::{e['fecha']} {e['titulo'][:50]} || {e['resumen']} || campos: {list((e.get('ficha') or {}).get('campos', {}))} || docs: {len(e.get('documentos') or [])}")
+for t in ("anuncios", "resultados"):
+    for x in (r.get("avisos") or {}).get(t) or []:
+        print(f"::notice::{t} {x['titulo'][:50]} || {x.get('resumen') or '(sin resumen)'} || {list((x.get('campos') or {}).keys())}")

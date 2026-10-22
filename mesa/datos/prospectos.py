@@ -26,6 +26,13 @@ CAMPOS = [  # (clave, título para mostrar, patrón del rótulo en el aviso)
     ("precio", "Precio de emisión", r"Precio de [Ee]misi[oó]n|Precio de [Ss]uscripci[oó]n"),
     ("calificacion", "Calificación", r"Calificaci[oó]n(?: de [Rr]iesgo)?"),
     ("garantia", "Garantía", r"Entidad de [Gg]arant[ií]a|Garant[ií]a"),
+    # resultados de la licitación
+    ("vn_emitido", "Monto emitido", r"Valor [Nn]ominal (?:a [Ee]mitir|[Ee]mitido|[Aa]djudicado)|Monto (?:a [Ee]mitir|[Ee]mitido|[Aa]djudicado)|V/N (?:a [Ee]mitir|[Ee]mitido)"),
+    ("ofertado", "Ofertas recibidas", r"Valor [Nn]ominal (?:de las [Oo]fertas [Rr]ecibidas|[Oo]fertado)|Monto (?:total )?[Oo]fertado|Cantidad de [Oo]fertas(?: [Rr]ecibidas)?"),
+    ("margen_corte", "Margen de corte", r"Margen (?:de [Cc]orte|[Aa]plicable|[Dd]iferencial)"),
+    ("tasa_corte", "Tasa de corte", r"Tasa (?:de [Cc]orte|[Aa]plicable|[Ff]ija|[Ii]nterna de [Rr]etorno|de [Ii]nter[eé]s [Ff]ija)"),
+    ("factor_prorrateo", "Prorrateo", r"Factor de [Pp]rorrateo"),
+    ("duration", "Duration", r"Duration"),
 ]
 _ROTULO = re.compile(r"(?:(?<=\s)|^)(?:[A-ZÁÉÍÓÚÑ][\wáéíóúñ/()\-]*(?:\s+(?:de|del|la|las|los|y|e|en|bajo|a|[A-ZÁÉÍÓÚÑ][\wáéíóúñ/()\-]*)){0,11})\s?:\s")
 
@@ -171,4 +178,42 @@ def completar(evs: list[dict], docs: list[dict], fichas: dict, hoy_iso: str, dia
                 fi["extra"].update(f.get("extra") or {})
         ev["ficha"] = fi
         ev["resumen"] = resumen(ev, fi)
+    return cambio
+
+
+def resumen_resultado(titulo: str, fi: dict) -> str:
+    ca = fi.get("campos") or {}
+    partes = []
+    for k, t in (("vn_emitido", "se emitieron"), ("ofertado", "ofertas"), ("tasa_corte", "tasa de corte"), ("margen_corte", "margen de corte"),
+                 ("precio", "precio"), ("vencimiento", "vence"), ("factor_prorrateo", "prorrateo")):
+        if ca.get(k):
+            partes.append(f"{t}: {ca[k][:90]}")
+    return "Resultado: " + "; ".join(partes) + "." if partes else ""
+
+
+def fichar_avisos(avisos: dict, fichas: dict, max_pdfs: int = 8) -> bool:
+    """Resumen de cada aviso (anuncio o resultado) leyendo su PDF una sola vez."""
+    bajados, cambio = 0, False
+    for tipo in ("anuncios", "resultados"):
+        for a in avisos.get(tipo) or []:
+            u = a.get("link")
+            if not u:
+                continue
+            f = fichas.get(u)
+            if f is None and bajados < max_pdfs:
+                bajados += 1
+                t = bajar_texto(u)
+                f = ficha(t) if t else {"campos": {}, "extra": {}, "sin_texto": True}
+                fichas[u] = f
+                cambio = True
+            if not f:
+                continue
+            a["campos"] = f.get("campos") or {}
+            if tipo == "resultados":
+                a["resumen"] = resumen_resultado(a["titulo"], f)
+            else:
+                t = a["titulo"].upper()
+                clase = "ON" if re.search(r"\bON\b", t) else "Fideicomiso" if re.search(r"\bFF\b|FIDEICOMISO|SERIE", t) else "Emisión"
+                mon = "USD" if re.search(r"d[oó]lar|U\$S|US\$", " ".join((f.get("campos") or {}).values()), re.I) else ""
+                a["resumen"] = resumen({"clase": clase, "emisor": a.get("empresa") or (clave_emisor(a["titulo"]) or "").title(), "moneda": mon}, f)
     return cambio
