@@ -134,13 +134,13 @@ function pintarResumenHoy() {
   const ops = Object.values(est.oportunidades || {}).reduce((n, l) => n + l.length, 0);
   const clima = est.clima || "—", t = SIM_RES?.total || {};
   $("#resumen-hoy").innerHTML = `<div class="card resumen">
-    <div class="tiras" style="margin-top:0"><span class="chip ${clima === "malo" ? "rojo" : clima === "bueno" ? "verde" : "amar"}">Clima ${esc(clima)}</span>
-      <span class="chip">Riesgo país ${num(rp.valor, 0)}</span><span class="chip">MEP ${num(ind.mep_al30, 0)}</span></div>
+    <div class="tiras" style="margin-top:0"><button class="chip ir ${clima === "malo" ? "rojo" : clima === "bueno" ? "verde" : "amar"}" data-ir="mercado|#economista">Clima ${esc(clima)} ›</button>
+      <button class="chip ir" data-ir="mercado|#indicadores">Riesgo país ${num(rp.valor, 0)} ›</button><button class="chip ir" data-ir="mercado|#indicadores">MEP ${num(ind.mep_al30, 0)} ›</button></div>
     <div class="grilla" style="margin-top:10px">
-      <div class="met"><span>Para decidir</span><b>${pend}</b></div>
-      <div class="met"><span>Oportunidades</span><b>${ops}</b></div>
-      <div class="met"><span>Simulación (cerradas)</span><b style="color:var(--${(t.ganancia || 0) >= 0 ? "verde" : "rojo"})">${t.cerradas ? plata(t.ganancia) : "—"}</b></div>
-      <div class="met"><span>Abiertas en papel</span><b>${SIM_RES ? SIM_RES.abiertas || 0 : "—"}</b></div>
+      <button class="met ir" data-ir="propuestas|#titulo-decidir"><span>Para decidir ›</span><b>${pend}</b></button>
+      <button class="met ir" data-ir="propuestas|#titulo-ops|ops"><span>Oportunidades ›</span><b>${ops}</b></button>
+      <button class="met ir" data-ir="ranking|#simulacion"><span>Simulación (cerradas) ›</span><b style="color:var(--${(t.ganancia || 0) >= 0 ? "verde" : "rojo"})">${t.cerradas ? plata(t.ganancia) : "—"}</b></button>
+      <button class="met ir" data-ir="ranking|#simulacion"><span>Abiertas en papel ›</span><b>${SIM_RES ? SIM_RES.abiertas || 0 : "—"}</b></button>
     </div></div>`;
 }
 
@@ -560,7 +560,7 @@ function pintarEventos() {
   const lim = new Date(Date.now() + 7 * 864e5).toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
   const sem = (ESTADO.estado?.eventos || []).filter((e) => e.fecha <= lim && e.tipo !== "licitacion" && (e.mio || e.tipo === "macro" || e.tipo === "cobro"));
   pintarLicitaciones(lim);
-  $("#eventos-semana").innerHTML = sem.length ? `<h2>Esta semana</h2><div class="card">${sem.slice(0, 8).map((e) =>
+  $("#eventos-semana").innerHTML = sem.length ? `<h2 class="ir" data-ir="lista|#cal-vista|eventos">Esta semana <span class="tenue">· ver calendario ›</span></h2><div class="card">${sem.slice(0, 8).map((e) =>
     `<div class="evento ${e.fuerte ? "fuerte" : ""}"><span class="ev-ic">${ICONO_EV[e.tipo] || "•"}</span><span><b>${diaTxt(e.fecha)}</b> · ${e.ticker && e.ticker !== "AL/GD" ? esc(e.ticker) + " · " : ""}${esc(e.nombre)}</span></div>`).join("")}</div>` : "";
 }
 const CHIP_LIC = { ON: "verde", Tesoro: "azul", Provincia: "azul", Fideicomiso: "", VCP: "", Otra: "" };
@@ -811,6 +811,22 @@ async function verDebate(tk) {
 }
 function abrirDebate(tk) { document.querySelector('.tabs button[data-v="asistente"]').click(); verDebate(tk); }
 document.addEventListener("click", (ev) => { const b = ev.target.closest("[data-abrir-debate]"); if (b) abrirDebate(b.dataset.abrirDebate); });
+// accesos directos: tocar un número o un chip lleva a su detalle (vista|#lugar|extra)
+function irYResaltar(vista, sel) {
+  irA(vista);
+  setTimeout(() => { const el = sel && $(sel); if (!el) return; el.scrollIntoView({ behavior: "smooth", block: "start" });
+    el.classList.remove("resaltar"); void el.offsetWidth; el.classList.add("resaltar"); }, 120);
+}
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-ir]"); if (!b) return;
+  const [vista, sel, extra] = b.dataset.ir.split("|");
+  if (extra === "ops") {  // si no hay de corto pero sí de mediano, mostrar las de mediano
+    const o = ESTADO.estado?.oportunidades || {};
+    if (!(o[PLAZO] || []).length) { const otro = PLAZO === "corto" ? "mediano" : "corto"; if ((o[otro] || []).length) document.querySelector(`#ops-plazo [data-plazo="${otro}"]`)?.click(); }
+  }
+  if (extra === "eventos") document.querySelector('#cal-vista [data-cal="eventos"]')?.click();
+  irYResaltar(vista, sel);
+});
 document.addEventListener("click", (ev) => { if (ev.target.closest("[data-ir-pron]")) { irA("ranking"); setTimeout(() => $("#titulo-pronosticos")?.scrollIntoView({ behavior: "smooth" }), 100); } });
 $("#form-debate").addEventListener("submit", (ev) => { ev.preventDefault(); verDebate(ev.target.ticker.value.trim().toUpperCase()); });
 $("#form-letras").addEventListener("submit", async (ev) => {

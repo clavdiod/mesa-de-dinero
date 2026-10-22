@@ -120,3 +120,13 @@ details.radar p { margin: 6px 0; font-size: 14px; }
 .fav { background: none; border: none; padding: 0 6px 0 0; font-size: 19px; line-height: 1; color: var(--tenue, #8a8f98); cursor: pointer; min-width: 0; box-shadow: none; }
 .fav.on { color: #f5b301; }
 .item.pron .item-cab { gap: 6px; flex-wrap: wrap; }
+
+/* accesos directos */
+button.met.ir { text-align: left; font: inherit; color: inherit; cursor: pointer; width: 100%; }
+button.met.ir:active, .chip.ir:active { transform: scale(.97); }
+.chip.ir { border: none; font: inherit; font-size: 12px; cursor: pointer; }
+h2.ir { cursor: pointer; }
+@keyframes resaltar { 0% { box-shadow: 0 0 0 3px var(--azul); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.resaltar { animation: resaltar 1.6s ease-out; border-radius: var(--r); }
+
+#v-propuestas [id], #v-mercado [id], #v-ranking [id], #v-lista [id] { scroll-margin-top: 90px; }
