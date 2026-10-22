@@ -194,7 +194,17 @@ def resumen_resultado(titulo: str, fi: dict) -> str:
     for k, t in (("vn_emitido", "se emiten"), ("ofertado", "ofertas:"), ("tasa_corte", "tasa de corte"), ("margen_corte", "margen de corte"),
                  ("precio", "precio"), ("vencimiento", "vence el"), ("factor_prorrateo", "prorrateo"), ("duration", "duration")):
         if ca.get(k):
-            partes.append(f"{t} {ca[k][:90]}")
+            v = re.sub(r"\s*\((?:Pesos|D[oó]lares|U\$S|US\$)[^)]*\)?", "", ca[k], flags=re.I)
+            if k == "vencimiento":
+                m = re.match(r"^(.*?\d{4})", v)
+            elif k in ("tasa_corte", "margen_corte", "factor_prorrateo", "duration"):
+                m = re.match(r"^(.*?(?:%|meses|años))", v)
+            elif k in ("vn_emitido", "ofertado"):
+                m = re.match(r"^((?:U\$S|US\$|\$)\s?[\d.,]*\d)", v)
+            else:
+                m = None
+            v = m.group(1) if m else re.split(r"\.\s+[A-ZÁÉÍÓÚ]|\.-", v)[0]
+            partes.append(f"{t} {v.strip(' .;,')[:70]}")
     return "Resultado: " + "; ".join(partes) + "." if partes else ""
 
 
