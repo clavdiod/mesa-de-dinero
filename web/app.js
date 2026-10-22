@@ -245,6 +245,26 @@ document.addEventListener("click", async (ev) => {
   pintarUsuario(); pintarPronosticos();
 }, true);
 
+// ---------- reunión de la mesa (revisión semanal) ----------
+function pintarReunion() {
+  const r = ESTADO.estado?.reunion, box = $("#reunion");
+  if (!box) return;
+  if (!r) { box.innerHTML = ""; return; }
+  const col = (v) => (v > 0 ? "verde" : v < 0 ? "rojo" : "texto");
+  const ag = (r.agentes || []).filter((a) => a.casos >= 5).map((a) => `<tr><td>${esc(a.nombre)}</td><td class="n">${a.casos}</td><td class="n">${num(a.acierto_pct, 0)}%</td>
+    <td class="n" style="color:var(--${col(a.promedio_pct)})">${pct(a.promedio_pct, 1)}</td><td class="n">${r.ajustes?.[a.agente] ? `×${num(r.ajustes[a.agente].factor, 2)}` : ""}</td></tr>`).join("");
+  const pap = (r.papeles || []).slice(0, 10).map((p) => `<div class="evento"><span class="ev-ic">${p.acerto === true ? "✅" : p.acerto === false ? "❌" : "➖"}</span>
+    <span><b class="link" data-abrir-debate="${esc(p.ticker)}">${esc(p.ticker)}</b> ${pct(p.ret, 1)} desde el ${esc(fecha(p.desde))}
+    <span class="tenue">· la mesa ${p.mesa > 0 ? "lo veía a favor" : p.mesa < 0 ? "lo veía en contra" : "estaba dividida"}${p.favor.length ? ` · a favor: ${esc(p.favor.join(", "))}` : ""}${p.contra.length ? ` · en contra: ${esc(p.contra.join(", "))}` : ""}</span></span></div>`).join("");
+  box.innerHTML = `<h2>🧑‍⚖️ Reunión de la mesa <span class="hora">· ${esc(fecha(r.fecha))}</span></h2><div class="card">
+    <p class="tenue">El Jefe y los analistas revisan todo lo que miraron desde el ${esc(fecha(r.desde))} (${r.senales} señales) contra lo que hizo el precio. Se repite cada día al cierre.</p>
+    ${(r.lecciones || []).map((l) => `<p>• ${esc(l)}</p>`).join("")}
+    ${ag ? `<div class="tabla-scroll"><table><tr><th>Analista</th><th class="n">Señales</th><th class="n">Acierto</th><th class="n">Prom.</th><th class="n">Ajuste</th></tr>${ag}</table></div>
+      <p class="tenue">Ajuste = el voto de ese analista sube o baja por una semana según lo que pasó (máximo ±30%). Solo se ajusta a los de corto plazo: a los de meses no se los juzga en una semana.</p>` : ""}
+    ${pap ? `<p style="margin-top:10px"><b>Los papeles que más se movieron</b></p>${pap}` : ""}
+    ${(r.ciegos || []).length ? `<p class="tenue" style="margin-top:8px">Se nos escaparon: ${r.ciegos.map((c) => `${esc(c.ticker)} ${pct(c.ret, 0)}`).join(" · ")}</p>` : ""}</div>`;
+}
+
 // ---------- libreta de pronósticos ----------
 const ESTADO_PRON = { se_dio: ["verde", "✅ Se dio"], fallo: ["rojo", "❌ Falló"], no_se_dio: ["", "➖ No se dio"], en_curso: ["amar", "⏳ En curso"], esperando: ["", "🕒 Espera apertura"] };
 const ORIGEN_PRON = { anticipador: "Anticipador", anticipo: "Anticipo NY", mundo: "Corresponsal", jefe: "Jefe", oportunidad: "Oportunidad" };
@@ -476,7 +496,7 @@ function pintarAnticipos() {
     ${li.lista.slice(0, 10).map((x) => { const pr = (ESTADO.estado?.pronosticos || []).find((p) => p.origen === "anticipador" && p.ticker === x.ticker && p.fecha === li.fecha);
       const [c, e] = pr ? ESTADO_PRON[pr.estado] || ["", ""] : ["", ""];
       return `<div class="agente"><b>${estrella(x.ticker, "Anticipador")}<span class="link" data-abrir-debate="${esc(x.ticker)}">${esc(x.ticker)}</span><br><span class="tenue">${num(x.prob * 100, 0)}%</span></b>
-        <span>${esc((x.razones || []).join(" · ") || "combinación de precursores")}${pr ? `<br><span class="chip ${c}">${e}</span> ${pr.ref ? `desde ${num(pr.ref)}: va ${pct(pr.ahora_pct, 1)}, mejor ${pct(pr.mejor, 1)}` : ""}` : ""}</span></div>`; }).join("")}
+        <span>${esc((x.razones || []).join(" · ") || "combinación de precursores")}${x.fr_contra ? ' <span class="chip rojo">entre los más débiles: pesa la mitad</span>' : ""}${pr ? `<br><span class="chip ${c}">${e}</span> ${pr.ref ? `desde ${num(pr.ref)}: va ${pct(pr.ahora_pct, 1)}, mejor ${pct(pr.mejor, 1)}` : ""}` : ""}</span></div>`; }).join("")}
     <p><button class="chico" data-ir-pron>📋 Ver cómo van todos los pronósticos</button></p>` : "";
   const pl = es?.plazos?.al_cierre;
   const est = pl?.casos ? `<p class="tenue" style="margin-top:8px">Estadística propia de los anticipos (desde ${esc(fecha(es.desde))}): acertaron ${num(pl.aciertos / pl.casos * 100, 0)}% de ${pl.casos}, ${pct(pl.suma_ret / pl.casos, 2)} promedio hasta el cierre.</p>` : "";

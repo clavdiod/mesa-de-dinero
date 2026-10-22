@@ -561,10 +561,14 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     senales += anticipo.senales_atraso(ctx.extra.get("anticipos") or [])
     lista_ant = {} if simular else (almacen.get("anticipo/lista") or {})
     ctx.extra["anticipo_lista"] = lista_ant
+    fr_debil = {s.ticker for s in senales if s.agente == "fuerza_relativa" and s.direccion < 0 and s.fuerza >= 0.8}
+    for x in lista_ant.get("lista") or []:
+        x["fr_contra"] = x["ticker"] in fr_debil
     if lista_ant.get("activo"):
         for x in lista_ant.get("lista") or []:
             if ctx.titulo(x["ticker"]):
-                senales.append(Senal("anticipador", x["ticker"], 1, round(min(0.8, 0.3 + x["prob"]), 2),
+                # Reunión del 22/10: los marcados que además estaban entre los más débiles (Fuerza relativa) siguieron cayendo
+                senales.append(Senal("anticipador", x["ticker"], 1, round(min(0.8, 0.3 + x["prob"]) * (0.5 if x["fr_contra"] else 1), 2),
                                      f"Precursores de suba para esta semana ({x['prob'] * 100:.0f}% de probabilidad de subir 5% o más): "
                                      + (", ".join(x["razones"]) or "combinación de señales previas") + ".", x))
     senales += _senales_ws(ctx, ws_datos, candidatos + [t for t in ctx.tickers_lista()])
@@ -838,6 +842,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "mae": ctx.extra.get("mae"),
         "mundo": ctx.extra.get("mundo"),
         "pronosticos": libreta[:200],
+        "reunion": None if simular else almacen.get("revision/ultima"),
         "alertas_disparadas": None if simular else (almacen.get("alertas/disparadas") or {}),
         "mae_dias": None if simular else [{"fecha": d["fecha"], "resumen": d["resumen"]}
                                           for d in ((almacen.get("mae/comparacion") or {}).get("dias") or [])[-20:]],

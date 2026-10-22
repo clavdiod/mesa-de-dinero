@@ -70,8 +70,10 @@ def cedears(ctx: Contexto) -> list[Senal]:
                              f"Su dólar implícito ({_ar(v, 0)}) está {abs(desvio):.1f}% por debajo de la mediana de CEDEARs ({_ar(med, 0)}): relativamente barato.",
                              {"ccl_implicito": round(v, 2), "mediana": round(med, 2), "desvio_pct": round(desvio, 2)}))
         elif desvio >= 2.5:
-            out.append(Senal("cedears", s, -1, _clip(desvio / 6),
-                             f"Su dólar implícito está {desvio:.1f}% por encima de la mediana: relativamente caro.",
+            # Reunión del 22/10: este "caro" acertó 29% en 114 casos (los papeles subieron: el precio en pesos se adelanta
+            # a la suba en Nueva York). Queda como dato, sin voto, hasta que la estadística diga otra cosa.
+            out.append(Senal("cedears", s, 0, 0.0,
+                             f"Su dólar implícito está {desvio:.1f}% por encima de la mediana: en pesos ya se paga más (a veces anticipa una suba en Nueva York).",
                              {"ccl_implicito": round(v, 2), "mediana": round(med, 2), "desvio_pct": round(desvio, 2)}))
     return out
 

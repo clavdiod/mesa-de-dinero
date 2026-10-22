@@ -141,9 +141,11 @@ def reunir(almacen, cache, panel: dict[str, list], hoy: date, dias: int = 7) -> 
 
 def ajustes(reunion: dict, previos: dict | None = None, minimo: int = 25) -> dict:
     """Ajuste de voto por una semana según lo que pasó: solo con casos suficientes y diferencias claras."""
+    from .riesgo import plazo_de
     out = {}
     for a in reunion["agentes"]:
-        if a["casos"] < minimo:
+        # una semana alcanza para juzgar ideas de días, no las de 1 a 3 meses (Economista, Wall Street, Pánico)
+        if a["casos"] < minimo or plazo_de(a["agente"]) > 10:
             continue
         if a["acierto_pct"] <= 40 and a["promedio_pct"] < -COMISION:
             f = 0.7

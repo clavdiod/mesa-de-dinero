@@ -218,7 +218,15 @@ class Registro:
             cal = fb if fb is not None else cal
         if cal is None:
             cal = A_PRUEBA.get(agente, 1.0)  # agente nuevo sin historia: arranca con medio voto hasta demostrar
-        return float(self.pesos.get(agente, 1.0)) * float(cal)
+        return float(self.pesos.get(agente, 1.0)) * float(cal) * self._ajuste_reunion(agente)
+
+    def _ajuste_reunion(self, agente: str) -> float:
+        """Ajuste de la reunión semanal de la mesa (±30% como máximo, vence a la semana)."""
+        if not hasattr(self, "_ajustes"):
+            from datetime import date as _d
+            hoy = _d.today().isoformat()
+            self._ajustes = {k: v["factor"] for k, v in (self.a.get("revision/ajustes") or {}).items() if v.get("hasta", "") >= hoy}
+        return float(self._ajustes.get(agente, 1.0))
 
     def recalibrar(self) -> dict:
         from .calibracion import calibrar

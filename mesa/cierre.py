@@ -106,6 +106,21 @@ def diario(simular: bool = False) -> dict:
         except Exception as ex:
             print(f"[cierre] mundo: {ex}")
 
+    # Reunión de la mesa: el Jefe y los analistas revisan lo que miraron en la última semana y aprenden
+    if not simular:
+        try:
+            from .agentes import revision as _rev
+            panel_ui = (a.get("ui/panel") or {}).get("titulos") or {}
+            r = _rev.reunir(a, cache, panel_ui, hoy, 7)
+            aj = _rev.ajustes(r)
+            r["lecciones"] = _rev.lecciones(r)
+            r["ajustes"] = aj
+            a.put("revision/ultima", r)
+            a.put("revision/ajustes", aj)
+            print(f"[cierre] reunión: {r['senales']} señales revisadas, {len(aj)} ajustes")
+        except Exception as ex:
+            print(f"[cierre] reunión: {ex}")
+
     # calendario de balances y dividendos de EE.UU. para los CEDEARs (gratis, no usa IOL)
     if not simular:
         try:
