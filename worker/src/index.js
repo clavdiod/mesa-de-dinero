@@ -84,8 +84,100 @@ async function login(req, env) {
   await env.MESA.delete(clave);
   const vence = String(Date.now() + DIAS_SESION * 864e5);
   const valor = `${vence}.${await firmar(env, vence)}`;
-  return new Response(JSON.stringify({ ok: true }), { headers: { ...JSON_H,
-    "set-cookie": `mesa_sesion=${valor}; Path=/; Max-Age=${DIAS_SESION * 86400}; HttpOnly; Secure; SameSite=Strict` } });
+  const h = new Headers(JSON_H);
+  h.append("set-cookie", `mesa_sesion=${valor}; Path=/; Max-Age=${DIAS_SESION * 86400}; HttpOnly; Secure; SameSite=Strict`);
+  h.append("set-cookie", await cookieDesbloqueo(env));  // la clave completa también desbloquea
+  return new Response(JSON.stringify({ ok: true }), { headers: h });
+}
+
+// ---- bloqueo con huella / cara (WebAuthn, passkey del celular) ----
+// Si hay una passkey registrada, además de la sesión hace falta un "desbloqueo" que dura 10 minutos y se renueva
+// solo mientras la app está abierta. Con la clave completa también se desbloquea.
+const MIN_DESBLOQUEO = 10;
+const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/[+/=]/g, (c) => ({ "+": "-", "/": "_", "=": "" }[c]));
+const desB64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+async function cookieDesbloqueo(env) {
+  const vence = String(Date.now() + MIN_DESBLOQUEO * 60000);
+  return `mesa_desbloqueo=${vence}.${await firmar(env, "desb|" + vence)}; Path=/; Max-Age=${MIN_DESBLOQUEO * 60}; HttpOnly; Secure; SameSite=Strict`;
+}
+async function desbloqueado(req, env) {
+  if (env.MODO_LOCAL === "1" && !env.PROBAR_BLOQUEO) return true;
+  const keys = await leer(env, "auth/passkeys", []);
+  if (!keys.length) return true;
+  const c = leerCookie(req, "mesa_desbloqueo");
+  if (!c) return false;
+  const [vence, sig] = c.split(".");
+  return !!vence && Number(vence) > Date.now() && iguales(sig, await firmar(env, "desb|" + vence));
+}
+function derARaw(der) {  // firma ECDSA en DER -> r||s de 32 bytes cada uno (lo que pide WebCrypto)
+  let i = 2; if (der[1] & 0x80) i += der[1] & 0x7f;
+  const leerInt = () => { i++; const len = der[i++]; let v = der.slice(i, i + len); i += len;
+    while (v.length > 32 && v[0] === 0) v = v.slice(1); const out = new Uint8Array(32); out.set(v, 32 - v.length); return out; };
+  const r = leerInt(), s2 = leerInt(); const raw = new Uint8Array(64); raw.set(r); raw.set(s2, 32); return raw;
+}
+async function retoNuevo(env) {
+  const r = b64u(crypto.getRandomValues(new Uint8Array(32)));
+  await env.MESA.put(`auth/reto/${r}`, "1", { expirationTtl: 300 });
+  return r;
+}
+async function retoValido(env, cd, tipo, origen) {
+  if (cd.type !== tipo || cd.origin !== origen || !cd.challenge) return false;
+  const k = `auth/reto/${cd.challenge}`;
+  if (!(await env.MESA.get(k))) return false;
+  await env.MESA.delete(k);
+  return true;
+}
+async function passkeyApi(req, env, url, p) {
+  const keys = await leer(env, "auth/passkeys", []);
+  if (p === "/api/passkey/estado") return json({ activa: keys.length > 0, cantidad: keys.length });
+  if (p === "/api/passkey/reto" && req.method === "POST")
+    return json({ reto: await retoNuevo(env), rpId: url.hostname, ids: keys.map((k) => k.id) });
+  if (p === "/api/passkey/registrar" && req.method === "POST") {
+    if (keys.length && !(await desbloqueado(req, env))) return nope("bloqueada", 423);
+    const b = await req.json();
+    const cd = JSON.parse(new TextDecoder().decode(desB64u(b.clientDataJSON)));
+    if (!(await retoValido(env, cd, "webauthn.create", url.origin))) return nope("reto inválido", 400);
+    if (![-7, -257].includes(b.alg) || !b.id || !b.spki) return nope("tipo de llave no soportado", 400);
+    keys.push({ id: b.id, spki: b.spki, alg: b.alg, nombre: String(b.nombre || "celular").slice(0, 40), creada: `${hoyBA()} ${horaBA()}` });
+    await guardar(env, "auth/passkeys", keys);
+    return new Response(JSON.stringify({ ok: true }), { headers: { ...JSON_H, "set-cookie": await cookieDesbloqueo(env) } });
+  }
+  if (p === "/api/passkey/verificar" && req.method === "POST") {
+    const b = await req.json();
+    const k = keys.find((x) => x.id === b.id);
+    if (!k) return nope("llave desconocida", 400);
+    const cdBytes = desB64u(b.clientDataJSON), auth = desB64u(b.authenticatorData);
+    const cd = JSON.parse(new TextDecoder().decode(cdBytes));
+    if (!(await retoValido(env, cd, "webauthn.get", url.origin))) return nope("reto inválido", 400);
+    const rpHash = new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(url.hostname)));
+    if (!rpHash.every((v, i) => v === auth[i])) return nope("sitio inválido", 400);
+    if ((auth[32] & 0x05) !== 0x05) return nope("falta la huella o la cara", 400);  // presencia + verificación del usuario
+    const hashCd = new Uint8Array(await crypto.subtle.digest("SHA-256", cdBytes));
+    const datos = new Uint8Array(auth.length + 32); datos.set(auth); datos.set(hashCd, auth.length);
+    const ec = k.alg === -7;
+    const llave = await crypto.subtle.importKey("spki", desB64u(k.spki), ec ? { name: "ECDSA", namedCurve: "P-256" } : { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+    const firma = desB64u(b.signature);
+    const ok = await crypto.subtle.verify(ec ? { name: "ECDSA", hash: "SHA-256" } : "RSASSA-PKCS1-v1_5", llave, ec ? derARaw(firma) : firma, datos);
+    if (!ok) return nope("no se pudo verificar", 401);
+    return new Response(JSON.stringify({ ok: true }), { headers: { ...JSON_H, "set-cookie": await cookieDesbloqueo(env) } });
+  }
+  if (p === "/api/passkey/borrar" && req.method === "POST") {
+    if (!(await desbloqueado(req, env))) return nope("bloqueada", 423);
+    await guardar(env, "auth/passkeys", []);
+    return json({ ok: true });
+  }
+  return nope("no existe", 404);
+}
+
+// Texto del aviso push (sin desbloqueo: es lo mismo que ya se ve en la pantalla bloqueada del celular)
+async function textoAviso(env) {
+  const [estado, alertas, props] = await Promise.all([leer(env, "ui/estado", {}), leer(env, "ui/alertas", []), leer(env, "registro/propuestas", [])]);
+  const nuevas = estado.nuevas || [], p = props.find((x) => nuevas.includes(x.id)), a = alertas[0];
+  const n = (x) => Number(x).toLocaleString("es-AR", { maximumFractionDigits: 2 });
+  if (p) return { importante: true, titulo: `🔔 Comprar ${p.ticker} con límite ${n(p.plan.entrada)}`,
+    cuerpo: `Objetivo ${n(p.plan.objetivo)} · stop ${n(p.plan.stop)}. ${nuevas.length > 1 ? `(+${nuevas.length - 1} más) ` : ""}Entrá para ver el debate y decidir.` };
+  if (a) { const imp = /salir|stop|balance|cancel/i.test(a.texto); return { importante: imp, titulo: `${imp ? "⚠️ " : ""}${a.ticker}`, cuerpo: a.texto }; }
+  return { importante: false, titulo: "Mesa de dinero", cuerpo: "Hay novedades en la mesa." };
 }
 
 const leer = async (env, k, d = null) => (await env.MESA.get(k, "json")) ?? d;
@@ -129,9 +221,16 @@ async function api(req, env, url) {
 
   // ---- Navegador ----
   if (p === "/api/login" && req.method === "POST") return login(req, env);
-  if (p === "/api/salir" && req.method === "POST")
-    return new Response("{}", { headers: { ...JSON_H, "set-cookie": "mesa_sesion=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict" } });
+  if (p === "/api/salir" && req.method === "POST") {
+    const h = new Headers(JSON_H);
+    h.append("set-cookie", "mesa_sesion=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict");
+    h.append("set-cookie", "mesa_desbloqueo=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict");
+    return new Response("{}", { headers: h });
+  }
   if (!(await esUsuario(req, env))) return nope("sin acceso", 403);
+  if (p.startsWith("/api/passkey/")) return passkeyApi(req, env, url, p);
+  if (p === "/api/aviso") return json(await textoAviso(env));
+  if (!(await desbloqueado(req, env))) return nope("bloqueada", 423);
 
   if (p === "/api/estado") {
     const renovar = await cookieSesionNueva(req, env);
@@ -140,7 +239,8 @@ async function api(req, env, url) {
       leer(env, `consumo/${hoyBA().slice(0, 7)}`, { total: 0 }),
     ]);
     const r = json({ estado, cierre, alertas, consumo, tope: Number(env.TOPE_IOL || 25000) });
-    if (renovar) r.headers.set("set-cookie", renovar);
+    if (renovar) r.headers.append("set-cookie", renovar);
+    if ((await leer(env, "auth/passkeys", [])).length) r.headers.append("set-cookie", await cookieDesbloqueo(env));  // mientras la app está abierta no se bloquea
     return r;
   }
   if (p === "/api/propuestas") {

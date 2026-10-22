@@ -31,6 +31,13 @@
   </form>
   <p class="tenue">Queda abierta en este dispositivo: no tenés que volver a ponerla.</p>
 </div>
+<div id="bloqueo" class="card" style="display:none;max-width:420px;margin:60px auto;text-align:center">
+  <div style="font-size:48px">🔒</div>
+  <h2 style="margin-top:6px">Mesa bloqueada</h2>
+  <p class="tenue">Desbloqueá con tu huella o tu cara.</p>
+  <button id="btn-desbloquear" class="prim" style="width:100%">Desbloquear</button>
+  <p><button id="btn-usar-clave" class="chico" style="margin-top:10px">Usar la clave</button></p>
+</div>
 <main>
   <!-- HOY: lo que hay que mirar y decidir -->
   <section id="v-propuestas" class="vista activa">
@@ -188,6 +195,10 @@
       <button>Guardar</button>
     </form>
     <p id="capital-info" class="tenue"></p>
+    <h2>🔒 Huella o cara al abrir</h2>
+    <div id="passkey-estado" class="tenue"></div>
+    <div class="tiras"><button id="btn-passkey">Activar en este celular</button><button id="btn-passkey-borrar" class="chico" style="display:none">Desactivar</button></div>
+    <p class="tenue">Cada vez que abrís la app (o después de 10 minutos sin usarla) te pide la huella o la cara del celular. Si falla, entrás con la clave. Podés activarla en más de un dispositivo.</p>
     <h2>Avisos en el celular</h2>
     <button id="btn-push">Activar avisos en este celular</button>
     <p class="tenue">En iPhone primero agregá la web a la pantalla de inicio (Compartir → Agregar a inicio).</p>

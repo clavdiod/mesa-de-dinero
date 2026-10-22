@@ -941,8 +941,9 @@ async function cargar() {
     [ESTADO, PROPS, USUARIO.lista, USUARIO.cartera, USUARIO.ons, USUARIO.capital] = await Promise.all([
       api("estado"), api("propuestas"), api("usuario/lista"), api("usuario/cartera"), api("usuario/ons"), api("usuario/capital")]);
     pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes(); pintarAnticipos(); pintarRadar(); pintarAviso();
-    $("#login").style.display = "none"; document.querySelector("main").style.display = "";
+    $("#login").style.display = "none"; $("#bloqueo").style.display = "none"; document.querySelector("main").style.display = "";
   } catch (e) {
+    if (String(e.message).includes("bloqueada")) { mostrarBloqueo(); return; }
     if (String(e.message).includes("sin acceso")) {
       $("#login").style.display = "block"; document.querySelector("main").style.display = "none";
       $("#sub").textContent = "Ingresá tu clave";
@@ -951,10 +952,63 @@ async function cargar() {
 }
 $("#form-login").addEventListener("submit", async (ev) => {
   ev.preventDefault();
-  try { await post("login", { clave: ev.target.clave.value }); ev.target.reset(); await cargar().then(cargarDisponibles); pintarRanking().catch(() => {}); pintarSimulacion(); }
+  try { await post("login", { clave: ev.target.clave.value }); ev.target.reset(); BLOQUEADA = false; await cargar().then(cargarDisponibles); pintarRanking().catch(() => {}); pintarSimulacion(); }
   catch (e) { toast(e.message); }
 });
+// ---------- huella / cara (passkey) ----------
+const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const desB64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+let BLOQUEADA = false;
+let AUTO_INTENTO = false;
+function mostrarBloqueo() {
+  if (!BLOQUEADA && !AUTO_INTENTO) { AUTO_INTENTO = true; setTimeout(() => desbloquear(true), 300); }  // Android lo pide solo; iPhone necesita tocar el botón
+  BLOQUEADA = true;
+  $("#bloqueo").style.display = "block"; $("#login").style.display = "none"; document.querySelector("main").style.display = "none";
+  $("#sub").textContent = "Bloqueada";
+}
+async function desbloquear(auto = false) {
+  try {
+    const r = await post("passkey/reto", {});
+    const cred = await navigator.credentials.get({ publicKey: { challenge: desB64u(r.reto), rpId: r.rpId, userVerification: "required", timeout: 60000,
+      allowCredentials: r.ids.map((id) => ({ type: "public-key", id: desB64u(id) })) } });
+    await post("passkey/verificar", { id: cred.id, authenticatorData: b64u(cred.response.authenticatorData),
+      clientDataJSON: b64u(cred.response.clientDataJSON), signature: b64u(cred.response.signature) });
+    BLOQUEADA = false; await cargar(); cargarDisponibles(); pintarRanking().catch(() => {}); pintarSimulacion();
+    AUTO_INTENTO = false;
+  } catch (e) { if (!auto) toast(e.name === "NotAllowedError" ? "Cancelado: probá de nuevo o usá la clave" : "No se pudo: " + e.message); }
+}
+$("#btn-desbloquear").onclick = () => desbloquear(false);
+$("#btn-usar-clave").onclick = () => { $("#bloqueo").style.display = "none"; $("#login").style.display = "block"; };
+async function pintarPasskey() {
+  try {
+    const e = await api("passkey/estado");
+    $("#passkey-estado").textContent = e.activa ? `Activada (${e.cantidad} ${e.cantidad === 1 ? "dispositivo" : "dispositivos"}).` : "Desactivada: la app queda abierta en este celular.";
+    $("#btn-passkey").textContent = e.activa ? "Sumar este celular" : "Activar en este celular";
+    $("#btn-passkey-borrar").style.display = e.activa ? "" : "none";
+  } catch (_) {}
+}
+$("#btn-passkey").onclick = async () => {
+  if (!window.PublicKeyCredential) return toast("Este navegador no permite huella o cara");
+  try {
+    const r = await post("passkey/reto", {});
+    const cred = await navigator.credentials.create({ publicKey: { challenge: desB64u(r.reto), rp: { name: "Mesa de dinero", id: r.rpId },
+      user: { id: crypto.getRandomValues(new Uint8Array(16)), name: "mesa", displayName: "Mesa de dinero" },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "preferred" }, timeout: 60000,
+      excludeCredentials: r.ids.map((id) => ({ type: "public-key", id: desB64u(id) })) } });
+    const spki = cred.response.getPublicKey?.();
+    if (!spki) return toast("Este celular no permite registrar la huella desde el navegador");
+    await post("passkey/registrar", { id: cred.id, spki: b64u(spki), alg: cred.response.getPublicKeyAlgorithm(),
+      clientDataJSON: b64u(cred.response.clientDataJSON), nombre: navigator.userAgent.match(/\(([^;)]+)/)?.[1] || "celular" });
+    toast("Listo: desde ahora la app pide tu huella o tu cara"); pintarPasskey();
+  } catch (e) { toast(e.name === "InvalidStateError" ? "Este celular ya estaba registrado" : e.name === "NotAllowedError" ? "Cancelado" : "No se pudo: " + e.message); }
+};
+$("#btn-passkey-borrar").onclick = async () => {
+  try { await post("passkey/borrar", {}); toast("Desactivada: ya no pide huella"); pintarPasskey(); } catch (e) { toast("No se pudo: " + e.message); }
+};
+pintarPasskey();
+
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
 cargar().then(cargarDisponibles); pintarRanking().catch(() => {}); pintarSimulacion();
-setInterval(() => { if (!document.hidden) { cargar(); pintarSimulacion(); } }, 60000);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) cargar(); });
+setInterval(() => { if (!document.hidden && !BLOQUEADA) { cargar(); pintarSimulacion(); } }, 60000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !BLOQUEADA) cargar(); });
