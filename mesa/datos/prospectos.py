@@ -215,5 +215,5 @@ def fichar_avisos(avisos: dict, fichas: dict, max_pdfs: int = 8) -> bool:
                 t = a["titulo"].upper()
                 clase = "ON" if re.search(r"\bON\b", t) else "Fideicomiso" if re.search(r"\bFF\b|FIDEICOMISO|SERIE", t) else "Emisión"
                 mon = "USD" if re.search(r"d[oó]lar|U\$S|US\$", " ".join((f.get("campos") or {}).values()), re.I) else ""
-                a["resumen"] = resumen({"clase": clase, "emisor": a.get("empresa") or (clave_emisor(a["titulo"]) or "").title(), "moneda": mon}, f)
+                a["resumen"] = resumen({"clase": clase, "emisor": (clave_emisor(a["titulo"]) or "").title() or a.get("empresa"), "moneda": mon}, f)
     return cambio
