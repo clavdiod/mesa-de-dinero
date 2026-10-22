@@ -804,6 +804,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     except Exception as ex:
         print(f"[cobros] {ex}")
 
+    eventos_cal = _calendario(almacen, ctx, hoy, ops, abiertas, cartera, simular)  # antes del resumen: carga licitaciones y avisos
+
     resumen = {
         "fecha": hoy.isoformat(), "hora": ctx.hora, "clima": ctx.extra.get("clima_estado"),
         "indicadores": {k: ctx.extra.get(k) for k in ("mep_al30", "ccl_al30", "canje_pct", "spread_gd_al_30",
@@ -841,7 +843,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                                           for d in ((almacen.get("mae/comparacion") or {}).get("dias") or [])[-20:]],
         "anticipo_lista": ctx.extra.get("anticipo_lista"),
         "anticipo_estadistica": None if simular else almacen.get("anticipo/estadistica"),
-        "eventos": _calendario(almacen, ctx, hoy, ops, abiertas, cartera, simular),
+        "eventos": eventos_cal,
         "flujos_bonos": flujos_cartera or {k: v for k, v in eventos_mod.flujos_bonos().items()
                                            if k in {c.get("ticker", "").upper() for c in cartera}},
         "cobros": mis_cobros,

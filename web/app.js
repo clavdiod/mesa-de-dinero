@@ -129,6 +129,18 @@ function pintarEstado() {
 }
 
 let SIM_RES = null;
+function licChip() {
+  const hoy = HOY(), lim = new Date(Date.now() + 7 * 864e5).toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
+  const xs = (ESTADO.estado?.eventos || []).filter((e) => e.tipo === "licitacion" && e.fecha >= hoy && e.fecha <= lim);
+  if (!xs.length) return "";
+  const hoyN = xs.filter((e) => e.fecha === hoy).length;
+  return `<button class="chip ir verde" data-ir="propuestas|#licitaciones-hoy">🏦 ${hoyN ? `${hoyN} licitación${hoyN > 1 ? "es" : ""} hoy` : `${xs.length} licitaci${xs.length > 1 ? "ones" : "ón"} esta semana`} ›</button>`;
+}
+function cobChip() {
+  const hoy = HOY(), lim = new Date(Date.now() + 7 * 864e5).toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
+  const xs = (ESTADO.estado?.cobros || []).filter((c) => c.fecha >= hoy && c.fecha <= lim);
+  return xs.length ? `<button class="chip ir verde" data-ir="propuestas|#cobros-hoy">💵 ${xs.length} cobro${xs.length > 1 ? "s" : ""} esta semana ›</button>` : "";
+}
 function pintarResumenHoy() {
   const est = ESTADO.estado || {}, rp = est.riesgo_pais || {}, ind = est.indicadores || {};
   const pend = PROPS.filter((p) => p.decision === "pendiente" && (p.fecha === est.fecha || ["pendiente", "abierta"].includes(p.seguimiento?.estado))).length;
@@ -136,7 +148,7 @@ function pintarResumenHoy() {
   const clima = est.clima || "—", t = SIM_RES?.total || {};
   $("#resumen-hoy").innerHTML = `<div class="card resumen">
     <div class="tiras" style="margin-top:0"><button class="chip ir ${clima === "malo" ? "rojo" : clima === "bueno" ? "verde" : "amar"}" data-ir="mercado|#economista">Clima ${esc(clima)} ›</button>
-      <button class="chip ir" data-ir="mercado|#indicadores">Riesgo país ${num(rp.valor, 0)} ›</button><button class="chip ir" data-ir="mercado|#indicadores">MEP ${num(ind.mep_al30, 0)} ›</button></div>
+      <button class="chip ir" data-ir="mercado|#indicadores">Riesgo país ${num(rp.valor, 0)} ›</button><button class="chip ir" data-ir="mercado|#indicadores">MEP ${num(ind.mep_al30, 0)} ›</button>${licChip()}${cobChip()}</div>
     <div class="grilla" style="margin-top:10px">
       <button class="met ir" data-ir="propuestas|#titulo-decidir"><span>Para decidir ›</span><b>${pend}</b></button>
       <button class="met ir" data-ir="propuestas|#titulo-ops|ops"><span>Oportunidades ›</span><b>${ops}</b></button>

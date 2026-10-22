@@ -135,13 +135,25 @@ def actualizar_licitaciones(almacen, hoy: date, hora: str = "", forzar: bool = F
     if isinstance(guardado, list):
         guardado = {}
     tarde = hora >= "13:00"
-    if not forzar and guardado.get("fecha") == hoy.isoformat() and (not tarde or guardado.get("tarde")):
+    # se refresca cada 2 horas (el calendario del MAE a veces viene incompleto: no quedarse con una foto mala todo el día)
+    def _min(h):
+        try:
+            return int(h[:2]) * 60 + int(h[3:5])
+        except (ValueError, TypeError):
+            return 0
+    fresco = guardado.get("fecha") == hoy.isoformat() and _min(hora) - _min(guardado.get("hora") or "00:00") < 120
+    if not forzar and fresco:
         return guardado
     try:
         evs = gratis.licitaciones_mae(hoy - timedelta(days=1), hoy + timedelta(days=45))
     except Exception as ex:
         print(f"[licitaciones] {ex}")
         return guardado
+    # si vino con menos ONs/fideicomisos que la foto anterior del día, se conservan los que faltan
+    if guardado.get("fecha") == hoy.isoformat():
+        ids = {e.get("id") for e in evs}
+        evs += [e for e in guardado.get("eventos") or [] if e.get("id") not in ids and e.get("fecha", "") >= hoy.isoformat()]
+        evs.sort(key=lambda x: (x["fecha"], x.get("hora_cierre") or ""))
     # no todas las ONs se licitan en el sistema del MAE: se suman los titulares de las últimas 48 h
     noticias = []
     try:
