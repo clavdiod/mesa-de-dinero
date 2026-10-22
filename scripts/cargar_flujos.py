@@ -1,21 +1,20 @@
-"""Carga en usuario/ons los flujos que no publica MAE (sacados de IOL el 22/10/2026, cada 100 nominales)."""
-import json
-
+"""PR17 (Bocon serie 10): 11 cuotas trimestrales del 2/11/2026 al 2/5/2029, cada 100 nominales originales.
+Datos que pasó el usuario (Google / Docta Capital): próxima cuota 96,98 y total 962,65. Se reparte con amortización
+fija e interés Badlar sobre el saldo (estimado: el interés real depende de la Badlar de cada trimestre)."""
 from mesa.nucleo.almacen import almacen_por_defecto
 
+fechas = ["2026-11-02", "2027-02-02", "2027-05-02", "2027-08-02", "2027-11-02", "2028-02-02", "2028-05-02",
+          "2028-08-02", "2028-11-02", "2029-02-02", "2029-05-02"]
+primera, total, n = 96.98, 962.65, 11
+# cuota_k = A + r·A·(n−k+1): con primera y total se despejan A (amortización) y r (interés trimestral sobre el saldo)
+s = n * (n + 1) / 2
+r = (total / primera - n) / (s - (total / primera) * n)
+A = primera / (1 + n * r)
+flujos = [{"fecha": f, "interes": round(r * A * (n - k), 4), "amortizacion": round(A, 4)} for k, f in enumerate(fechas)]
 a = almacen_por_defecto()
 ons = a.get("usuario/ons") or {}
-fechas_ao27 = ["2026-10-31", "2026-11-30", "2026-12-31", "2027-01-31", "2027-02-28", "2027-03-31", "2027-04-30", "2027-05-31",
-               "2027-06-30", "2027-07-31", "2027-08-31", "2027-09-30"]
-nuevos = {
-    "AO27": {"emisor": "Tesoro Nacional (Bonar 2027, renta mensual 6% anual) · fuente IOL", "moneda": "USD", "lamina_minima": 1,
-             "flujos": [{"fecha": f, "interes": 0.5, "amortizacion": 0} for f in fechas_ao27] + [{"fecha": "2027-10-29", "interes": 0.5, "amortizacion": 100}]},
-    "T661O": {"emisor": "ON T661O · fuente IOL (renta estimada: tasa variable)", "moneda": "ARS", "lamina_minima": 1,
-              "flujos": [{"fecha": "2026-11-30", "interes": 1.25, "amortizacion": 100}]},
-    "RVS1O": {"emisor": "ON RVS1O · fuente IOL (renta estimada: tasa variable)", "moneda": "ARS", "lamina_minima": 1,
-              "flujos": [{"fecha": "2026-11-27", "interes": 1.25, "amortizacion": 0}, {"fecha": "2027-02-27", "interes": 1.25, "amortizacion": 100}]},
-}
-for k, v in nuevos.items():
-    ons.setdefault(k, v)
+ons["PR17"] = {"emisor": "Bono de Consolidación serie 10 (Badlar) · estimado con datos de Docta Capital", "moneda": "ARS", "lamina_minima": 1,
+               "flujos": flujos}
 a.put("usuario/ons", ons)
-print("::notice::ONs cargadas: " + ", ".join(ons))
+print("::notice::" + f"r={r:.5f} A={A:.4f} primera={flujos[0]['interes'] + A:.2f} total={sum(f['interes'] + f['amortizacion'] for f in flujos):.2f} "
+      + " | ".join(f"{f['fecha']} {f['interes'] + f['amortizacion']:.2f}" for f in flujos))
