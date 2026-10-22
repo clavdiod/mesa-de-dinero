@@ -1,22 +1,10 @@
-"""Cómo arma la web los parámetros de detalle y flujo de fondos."""
-import re
-
+"""emisiones/flujofondos/{ticker} en MAE."""
 import requests
 
-H = {"User-Agent": "Mozilla/5.0", "Origin": "https://marketdata.mae.com.ar", "Referer": "https://marketdata.mae.com.ar/"}
-html = requests.get("https://marketdata.mae.com.ar/", headers=H, timeout=30).text
-codigo = ""
-for j in set(re.findall(r'(?:src|href)="([^"]+\.js)"', html)):
-    codigo += requests.get("https://marketdata.mae.com.ar" + ("" if j.startswith("/") else "/") + j, headers=H, timeout=30).text
-for c in list(set(re.findall(r'(?:assets|static/js)/[\w.\-]+\.js', codigo)))[:200]:
-    try:
-        codigo += "\n/*F " + c + "*/\n" + requests.get("https://marketdata.mae.com.ar/" + c, headers=H, timeout=20).text
-    except Exception:
-        pass
+H = {"User-Agent": "Mozilla/5.0", "Accept": "application/json", "Origin": "https://marketdata.mae.com.ar", "Referer": "https://marketdata.mae.com.ar/"}
+B = "https://api.marketdata.mae.com.ar/api/"
 out = []
-for k in ("GetTitleFlujoFondos(", "GetTitleInfo(", "GetTitleInfoList(", "flujoFondos", "idEmision", "codigoEmision"):
-    for m in list(re.finditer(re.escape(k), codigo))[:2]:
-        i = m.start()
-        out.append(f"[{k}] " + codigo[max(0, i - 400): i + 300].replace("\n", " "))
-for i in range(0, len(out), 3):
-    print("::notice::" + " ##### ".join(out[i:i + 3])[:3950])
+for tk in ("TTD26", "YM34O", "AL30", "GD30", "S13N6", "PN35O", "TLCMO"):
+    r = requests.get(B + f"emisiones/flujofondos/{tk}", headers=H, timeout=20)
+    out.append(f"{tk}: {r.status_code} {r.text[:900]}")
+print("::notice::" + " ||| ".join(out)[:3950])
