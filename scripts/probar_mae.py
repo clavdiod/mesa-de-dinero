@@ -1,16 +1,22 @@
-"""Qué segmento/tipo de operación tiene cada fila del histórico (para descartar las que no son de mercado)."""
-from collections import Counter
-from datetime import date, timedelta
+"""Flujos de fondos desde MAE: detalle de título -> id de emisión -> emisiones/flujofondos/{id}."""
+import json
 
-from mesa.datos.gratis import mae_cierres, mae_panel_rf
+import requests
 
-hoy = date.today()
-h = mae_cierres(hoy - timedelta(days=1), hoy)
-c = Counter((r.get("codsegmento"), r.get("tipoOpera"), r.get("tipoOperacionDesc"), r.get("tipoCierreDesc")) for r in h)
-print("::notice::TIPOS " + " | ".join(f"{k}: {v}" for k, v in c.most_common(20))[:3900])
-out = [f"{r['codTitulo']} {r['moneda']} pl{r['plazo']} {r['precioCierre']} vol {r['volumen']:.0f} seg {r.get('codsegmento')} op {r.get('tipoOpera')} {r.get('tipoOperacionDesc')} {r.get('tipoCierreDesc')} {r.get('tipoEmision')}"
-       for r in h if r["codTitulo"].strip() in ("AE38", "D30O6", "S13N6") and r["fecha"][:10] == hoy.isoformat()]
-print("::notice::FILAS " + " | ".join(out)[:3900])
-p = mae_panel_rf()
-cp = Counter((r.get("codigoSegmento"), r.get("segmento")) for r in p)
-print("::notice::PANEL " + str(cp.most_common()) + " || " + " | ".join(f"{r['ticker']} {r['moneda']} pl{r['plazo']} {r['ultimo']} {r['segmento']}" for r in p if r["ticker"].strip() in ("AE38", "D30O6", "S13N6")))
+H = {"User-Agent": "Mozilla/5.0", "Accept": "application/json", "Origin": "https://marketdata.mae.com.ar", "Referer": "https://marketdata.mae.com.ar/"}
+B = "https://api.marketdata.mae.com.ar/api/"
+q = lambda o: json.dumps(o, separators=(",", ":"))
+out = []
+for tk in ("TTD26", "YM34O", "AL30", "S13N6"):
+    act = requests.get(B + f"mercado/titulosactivos?oTitulo={q({'titulo': tk})}", headers=H, timeout=20).json()
+    m = next((x for x in act if x["codTitulo"].strip() == tk), act[0] if act else None)
+    out.append(f"{tk} activos: {json.dumps(m)[:250]}")
+    if not m:
+        continue
+    for extra in ({"tipoNegociacion": "TRD"}, {"tipoNegociacion": "F"}, {}):
+        o = {"codTitulo": tk, "tipoEmision": m.get("tipoEspecie") or m.get("tipoEmision"), "plazo": m.get("plazo"), "moneda": m.get("moneda"), "segmento": m.get("codSegmento"), **extra}
+        d = requests.get(B + f"mercado/titulo/detalle?oTitulo={q(o)}", headers=H, timeout=20)
+        out.append(f"  detalle {extra}: {d.status_code} {d.text[:700]}")
+        if d.status_code == 200 and d.text.strip():
+            break
+print("::notice::" + " ||| ".join(out)[:3950])
