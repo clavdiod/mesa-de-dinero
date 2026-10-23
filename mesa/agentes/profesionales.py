@@ -166,7 +166,8 @@ def entrenar(precios: dict[str, list[list]], etfs: dict[str, list[list]], sector
         validos = [hz for hz in d if d[hz].get("casos", 0) >= 30 and d[hz]["acierto"] >= 52 and d[hz]["le_gana"] >= 50]
         plazo = max(validos or d, key=lambda hz: d[hz].get("exceso", -99)) if d else None
         out["herramientas"][k] = {"nombre": HERRAMIENTAS[k], "horizontes": d, "plazo": plazo,
-                                  "activa": bool(plazo in validos and d[plazo]["exceso"] >= 1.0)}
+                                  # además del promedio, la mediana tiene que ganar: que no dependa de 2 o 3 casos espectaculares
+                                  "activa": bool(plazo in validos and d[plazo]["exceso"] >= 1.0 and d[plazo].get("exceso_mediana", 0) >= 0.25)}
     return out
 
 

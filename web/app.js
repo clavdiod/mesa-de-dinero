@@ -648,11 +648,13 @@ function radarGanadores() {
   (e.ganadores?.lista || []).forEach((x) => Object.keys(x.estrategias || {}).forEach((k) => add(x.ticker, "🏆 " + (NOMG[k] || k), x.estrategias[k], pg[k]?.activa)));
   const pp = e.profesionales?.prueba || {};
   const NOMP = { analistas: "📈 Analistas", insiders: "🧑‍💼 Insiders", sector: "🔄 Sector líder" };
-  Object.entries(e.profesionales?.lista || {}).forEach(([tk, ev]) => Object.entries(ev).forEach(([k, t]) => { if (k !== "sector" || pp.sector?.activa || Object.keys(ev).length > 1) add(tk, NOMP[k] || k, t, pp[k]?.activa); }));
+  Object.entries(e.profesionales?.lista || {}).forEach(([tk, ev]) => Object.entries(ev).forEach(([k, t]) => { if (k !== "sector") add(tk, NOMP[k] || k, t, pp[k]?.activa); }));
   (e.anticipos || []).filter((a) => a.atraso > 0.5).forEach((a) => add(a.ticker, "⏩ Anticipo NY", `en NY ${num(a.us, 1)}%, le falta ${num(a.atraso, 1)}%`, true));
   (e.anticipo_lista?.lista || []).forEach((x) => add(x.ticker, "⏩ Anticipador", (x.razones || []).join(" · "), e.anticipo_lista?.activo));
   (e.mundo?.empresas || []).filter((x) => x.dir > 0).forEach((x) => add(x.ticker, "🌍 Corresponsal", ((x.titulares || [])[0] || {}).titulo || "", true));
   Object.values(e.oportunidades || {}).flat().forEach((o) => add(o.ticker, "✅ Oportunidad de la mesa", o.resumen_jefe || "", true));
+  // el sector líder suma como confirmación (sola marcaría a medio Nasdaq)
+  Object.entries(e.profesionales?.lista || {}).forEach(([tk, ev]) => { if (ev.sector && m.has(tk)) add(tk, NOMP.sector, ev.sector, pp.sector?.activa); });
   return [...m.values()].sort((a, b) => b.n - a.n || b.probadas - a.probadas);
 }
 function pintarRadarGanadores() {

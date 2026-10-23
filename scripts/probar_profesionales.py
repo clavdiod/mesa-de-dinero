@@ -19,3 +19,6 @@ print("::notice::" + f"{len(s5)} papeles, datos {r['datos']} || " + " || ".join(
 pl = pro.armar_lista(a, list(s5), {tk: f[-1]["c"] for tk, f in s5.items()}, hoy)
 print("::notice::LIDERES " + json.dumps(pl["lideres"]) + " " + json.dumps(pl["sectores_3m"]))
 print("::notice::HOY " + " | ".join(f"{tk}: " + "; ".join(f"{k}={m[:90]}" for k, m in ev.items()) for tk, ev in list(pl["lista"].items())[:25])[:3800])
+
+import runpy
+runpy.run_path("scripts/cargar_estado.py")
