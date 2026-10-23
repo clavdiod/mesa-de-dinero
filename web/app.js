@@ -133,7 +133,8 @@ const RESUMEN_PLEG = {
   "radar-ganadores": () => radarGanadores().slice(0, 3).map((x) => `${x.ticker} (${x.n})`).join(" · "),
   "cobros-hoy": () => { const c = (ESTADO.estado?.cobros || []).filter((x) => x.fecha >= HOY()).sort((a, b) => a.fecha.localeCompare(b.fecha))[0];
     return c ? `próximo ${diaTxt(c.fecha)} · ${c.ticker}${c.total != null ? " " + plataMon(c.total, c.moneda) : ""}` : ""; },
-  "radar": () => { const r = ESTADO.estado?.radar || []; const a = r.filter((x) => x.severidad === "alta").length; return `${r.length} alerta${r.length === 1 ? "" : "s"}${a ? ` · ${a} alta${a > 1 ? "s" : ""}` : ""}`; },
+  "radar": () => { const r = ESTADO.estado?.radar || []; const a = r.filter((x) => x.severidad === "alta");
+    return `${r.length} movimiento${r.length === 1 ? "" : "s"} raro${r.length === 1 ? "" : "s"}${a.length ? ` · ${a.length} fuerte${a.length > 1 ? "s" : ""}: ${a.slice(0, 3).map((x) => x.ticker).join(", ")}` : ""}`; },
   "anticipos": () => { const e = ESTADO.estado || {}; const n = (e.anticipos || []).length, m = (e.anticipo_lista?.lista || []).length;
     return [n ? `${n} hoy en NY` : "", m ? `${m} para los próximos días` : ""].filter(Boolean).join(" · "); },
 };
@@ -164,7 +165,7 @@ function plegar(box) {
     }
   } finally { delete box.dataset.plegando; }
 }
-const OBS_PLEG = new MutationObserver((ms) => { for (const m of ms) if (m.target.id && !m.target.dataset.plegando && !m.target.querySelector(":scope > details")) plegar(m.target); });
+const OBS_PLEG = new MutationObserver((ms) => { for (const m of ms) if (m.target.id && !m.target.dataset.plegando && !m.target.querySelector(":scope > details.plegable, :scope > details.plegable-card")) plegar(m.target); });
 ["radar-ganadores", "cobros-hoy", "licitaciones-hoy", "anticipos", "eventos-semana", "radar",
   "economista", "wallstreet", "ganadores", "profesionales", "adr", "ministro", "mae", "mundo", "cripto"].forEach((id) => {
   const b = document.getElementById(id); if (b) OBS_PLEG.observe(b, { childList: true });
