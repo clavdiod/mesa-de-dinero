@@ -84,14 +84,53 @@ function pintarPropuestas() {
   }));
 }
 
+// ---------- 🔔 avisos: la campanita del encabezado ----------
+let AV_LEIDO = "";
+try { AV_LEIDO = localStorage.getItem("mesa_avisos_leido") || ""; } catch (_) {}
+const avClave = (a) => `${a.fecha || ""} ${a.hora || ""}`;
+function pintarAvisos() {
+  const xs = (ESTADO.alertas || []).slice().sort((a, b) => avClave(b).localeCompare(avClave(a)));
+  const nuevos = xs.filter((a) => avClave(a) > AV_LEIDO).length, g = $("#avisos-n");
+  g.textContent = nuevos > 99 ? "99+" : nuevos; g.style.display = nuevos ? "" : "none";
+  const porDia = new Map();
+  xs.slice(0, 80).forEach((a) => { const d = a.fecha || ""; if (!porDia.has(d)) porDia.set(d, []); porDia.get(d).push(a); });
+  const item = (a) => {
+    const t = String(a.texto || ""), m = t.match(/^(\S+\s)?([A-Z][A-Z0-9.]{1,7}):\s*/);
+    const tk = m ? m[2] : null, resto = m ? t.slice(m[0].length) : t;
+    const corte = resto.search(/[;.](\s|$)/), corto = corte > 20 && corte < resto.length - 2 ? resto.slice(0, corte) : resto;
+    const cab = `<span class="av-hora">${esc(a.hora || "")}</span>${m && m[1] ? esc(m[1]) : ""}${tk ? `<b class="link" data-abrir-debate="${esc(tk)}">${esc(tk)}</b>: ` : ""}${esc(corto)}`;
+    const cls = `av-item${avClave(a) > AV_LEIDO ? " nuevo" : ""}`;
+    return corto === resto ? `<div class="${cls}">${cab}</div>`
+      : `<details class="${cls}"><summary>${cab} <span class="tenue">· más</span></summary><p class="tenue" style="margin:4px 0 0">${esc(resto.slice(corto.length).replace(/^[;.]\s*/, ""))}</p></details>`;
+  };
+  $("#lista-avisos").innerHTML = xs.length ? [...porDia].map(([d, l]) => `<div class="av-dia">${d === HOY() ? "Hoy" : esc(fecha(d))}</div>${l.map(item).join("")}`).join("")
+    : '<p class="tenue">Sin avisos por ahora.</p>';
+}
+function abrirAvisos(abrir) {
+  const p = $("#panel-avisos"), ab = abrir ?? p.style.display === "none";
+  p.style.display = ab ? "" : "none";
+  if (ab) {  // al abrir, se marcan como leídos (los nuevos quedan resaltados mientras está abierto)
+    pintarAvisos();
+    const ult = (ESTADO.alertas || []).map(avClave).sort().pop() || "";
+    if (ult > AV_LEIDO) { AV_LEIDO = ult; try { localStorage.setItem("mesa_avisos_leido", ult); } catch (_) {} }
+    $("#avisos-n").style.display = "none";
+  }
+}
+$("#btn-avisos").addEventListener("click", (ev) => { ev.stopPropagation(); abrirAvisos(); });
+$("#cerrar-avisos").addEventListener("click", () => abrirAvisos(false));
+document.addEventListener("click", (ev) => {
+  const p = $("#panel-avisos");
+  if (p.style.display !== "none" && !ev.target.closest("#panel-avisos")) abrirAvisos(false);
+  if (ev.target.closest("#panel-avisos [data-abrir-debate]")) abrirAvisos(false);
+});
+
 function pintarEstado() {
   const est = ESTADO.estado || {}, ind = est.indicadores || {}, rp = est.riesgo_pais || {};
   $("#sub").textContent = est.fecha ? `${mercadoAbierto() ? "● Abierto" : "Cerrado"} · ronda ${fecha(est.fecha)} ${est.hora}` : "Todavía no corrió ninguna ronda";
   const clima = est.clima || "—";
   $("#clima").innerHTML = `<span class="chip ${clima === "malo" ? "rojo" : clima === "bueno" ? "verde" : "amar"}">Clima ${esc(clima)}</span>
     <span class="chip">Riesgo país ${num(rp.valor, 0)}${est.riesgo_pais_ayer ? ` (ayer ${num(est.riesgo_pais_ayer, 0)})` : ""}</span>`;
-  $("#alertas").innerHTML = (ESTADO.alertas || []).filter((a) => a.fecha === est.fecha)
-    .map((a) => `<div class="card" style="border-color:var(--amar)">🔔 ${esc(a.hora)} — ${esc(a.texto)}</div>`).join("");
+  pintarAvisos();
   const d = est.dolares || {};
   const mets = [["MEP (AL30)", num(ind.mep_al30)], ["CCL (AL30)", num(ind.ccl_al30)], ["Canje MEP/CCL", pct(ind.canje_pct)],
     ["GD30 vs AL30", pct(ind.spread_gd_al_30)], ["Brecha MEP", pct(ind.brecha_mep_pct)], ["Caución corta TNA", ind.caucion_tna == null ? "—" : num(ind.caucion_tna) + "%"],

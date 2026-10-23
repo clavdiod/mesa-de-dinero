@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icono.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icono-192.png">
-<link rel="stylesheet" href="estilo.css?v=20261023d">
+<link rel="stylesheet" href="estilo.css?v=20261023e">
 </head>
 <body>
 <header class="barra">
@@ -17,11 +17,16 @@
     <p id="sub" class="tenue">Cargando…</p>
   </div>
   <div class="acciones-barra">
+    <button id="btn-avisos" class="chico icono" title="Avisos" aria-label="Avisos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span id="avisos-n" class="globo" style="display:none"></span></button>
     <button id="btn-analizar" class="chico" title="Correr una ronda ahora">Analizar</button>
     <button id="btn-ajustes" class="chico icono" title="Ajustes" aria-label="Ajustes"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button>
   </div>
 </header>
 <div id="aviso-global" style="display:none"></div>
+<div id="panel-avisos" class="panel-avisos" style="display:none" role="dialog" aria-label="Avisos">
+  <div class="fila"><b>🔔 Avisos</b><button id="cerrar-avisos" class="chico">Cerrar</button></div>
+  <div id="lista-avisos"></div>
+</div>
 
 <div id="login" class="card" style="display:none;max-width:420px;margin:40px auto">
   <h2 style="margin-top:0">Entrar a la mesa</h2>
@@ -46,7 +51,6 @@
     <div id="cobros-hoy"></div>
     <div id="licitaciones-hoy"></div>
     <div id="anticipos"></div>
-    <div id="alertas"></div>
     <div id="eventos-semana"></div>
     <div id="radar"></div>
     <h2 id="titulo-decidir">Para decidir</h2>
@@ -234,6 +238,6 @@
 </nav>
 
 <div id="toast" role="status"></div>
-<script src="app.js?v=20261023d"></script>
+<script src="app.js?v=20261023e"></script>
 </body>
 </html>

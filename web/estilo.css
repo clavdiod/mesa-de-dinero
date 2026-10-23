@@ -152,3 +152,15 @@ table.ficha td:first-child { white-space: nowrap; padding-right: 10px; }
 .rg-fila:last-child { border-bottom: 0; }
 .rg-n { display: inline-block; min-width: 22px; text-align: center; border-radius: 11px; font-weight: 700; padding: 0 6px; background: var(--verde-bg); color: var(--verde); }
 .chip.chico2 { font-size: 11px; padding: 1px 7px; }
+
+#btn-avisos { position: relative; }
+.globo { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--rojo); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+.panel-avisos { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); width: min(560px, calc(100% - 24px)); max-height: 72vh; overflow-y: auto; z-index: 20;
+  background: var(--card); border: 1px solid var(--borde); border-radius: var(--r); padding: 12px 14px; box-shadow: 0 10px 30px #0006; }
+.av-dia { margin: 12px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--tenue); }
+.av-item { padding: 8px 0; border-bottom: 1px solid var(--borde); font-size: 14px; }
+.av-item:last-child { border-bottom: 0; }
+.av-item.nuevo { border-left: 3px solid var(--amar, #d4a017); padding-left: 8px; }
+.av-item summary { cursor: pointer; list-style: none; color: var(--txt); }
+.av-item summary::-webkit-details-marker { display: none; }
+.av-hora { color: var(--tenue); font-variant-numeric: tabular-nums; margin-right: 6px; }
