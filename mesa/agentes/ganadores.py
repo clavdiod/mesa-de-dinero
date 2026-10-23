@@ -99,8 +99,10 @@ def entrenar(series: dict[str, list[dict]], paso: int = 3) -> dict:
                 d[h] = {"casos": len(v), "promedio": round(st.mean(v), 2), "mediana": round(st.median(v), 2),
                         "acierto": round(sum(1 for x in v if x > 0) / len(v) * 100, 1),
                         "exceso": round(st.mean(v) - out["base"][h]["promedio"], 2)}
-        h_mejor = max(d, key=lambda h: d[h]["exceso"]) if d else None
-        activa = bool(h_mejor and d[h_mejor]["casos"] >= 40 and d[h_mejor]["exceso"] >= 1.0 and d[h_mejor]["acierto"] >= 52)
+        # el plazo es el que más le gana al promedio entre los que además aciertan más de la mitad
+        validos = [h for h in d if d[h]["acierto"] >= 52 and d[h]["casos"] >= 40]
+        h_mejor = max(validos or d, key=lambda h: d[h]["exceso"]) if d else None
+        activa = bool(h_mejor in validos and d[h_mejor]["exceso"] >= 1.0)
         out["estrategias"][e] = {"nombre": ESTRATEGIAS[e], "horizontes": d, "plazo": h_mejor, "activa": activa}
     return out
 
