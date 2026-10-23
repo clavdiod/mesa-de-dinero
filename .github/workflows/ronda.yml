@@ -5,6 +5,10 @@ name: ronda
 # La dispara el reloj de Cloudflare (cron del Worker). El schedule propio de GitHub se quitó porque llegaba
 # tarde y duplicaba rondas (cada ronda extra gasta escrituras del plan gratis de Cloudflare KV).
 on:
+  # respaldo: si el reloj de Cloudflare falla, GitHub corre una ronda cada 15 minutos (si hubo una ronda
+  # hace menos de 12 minutos, el respaldo se va sin hacer nada ni escribir)
+  schedule:
+    - cron: "7,22,37,52 13-20 * * 1-5"
   workflow_dispatch:
     inputs:
       forzar:
@@ -36,6 +40,7 @@ jobs:
           VAPID_PRIVADA: ${{ secrets.VAPID_PRIVADA }}
           VAPID_PUBLICA: ${{ secrets.VAPID_PUBLICA }}
           VAPID_CONTACTO: ${{ secrets.VAPID_CONTACTO }}
+          RESPALDO: ${{ github.event_name == 'schedule' && '1' || '' }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.forzar }}" = "true" ]; then
             python -m mesa.ronda --forzar

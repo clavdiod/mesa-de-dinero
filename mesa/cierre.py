@@ -407,9 +407,18 @@ def mensual() -> dict:
 if __name__ == "__main__":
     tarea = sys.argv[1] if len(sys.argv) > 1 else "diario"
     fn = {"diario": diario, "calificadoras": calificadoras, "semanal": semanal, "mensual": mensual, "entrenar": entrenar}[tarea]
+    import os
     import traceback
+    _a = almacen_por_defecto()
+    _hoy = ahora().date().isoformat()
+    _hechas = _a.get("tareas/hechas") or {}
+    if os.environ.get("RESPALDO") and _hechas.get(tarea) == _hoy:
+        print(f"::notice::{tarea}: ya se hizo hoy (respaldo sin trabajo)")
+        sys.exit(0)
     try:
         r = fn()
+        _hechas[tarea] = _hoy
+        _a.put("tareas/hechas", _hechas)
         print(json.dumps(r, ensure_ascii=False, indent=1, default=str))
         print(f"::notice::{tarea} OK: {str(r)[:1500]}")
     except Exception as e:

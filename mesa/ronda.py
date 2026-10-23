@@ -7,6 +7,7 @@ Uso:  python -m mesa.ronda            (decide sola si le toca correr según hora
 from __future__ import annotations
 
 import argparse
+import os
 import hashlib
 import json
 from datetime import date, timedelta
@@ -434,12 +435,19 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
             return {"corrio": False, "motivo": "día no hábil"}
         if consumo.solo_cierre():
             return {"corrio": False, "motivo": f"consumo IOL {consumo.pct:.0f}%: solo ronda de cierre"}
-        if not toca_correr(ya, consumo.factor_frecuencia()):
+        if not toca_correr(ya, consumo.factor_frecuencia()) and not os.environ.get("RESPALDO"):
             return {"corrio": False, "motivo": "no toca en este horario"}
 
     # Cloudflare KV gratis: ~1.000 escrituras por día. Lo que no es urgente se guarda cada 30 minutos.
     minuto_dia = ya.hour * 60 + ya.minute
     cada30 = bool(forzar or simular or minuto_dia % 30 < 5 or minuto_dia >= 16 * 60 + 55)
+    if not simular and not forzar and os.environ.get("RESPALDO"):
+        # respaldo de GitHub: solo trabaja si el reloj de Cloudflare no corrió rondas en los últimos 12 minutos
+        est = almacen.get("ui/estado") or {}
+        if est.get("fecha") == hoy.isoformat() and est.get("hora"):
+            hh, mm = (int(x) for x in est["hora"].split(":")[:2])
+            if minuto_dia - (hh * 60 + mm) < 12:
+                return {"corrio": False, "motivo": "respaldo: el reloj de Cloudflare está funcionando"}
     if not simular and not forzar:
         ultima = {}  # (antes: ronda/ultima; ya no hay rondas duplicadas y ahorraba una escritura por ronda)
         if ultima.get("ts") and ya.timestamp() - ultima["ts"] < 170:

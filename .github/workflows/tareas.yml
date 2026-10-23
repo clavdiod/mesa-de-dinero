@@ -3,6 +3,12 @@ name: tareas
 # La dispara el reloj de Cloudflare (17:10 cierre, 10:00 calificadoras, viernes 17:30 semanal, días 1-3 mensual).
 # Sin schedule propio de GitHub: llegaba tarde y duplicaba tareas (y escrituras de Cloudflare KV).
 on:
+  # respaldo por si falla el reloj de Cloudflare: si la tarea ya se hizo hoy, se va sin hacer nada
+  schedule:
+    - cron: "25 13 * * 1-5"
+    - cron: "40 20 * * 1-5"
+    - cron: "5 21 * * 5"
+    - cron: "20 21 * * 5"
   workflow_dispatch:
     inputs:
       tarea:
@@ -28,6 +34,10 @@ jobs:
         id: t
         run: |
           case "${{ github.event.schedule }}" in
+            "25 13 * * 1-5") echo "tarea=calificadoras" >> $GITHUB_OUTPUT ;;
+            "40 20 * * 1-5") echo "tarea=diario" >> $GITHUB_OUTPUT ;;
+            "5 21 * * 5")    echo "tarea=semanal" >> $GITHUB_OUTPUT ;;
+            "20 21 * * 5")   echo "tarea=entrenar" >> $GITHUB_OUTPUT ;;
             "10 20 * * 1-5") echo "tarea=diario" >> $GITHUB_OUTPUT ;;
             "0 13 * * 1-5")  echo "tarea=calificadoras" >> $GITHUB_OUTPUT ;;
             "30 20 * * 5")   echo "tarea=semanal" >> $GITHUB_OUTPUT ;;
@@ -41,6 +51,7 @@ jobs:
           IOL_USUARIO: ${{ secrets.IOL_USUARIO }}
           IOL_CLAVE: ${{ secrets.IOL_CLAVE }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RESPALDO: ${{ github.event_name == 'schedule' && '1' || '' }}
         run: |
           if [ "${{ steps.t.outputs.tarea }}" = "mensual" ]; then
             python -c "from mesa.nucleo.reloj import ahora, es_dia_habil; from datetime import timedelta; d=ahora().date(); import sys; sys.exit(0 if es_dia_habil(d) and not any(es_dia_habil(d.replace(day=x)) for x in range(1, d.day)) else 1)" || { echo "No es el primer día hábil"; exit 0; }
