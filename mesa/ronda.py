@@ -212,7 +212,7 @@ def _radar_investigar(ctx, almacen, hoy, alertas: list[dict], por_ticker: dict) 
     from .nucleo.config import emisores
     nombres = {"tecnico": "Técnico", "historiador": "Historiador", "fuerza_relativa": "Fuerza relativa", "volumen_flujo": "Volumen y flujo",
                "economista": "Economista", "wallstreet": "Wall Street", "cripto": "Cripto", "adr": "Noche de Nueva York", "panico": "Comprador de pánico",
-               "mundo": "Corresponsal (mundo)", "acciones": "Acciones", "cedears": "CEDEARs", "soberanos": "Soberanos", "ons": "ONs", "macro_dolar": "Macro / dólar",
+               "mundo": "Corresponsal (mundo)", "ministro": "Ministro (política económica)", "acciones": "Acciones", "cedears": "CEDEARs", "soberanos": "Soberanos", "ons": "ONs", "macro_dolar": "Macro / dólar",
                "noticias": "Noticias", "hechos_emisor": "Hechos del emisor", "calificadoras": "Calificadoras",
                "oportunidades_corto": "Oportunidades (corto)", "oportunidades_mediano": "Oportunidades (mediano)"}
     cache_n = almacen.get(f"radar/noticias/{hoy.isoformat()}") or {}
@@ -324,6 +324,41 @@ def _noticias_papeles(ctx, almacen, hoy, tks: list[str], simular: bool) -> list[
         return out
     except Exception as ex:
         print(f"[mundo papeles] {ex}")
+        return []
+
+
+def _senales_ministro(ctx, almacen, hoy, simular: bool) -> list[Senal]:
+    """El Ministro: reservas, compras del BCRA, tasa real, inflación, dólar y pagos de deuda (API del BCRA, gratis).
+    Las series se bajan una vez por día; los titulares del Ministro cada 2 horas."""
+    if simular:
+        return []
+    try:
+        from .agentes import ministro
+        guard = almacen.get("ministro/series") or {}
+        if guard.get("fecha") != hoy.isoformat():
+            ser = ministro.bajar_series(hoy - timedelta(days=400), hoy)
+            if sum(len(v) for v in ser.values()) > 100:
+                guard = {"fecha": hoy.isoformat(), "series": ser}
+                almacen.put("ministro/series", guard)
+        series = guard.get("series") or {}
+        f = ministro.foto(series, hoy.isoformat())
+        prueba = almacen.get("ministro/prueba") or {}
+        notis = almacen.get("ministro/noticias") or {}
+        minuto = int(ctx.hora[:2]) * 60 + int(ctx.hora[3:5]) if ctx.hora else 0
+        if notis.get("fecha") != hoy.isoformat() or minuto - notis.get("minuto", 0) >= 120:
+            tit = gratis.buscar_noticias("Caputo ministro de Economía", horas=48, max_items=8)
+            tes = gratis.buscar_noticias("licitación del Tesoro rollover", horas=168, max_items=8)
+            notis = {"fecha": hoy.isoformat(), "minuto": minuto, "titulares": [{"titulo": n["titulo"], "link": n.get("link")} for n in tit[:6]],
+                     "rollover": ministro.rollover(tes)}
+            almacen.put("ministro/noticias", notis)
+        f["rollover"] = notis.get("rollover")
+        ctx.extra["ministro"] = {**ministro.lectura(f, prueba.get("activas")), "titulares": notis.get("titulares") or [],
+                                 "prueba": {k: {"casos": v["casos"], "acierto": round(v["aciertos"] / v["casos"] * 100, 1),
+                                                "promedio": round(v["suma_ret"] / v["casos"], 2), "activa": (prueba.get("activas") or {}).get(k)}
+                                            for k, v in (prueba.get("stats") or {}).items() if v.get("casos")}}
+        return ministro.senales(f, lambda tk: ctx.titulo(tk) is not None, prueba.get("activas"))
+    except Exception as ex:
+        print(f"[ministro] {ex}")
         return []
 
 
@@ -538,6 +573,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     senales += analistas.fuerza_relativa(ctx)
     senales += analistas.volumen_flujo(ctx)
 
+    # El Ministro: la política económica (reservas, tasa real, dólar, deuda) que mueve bonos, bancos y pesos
+    senales += _senales_ministro(ctx, almacen, hoy, simular)
     # Corresponsal: el mundo y las empresas (guerra en el Golfo, Fed, aranceles, rumores, nuevos desarrollos...)
     senales += _senales_mundo(ctx, almacen, hoy, ya.hour * 60 + ya.minute, cada30, simular)
 
@@ -849,6 +886,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "licitaciones_avisos": ctx.extra.get("licitaciones_avisos"),
         "mae": ctx.extra.get("mae"),
         "mundo": ctx.extra.get("mundo"),
+        "ministro": ctx.extra.get("ministro"),
         "pronosticos": libreta[:200],
         "reunion": None if simular else almacen.get("revision/ultima"),
         "alertas_disparadas": None if simular else (almacen.get("alertas/disparadas") or {}),

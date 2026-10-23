@@ -162,7 +162,9 @@ def entrenar(series: dict[str, dict[str, float]], cierres: dict[str, dict[str, f
                     _sumar(stats.setdefault(clave, {}), (p1 / p0 - 1) * 100 * d, 0.4)
     activas = {}
     for k, v in stats.items():
+        hit, ret = (v["aciertos"] / v["casos"], v["suma_ret"] / v["casos"]) if v.get("casos") else (0, 0)
         if v.get("casos", 0) >= 30:
-            hit, ret = v["aciertos"] / v["casos"], v["suma_ret"] / v["casos"]
             activas[k] = hit >= 0.52 and ret > 1.2
+        elif v.get("casos", 0) >= 15 and ret < 0:
+            activas[k] = False  # pocos casos pero claramente en contra: no vota
     return {"stats": stats, "activas": activas, "horizonte": horizonte}

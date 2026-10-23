@@ -325,6 +325,18 @@ def entrenar() -> dict:
     # Comprador de pánico: CEDEARs 5 años en dólares + acciones locales con el riesgo país
     from .agentes import panico
     acciones = {tk: cache.velas(tk) for tk in cache.indice if grupos.get(tk) == "acciones"}
+    try:  # el Ministro: reglas de política económica contra la historia
+        from .agentes import ministro as _min
+        from datetime import date as _d
+        ser = _min.bajar_series(_d(2022, 1, 1), ahora().date())
+        cier = {}
+        for tk in set(_min.SOBERANOS + _min.BANCOS + _min.COBERTURA):
+            if not cache.velas(tk):
+                cache.asegurar_mae(tk)
+            cier[tk] = {x["fecha"]: x["cierre"] for x in cache.velas(tk) if x.get("cierre")}
+        a.put("ministro/prueba", _min.entrenar(ser, cier))
+    except Exception as ex:
+        print(f"[entrenar] ministro: {ex}")
     hist["panico"] = panico.entrenar(datos5["precios"], datos5["indices"], acciones, macro.get("riesgo_pais") or {}, registro=registro)
     a.put("ranking/stats_historicas", hist)
     a.put("ranking/prueba_panico", {"por_tipo": hist["panico"]["por_tipo"], "por_horizonte": hist["panico"]["por_horizonte"]})

@@ -4,7 +4,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const num = (x, d = 2) => (x === null || x === undefined || isNaN(x) ? "—" : Number(x).toLocaleString("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d }));
 const pct = (x, d = 2) => (x === null || x === undefined ? "—" : `${x > 0 ? "+" : ""}${num(x, d)}%`);
 const NOMBRES = { acciones: "Acciones", cedears: "CEDEARs", ons: "ONs", soberanos: "Soberanos", pesos_tasas: "Pesos y tasas",
-  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", wallstreet: "Wall Street", cripto: "Cripto", adr: "Noche de Nueva York", panico: "Comprador de pánico", mundo: "Corresponsal (mundo)", anticipo: "Anticipo (Nueva York)", anticipador: "Anticipador", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
+  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", wallstreet: "Wall Street", cripto: "Cripto", adr: "Noche de Nueva York", panico: "Comprador de pánico", mundo: "Corresponsal (mundo)", ministro: "Ministro (política económica)", anticipo: "Anticipo (Nueva York)", anticipador: "Anticipador", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
   hechos_emisor: "Hechos del emisor", calificadoras: "Calificadoras", riesgo: "Riesgo", jefe: "Jefe" };
 
 function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("ver"); setTimeout(() => e.classList.remove("ver"), 2500); }
@@ -109,6 +109,7 @@ function pintarEstado() {
   }
   pintarEconomista();
   pintarWallStreet();
+  pintarMinistro();
   pintarMundo();
   pintarCobros();
   pintarPronosticos();
@@ -588,6 +589,33 @@ function pintarMAE() {
   $("#mae").innerHTML = `<div class="card eco"><div class="fila"><b>⚖️ MAE contra BYMA</b><span class="tenue">${esc(r?.hora || "")}</span></div>
     <p class="tenue">El mismo bono o la misma ON cotiza en los dos mercados. Si la diferencia es grande y hay volumen, el radar avisa: conviene comprar donde está más barato (o es un precio viejo: mirar las puntas).</p>
     ${tablaRes}${tablaPares}${hist}</div>`;
+}
+
+const NOMBRE_REGLA_MIN = { acumula: "Acumula reservas", pierde: "Pierde reservas", tasa_real_alta: "Tasa real alta", tasa_real_negativa: "Tasa real negativa",
+  inflacion_baja: "Inflación bajando", dolar_acelera: "Dólar acelerando", pago_cerca_con_reservas: "Pago de deuda cerca, con reservas" };
+function pintarMinistro() {
+  const r = ESTADO.estado?.ministro, box = $("#ministro");
+  if (!box) return;
+  if (!r) { box.innerHTML = ""; return; }
+  const f = r.foto || {}, n0 = (v, d = 0) => (v == null ? "—" : num(v, d));
+  const ind = [["Reservas BCRA", `US$ ${n0(f.reservas)} M`, f.reservas_20d != null ? `${f.reservas_20d >= 0 ? "+" : ""}${n0(f.reservas_20d)} M en 20 ruedas` : ""],
+    ["Compras del BCRA", f.compras_20d != null ? `US$ ${n0(f.compras_20d)} M` : "—", "últimas 20 ruedas"],
+    ["Tasa real", f.tasa_real != null ? `${num(f.tasa_real, 1)} pp` : "—", f.tamar ? `TAMAR ${num(f.tamar, 1)}% − inflación esperada ${num(f.expectativa, 1)}%` : ""],
+    ["Inflación", f.inflacion != null ? `${num(f.inflacion, 1)}% mensual` : "—", f.inflacion_tendencia != null ? (f.inflacion_tendencia < 0 ? "bajando" : f.inflacion_tendencia > 0 ? "subiendo" : "estable") : ""],
+    ["Dólar mayorista", f.tc ? `$${n0(f.tc, 2)}` : "—", f.tc_20d_pct != null ? `${pct(f.tc_20d_pct, 1)} en 20 ruedas` : ""],
+    ["Próximo pago de deuda", f.pago_deuda ? fecha(f.pago_deuda) : "—", f.dias_pago_deuda != null ? `faltan ${f.dias_pago_deuda} días` : ""],
+    ...(f.rollover != null ? [["Rollover del Tesoro", `${num(f.rollover, 0)}%`, f.rollover < 100 ? "libera pesos al mercado" : "absorbe pesos"]] : [])];
+  const reglas = (r.reglas || []).map((x) => `<p>• ${esc(x.texto)} <span class="chip ${x.estado ? "verde" : x.estado === false ? "" : "amar"}">${x.estado ? "probado: vota" : x.estado === false ? "solo dato" : "a prueba"}</span></p>`).join("");
+  const pr = Object.entries(r.prueba || {});
+  const tabla = pr.length ? `<div class="tabla-scroll"><table><tr><th>Regla</th><th class="n">Acierta</th><th class="n">Prom. 20 ruedas</th><th class="n">Casos</th></tr>
+    ${pr.map(([k, x]) => `<tr><td>${esc(NOMBRE_REGLA_MIN[k] || k)}${x.activa ? " ✅" : ""}</td><td class="n">${num(x.acierto, 0)}%</td><td class="n">${pct(x.promedio, 1)}</td><td class="n">${x.casos}</td></tr>`).join("")}</table></div>` : "";
+  const tit = (r.titulares || []).slice(0, 4).map((n) => `<div class="evento"><span class="ev-ic">📰</span><span>${n.link ? `<a href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.titulo)}</a>` : esc(n.titulo)}</span></div>`).join("");
+  box.innerHTML = `<div class="card eco"><div class="fila"><b>🏛️ El Ministro</b><span class="tenue">política económica · BCRA ${esc(fecha(f.fecha || ""))}</span></div>
+    <p class="tenue">Mira el mercado como el Ministerio de Economía: reservas, compras del BCRA, tasa real, inflación, dólar y pagos de deuda. Lo que ve lo comparte con toda la mesa.</p>
+    <div class="grilla">${ind.map(([t, v, d]) => `<div class="met"><span>${t}</span><b>${v}</b><span>${esc(d)}</span></div>`).join("")}</div>
+    ${reglas ? `<p style="margin-top:10px"><b>Lo que hoy le dice a la mesa</b></p>${reglas}` : '<p class="tenue" style="margin-top:10px">Hoy ninguna señal de política económica fuerte.</p>'}
+    ${tabla ? `<p class="tenue" style="margin-top:10px"><b>Probado con la historia</b> (cada regla, a 20 ruedas): solo votan las que ganaron más que la comisión.</p>${tabla}` : ""}
+    ${tit ? `<p class="tenue" style="margin-top:10px"><b>Lo último del Ministro</b></p>${tit}` : ""}</div>`;
 }
 
 const NOMBRE_TEMA = { empresa_rumor: "Rumores de empresas", empresa_hecho: "Noticias de empresas" };
