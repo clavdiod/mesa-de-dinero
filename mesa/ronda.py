@@ -119,8 +119,15 @@ def puntaje_ticker(senales: list[Senal], reg: Registro, ctx: Contexto | None = N
             if ctx and s.agente != "cripto" and ctx.extra.get("cripto"):
                 m *= cripto.multiplicador(ctx.extra["cripto"].get("btc"), ctx.extra["cripto"].get("ens") or {},
                                           (ctx.titulo(s.ticker) or {}).get("grupo"), s.direccion)
+            if s.agente == "ministro" and (s.datos or {}).get("probada") and ctx and \
+                    (ctx.titulo(s.ticker) or {}).get("grupo") in MINISTRO_DOMINIO:
+                m *= 1.5  # en bonos y pesos el Ministro decide: su voto probado pesa 50% más
             tot += s.direccion * s.fuerza * reg.peso(s.agente, s.fuerza) * m
     return round(tot, 3)
+
+
+# terreno del Ministro: bonos soberanos, letras y ONs (donde la política económica manda)
+MINISTRO_DOMINIO = {"soberanos", "letras", "bonos", "ons"}
 
 
 def _senales_ws(ctx, ws_datos: dict, tickers: list[str]) -> list[Senal]:
@@ -641,6 +648,9 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         senales.append(s)
         por_ticker.setdefault(s.ticker, []).append(s)
     vetos = {s.ticker for s in hechos if s.veto}
+    # el Ministro frena compras de bonos cuando una regla PROBADA de política económica dice que vienen mal
+    vetos |= {s.ticker for s in senales if s.agente == "ministro" and s.direccion < 0 and (s.datos or {}).get("probada")
+              and (ctx.titulo(s.ticker) or {}).get("grupo") in MINISTRO_DOMINIO}
 
     # --- Riesgo ---
     propuestas_hoy = reg.de_hoy(hoy)
