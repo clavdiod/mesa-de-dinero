@@ -1,32 +1,18 @@
-"""Fuentes gratis para: revisiones de analistas, compras de insiders y sectores."""
+"""Formato detallado de Nasdaq (perfil, consenso) y OpenInsider."""
+import json
 import re
 
 import requests
 
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36", "Accept": "application/json, text/html"}
-out = []
-def prueba(nombre, url, **kw):
-    try:
-        r = requests.get(url, headers={**UA, **kw.get("h", {})}, timeout=25)
-        out.append(f"{nombre}: {r.status_code} {len(r.text)}B {r.text[:260]!r}")
-        return r
-    except Exception as e:
-        out.append(f"{nombre}: ERR {e}")
-prueba("yahoo upgrades", "https://query2.finance.yahoo.com/v10/finance/quoteSummary/AAPL?modules=upgradeDowngradeHistory")
-s = requests.Session(); s.headers.update(UA)
-try:
-    s.get("https://fc.yahoo.com", timeout=15)
-    crumb = s.get("https://query1.finance.yahoo.com/v1/test/getcrumb", timeout=15).text
-    r = s.get(f"https://query2.finance.yahoo.com/v10/finance/quoteSummary/AAPL?modules=upgradeDowngradeHistory,assetProfile&crumb={crumb}", timeout=20)
-    out.append(f"yahoo con crumb ({crumb[:8]}): {r.status_code} {r.text[:300]!r}")
-except Exception as e:
-    out.append(f"yahoo crumb ERR {e}")
-prueba("nasdaq ratings", "https://api.nasdaq.com/api/analyst/AAPL/ratings")
-prueba("nasdaq target", "https://api.nasdaq.com/api/analyst/AAPL/targetprice")
-prueba("nasdaq perfil", "https://api.nasdaq.com/api/company/AAPL/company-profile")
-prueba("nasdaq insiders", "https://api.nasdaq.com/api/company/AAPL/insider-trades?limit=20&type=ALL&sortColumn=lastDate&sortOrder=DESC")
-r = prueba("openinsider", "http://openinsider.com/screener?s=NVDA&o=&pl=&ph=&ll=&lh=&fd=1461&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&vl=&vh=&ocl=&och=&sic1=-1&sicl=100&sich=9999&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1")
-if r is not None:
-    out.append("openinsider filas: " + str(len(re.findall(r"<tr", r.text))))
-prueba("sec submissions", "https://data.sec.gov/submissions/CIK0000320193.json", h={"User-Agent": "mesa-de-dinero contacto@example.com"})
-print("::notice::" + " ||| ".join(out)[:3950])
+p = requests.get("https://api.nasdaq.com/api/company/NVDA/company-profile", headers=UA, timeout=25).json()["data"]
+print("::notice::PERFIL " + json.dumps({k: (v.get("value") if isinstance(v, dict) else v) for k, v in p.items() if k in ("Sector", "Industry", "CompanyName", "Region")}, ensure_ascii=False))
+t = requests.get("https://api.nasdaq.com/api/analyst/NVDA/targetprice", headers=UA, timeout=25).json()["data"]
+print("::notice::TARGET " + json.dumps(t, ensure_ascii=False)[:3500])
+r = requests.get("https://api.nasdaq.com/api/analyst/NVDA/ratings", headers=UA, timeout=25).json()["data"]
+print("::notice::RATINGS " + json.dumps(r, ensure_ascii=False)[:1500])
+h = requests.get("http://openinsider.com/screener?s=CRWD&fd=1461&xp=1&cnt=100&page=1&sortcol=0", headers=UA, timeout=25).text
+tabla = re.search(r'<table[^>]*class="tinytable"[^>]*>(.*?)</table>', h, re.S)
+filas = re.findall(r"<tr[^>]*>(.*?)</tr>", tabla.group(1), re.S) if tabla else []
+celdas = [[re.sub(r"<[^>]+>", "", c).strip() for c in re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", f, re.S)] for f in filas[:6]]
+print("::notice::OPENINSIDER " + f"{len(filas)} filas || " + json.dumps(celdas, ensure_ascii=False)[:2500])
