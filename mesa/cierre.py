@@ -113,6 +113,10 @@ def diario(simular: bool = False) -> dict:
             panel_ui = (a.get("ui/panel") or {}).get("titulos") or {}
             r = _rev.reunir(a, cache, panel_ui, hoy, 7)
             aj = _rev.ajustes(r)
+            # las decisiones de una reunión siguen vigentes hasta su fecha aunque el cálculo del día no las repita
+            for k, v in (a.get("revision/ajustes") or {}).items():
+                if k not in aj and v.get("hasta", "") >= hoy.isoformat():
+                    aj[k] = v
             r["lecciones"] = _rev.lecciones(r)
             r["ajustes"] = aj
             a.put("revision/ultima", r)
