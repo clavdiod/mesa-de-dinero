@@ -1,16 +1,25 @@
-"""Series del BCRA v4 y titulares del ministro."""
+"""Prueba con la historia de las reglas del Ministro (BCRA desde 2022 + cierres guardados)."""
 import json
+from datetime import date
 
-import requests
+from mesa.agentes import ministro
+from mesa.datos.cache import CacheHistorico
+from mesa.nucleo.almacen import almacen_por_defecto
 
-out = []
-for i in (1, 47, 5, 44, 27, 29):
-    r = requests.get(f"https://api.bcra.gob.ar/estadisticas/v4.0/monetarias/{i}", params={"desde": "2025-01-01", "hasta": "2026-10-23", "limit": 3000}, timeout=40)
-    j = r.json()
-    res = j.get("results")
-    out.append(f"id {i}: {r.status_code} keys {list(j)[:5]} tipo {type(res).__name__} " + json.dumps(res if not isinstance(res, list) else res[:2], ensure_ascii=False)[:400] + f" n={len(res) if isinstance(res, list) else (len(res.get('detalle', [])) if isinstance(res, dict) else '?')} meta={json.dumps(j.get('metadata'))[:150]}")
-print("::notice::" + " ||| ".join(out)[:3950])
-from mesa.datos import gratis
-ns = gratis.buscar_noticias("Caputo ministro de Economía", horas=48, max_items=10)
-ns += gratis.buscar_noticias("licitación Tesoro rollover", horas=168, max_items=8)
-print("::notice::NOTICIAS " + " | ".join(n["titulo"][:110] for n in ns)[:3900])
+a = almacen_por_defecto()
+series = ministro.bajar_series(date(2022, 1, 1), date.today())
+print("::notice::series " + " ".join(f"{k}:{len(v)}({min(v) if v else '-'})" for k, v in series.items()))
+cache = CacheHistorico(a)
+tks = set(ministro.SOBERANOS + ministro.BANCOS + ministro.COBERTURA)
+cierres = {}
+for tk in tks:
+    v = cache.velas(tk)
+    if not v:
+        cache.asegurar_mae(tk)
+        v = cache.velas(tk)
+    cierres[tk] = {x["fecha"]: x["cierre"] for x in v if x.get("cierre")}
+print("::notice::cierres " + " ".join(f"{k}:{len(v)}" for k, v in cierres.items()))
+r = ministro.entrenar(series, cierres)
+print("::notice::PRUEBA " + json.dumps({k: {**v, "acierto": round(v["aciertos"] / v["casos"] * 100, 1), "prom": round(v["suma_ret"] / v["casos"], 2)} for k, v in r["stats"].items()}, ensure_ascii=False)[:3000] + " || activas " + json.dumps(r["activas"]))
+f = ministro.foto(series, date.today().isoformat())
+print("::notice::HOY " + json.dumps(ministro.lectura(f, r["activas"]), ensure_ascii=False)[:3000])
