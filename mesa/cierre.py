@@ -182,6 +182,12 @@ def diario(simular: bool = False) -> dict:
                     a.put("ganadores/lista", {"fecha": lg[0]["fecha"] if lg else hoy.isoformat(), "lista": lg[:15]})
                 except Exception as ex2:
                     print(f"[cierre] ganadores: {ex2}")
+                try:  # herramientas profesionales: analistas, insiders y sectores líderes
+                    from .agentes import profesionales as _pro
+                    pl = _pro.armar_lista(a, list(ser), {tk: f[-1]["c"] for tk, f in ser.items() if f}, hoy)
+                    print(f"[cierre] profesionales: {len(pl['lista'])} papeles marcados; sectores líderes {pl['lideres']}")
+                except Exception as ex2:
+                    print(f"[cierre] profesionales: {ex2}")
                 for tk in cache.indice:
                     vs = cache.velas(tk)
                     if tk not in ser and len(vs) > 60 and tk in {t.get("simbolo") for t in paneles.get("acciones", [])}:
@@ -345,6 +351,14 @@ def entrenar() -> dict:
         a.put("ganadores/prueba", _gan.entrenar(s5))
     except Exception as ex:
         print(f"[entrenar] ganadores: {ex}")
+    try:  # herramientas profesionales (analistas, insiders, rotación sectorial) contra la historia
+        from .agentes import profesionales as _pro
+        from datetime import date as _d2
+        rp = _pro.entrenar_todo(a, {tk: [[x["fecha"], x["c"]] for x in f] for tk, f in s5.items()}, ahora().date())
+        for k, v in rp["herramientas"].items():
+            print(f"[entrenar] profesionales {k}: activa={v['activa']} plazo={v['plazo']} {v['horizontes']}")
+    except Exception as ex:
+        print(f"[entrenar] profesionales: {ex}")
     try:  # el Ministro: reglas de política económica contra la historia
         from .agentes import ministro as _min
         from datetime import date as _d

@@ -22,7 +22,7 @@ from ..nucleo.modelos import Plan
 # Plazo de cada idea según el agente que la origina (en ruedas): cada estrategia gana en su plazo.
 # Wall Street (tendencia + momentum) gana a ~3 meses; Cripto y lo técnico, en días.
 PLAZO_AGENTE = {"wallstreet": 60, "oportunidades_mediano": 60, "economista": 20, "panico": 20,
-                "cripto": 10, "adr": 3, "volumen_flujo": 5, "anticipo": 3, "anticipador": 5, "mundo": 5, "ministro": 20, "ganadores": 20}
+                "cripto": 10, "adr": 3, "volumen_flujo": 5, "anticipo": 3, "anticipador": 5, "mundo": 5, "ministro": 20, "ganadores": 20, "profesionales": 40}
 
 
 def plazo_de(agente: str | None) -> int:

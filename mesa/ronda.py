@@ -219,7 +219,7 @@ def _radar_investigar(ctx, almacen, hoy, alertas: list[dict], por_ticker: dict) 
     from .nucleo.config import emisores
     nombres = {"tecnico": "Técnico", "historiador": "Historiador", "fuerza_relativa": "Fuerza relativa", "volumen_flujo": "Volumen y flujo",
                "economista": "Economista", "wallstreet": "Wall Street", "cripto": "Cripto", "adr": "Noche de Nueva York", "panico": "Comprador de pánico",
-               "mundo": "Corresponsal (mundo)", "ministro": "Ministro (política económica)", "ganadores": "Cazador de ganadores", "acciones": "Acciones", "cedears": "CEDEARs", "soberanos": "Soberanos", "ons": "ONs", "macro_dolar": "Macro / dólar",
+               "mundo": "Corresponsal (mundo)", "ministro": "Ministro (política económica)", "ganadores": "Cazador de ganadores", "profesionales": "Herramientas de Wall Street", "acciones": "Acciones", "cedears": "CEDEARs", "soberanos": "Soberanos", "ons": "ONs", "macro_dolar": "Macro / dólar",
                "noticias": "Noticias", "hechos_emisor": "Hechos del emisor", "calificadoras": "Calificadoras",
                "oportunidades_corto": "Oportunidades (corto)", "oportunidades_mediano": "Oportunidades (mediano)"}
     cache_n = almacen.get(f"radar/noticias/{hoy.isoformat()}") or {}
@@ -605,6 +605,18 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
             senales += _gan.senales(lg.get("lista") or [], pg, lambda tk: ctx.titulo(tk) is not None)
         except Exception as ex:
             print(f"[ganadores] {ex}")
+        try:  # herramientas profesionales: consenso de analistas, compras de insiders, sectores líderes
+            from .agentes import profesionales as _pro
+            lp = almacen.get("profesionales/lista") or {}
+            pp = almacen.get("profesionales/prueba") or {}
+            ctx.extra["profesionales"] = {"fecha": lp.get("fecha"), "lista": lp.get("lista") or {}, "lideres": lp.get("lideres") or [],
+                                          "sectores_3m": lp.get("sectores_3m") or {}, "nombres": lp.get("nombres") or {},
+                                          "prueba": {k: {"nombre": v["nombre"], "activa": v["activa"], "plazo": v["plazo"],
+                                                         **((v.get("horizontes") or {}).get(str(v["plazo"])) or {})}
+                                                     for k, v in (pp.get("herramientas") or {}).items()}}
+            senales += _pro.senales(lp.get("lista") or {}, pp, lambda tk: ctx.titulo(tk) is not None)
+        except Exception as ex:
+            print(f"[profesionales] {ex}")
     # El Ministro: la política económica (reservas, tasa real, dólar, deuda) que mueve bonos, bancos y pesos
     senales += _senales_ministro(ctx, almacen, hoy, simular)
     # Corresponsal: el mundo y las empresas (guerra en el Golfo, Fed, aranceles, rumores, nuevos desarrollos...)
@@ -819,7 +831,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         minuto = ya.hour * 60 + ya.minute
         nuevos_p = pron.desde_anticipador(ctx.extra.get("anticipo_lista") or {}, hoy, ctx.hora)
         nuevos_p += pron.desde_anticipos(ctx.extra.get("anticipos") or [], hoy, ctx.hora)
-        nuevos_p += pron.desde_ganadores([s for s in senales if s.agente == "ganadores"], hoy, ctx.hora,
+        nuevos_p += pron.desde_ganadores([s for s in senales if s.agente in ("ganadores", "profesionales")], hoy, ctx.hora,
                                          lambda tk: (ctx.titulo(tk) or {}).get("ultimo") if minuto >= 11 * 60 else None)
         nuevos_p += pron.desde_mundo(ctx.extra.get("mundo_senales") or [], hoy, ctx.hora, lambda tk: (ctx.titulo(tk) or {}).get("ultimo") if minuto >= 11 * 60 else None)
         for e in nuevas:
@@ -925,6 +937,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "mundo": ctx.extra.get("mundo"),
         "ministro": ctx.extra.get("ministro"),
         "ganadores": ctx.extra.get("ganadores"),
+        "profesionales": ctx.extra.get("profesionales"),
         "pronosticos": libreta[:200],
         "reunion": None if simular else almacen.get("revision/ultima"),
         "alertas_disparadas": None if simular else (almacen.get("alertas/disparadas") or {}),
