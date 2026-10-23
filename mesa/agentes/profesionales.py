@@ -97,7 +97,8 @@ def _ret(serie: list[list], fecha: str, h: int) -> float | None:
     idx = next((i for i, (f, _) in enumerate(serie) if f >= fecha), None)
     if idx is None or idx + h >= len(serie):
         return None
-    return (serie[idx + h][1] / serie[idx][1] - 1) * 100
+    r = (serie[idx + h][1] / serie[idx][1] - 1) * 100
+    return max(-60.0, min(100.0, r))  # datos rotos de Yahoo (splits mal ajustados) no deben dominar el promedio
 
 
 def _base(precios: dict[str, list[list]], fechas: list[str], h: int) -> dict[str, float]:
@@ -106,7 +107,7 @@ def _base(precios: dict[str, list[list]], fechas: list[str], h: int) -> dict[str
     for f in fechas:
         rs = [r for s in precios.values() if (r := _ret(s, f, h)) is not None]
         if rs:
-            out[f] = st.mean(rs)
+            out[f] = st.median(rs)  # el CEDEAR "típico" de ese día
     return out
 
 
@@ -115,6 +116,7 @@ def _resumen(casos: list[tuple[float, float]]) -> dict:
         return {"casos": 0}
     ex = [r - b for r, b in casos]
     return {"casos": len(casos), "promedio": round(st.mean(r for r, _ in casos), 2), "exceso": round(st.mean(ex), 2),
+            "exceso_mediana": round(st.median(ex), 2),
             "acierto": round(sum(1 for r, _ in casos if r > 0) / len(casos) * 100, 1),
             "le_gana": round(sum(1 for x in ex if x > 0) / len(ex) * 100, 1)}
 
@@ -161,7 +163,7 @@ def entrenar(precios: dict[str, list[list]], etfs: dict[str, list[list]], sector
             fechas = sorted({f for _, f, _ in casos})
             base = _base(precios, fechas, hz)
             d[hz] = _resumen([(r, base[f]) for _, f, r in casos if f in base])
-        validos = [hz for hz in d if d[hz].get("casos", 0) >= 30 and d[hz]["acierto"] >= 52]
+        validos = [hz for hz in d if d[hz].get("casos", 0) >= 30 and d[hz]["acierto"] >= 52 and d[hz]["le_gana"] >= 50]
         plazo = max(validos or d, key=lambda hz: d[hz].get("exceso", -99)) if d else None
         out["herramientas"][k] = {"nombre": HERRAMIENTAS[k], "horizontes": d, "plazo": plazo,
                                   "activa": bool(plazo in validos and d[plazo]["exceso"] >= 1.0)}

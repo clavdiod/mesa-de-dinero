@@ -144,3 +144,11 @@ details.lic[open] .lic-mas { display: none; }
 .lic-det { padding: 4px 0 10px 30px; }
 table.ficha td { vertical-align: top; font-size: 13px; }
 table.ficha td:first-child { white-space: nowrap; padding-right: 10px; }
+
+.m-grupo.oculto { display: none; }
+.grupo-tit { margin-top: 18px; padding-top: 8px; border-top: 1px solid var(--borde); }
+#m-grupos { position: sticky; top: 60px; z-index: 4; background: var(--bg); padding: 6px 0; }
+.rg-fila { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; padding: 8px 0; border-bottom: 1px solid var(--borde); }
+.rg-fila:last-child { border-bottom: 0; }
+.rg-n { display: inline-block; min-width: 22px; text-align: center; border-radius: 11px; font-weight: 700; padding: 0 6px; background: var(--verde-bg); color: var(--verde); }
+.chip.chico2 { font-size: 11px; padding: 1px 7px; }

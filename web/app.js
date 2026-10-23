@@ -4,7 +4,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const num = (x, d = 2) => (x === null || x === undefined || isNaN(x) ? "—" : Number(x).toLocaleString("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d }));
 const pct = (x, d = 2) => (x === null || x === undefined ? "—" : `${x > 0 ? "+" : ""}${num(x, d)}%`);
 const NOMBRES = { acciones: "Acciones", cedears: "CEDEARs", ons: "ONs", soberanos: "Soberanos", pesos_tasas: "Pesos y tasas",
-  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", wallstreet: "Wall Street", cripto: "Cripto", adr: "Noche de Nueva York", panico: "Comprador de pánico", mundo: "Corresponsal (mundo)", ministro: "Ministro (política económica)", ganadores: "Cazador de ganadores", anticipo: "Anticipo (Nueva York)", anticipador: "Anticipador", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
+  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", wallstreet: "Wall Street", cripto: "Cripto", adr: "Noche de Nueva York", panico: "Comprador de pánico", mundo: "Corresponsal (mundo)", ministro: "Ministro (política económica)", ganadores: "Cazador de ganadores", profesionales: "Herramientas de Wall Street", anticipo: "Anticipo (Nueva York)", anticipador: "Anticipador", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
   hechos_emisor: "Hechos del emisor", calificadoras: "Calificadoras", riesgo: "Riesgo", jefe: "Jefe" };
 
 function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("ver"); setTimeout(() => e.classList.remove("ver"), 2500); }
@@ -111,6 +111,7 @@ function pintarEstado() {
   pintarWallStreet();
   pintarMinistro();
   pintarGanadores();
+  pintarProfesionales();
   pintarMundo();
   pintarCobros();
   pintarPronosticos();
@@ -120,6 +121,7 @@ function pintarEstado() {
   pintarInformes();
   pintarOportunidades();
   pintarResumenHoy();
+  pintarRadarGanadores();
   $("#evaluados").innerHTML = (est.evaluados || []).map((e) => `<div class="card"><div class="fila"><b>${esc(e.ticker)}</b>
     <span class="chip ${e.riesgo.ok ? "verde" : "rojo"}">${e.riesgo.ok ? "Pasa" : "Rechazada"}</span></div>
     <p class="tenue">Entrada ${num(e.plan.entrada)} · stop ${num(e.plan.stop)} · objetivo ${num(e.plan.objetivo)} · ${num(e.riesgo.r_neto, 2)}R neto</p>
@@ -154,6 +156,7 @@ function pintarResumenHoy() {
     <div class="grilla" style="margin-top:10px">
       <button class="met ir" data-ir="propuestas|#titulo-decidir"><span>Para decidir ›</span><b>${pend}</b></button>
       <button class="met ir" data-ir="propuestas|#titulo-ops|ops"><span>Oportunidades ›</span><b>${ops}</b></button>
+      <button class="met ir" data-ir="propuestas|#radar-ganadores"><span>🎯 Posibles ganadores ›</span><b>${radarGanadores().filter((x) => x.n >= 2).length || radarGanadores().length}</b></button>
       <button class="met ir" data-ir="ranking|#simulacion"><span>Simulación (cerradas) ›</span><b style="color:var(--${(t.ganancia || 0) >= 0 ? "verde" : "rojo"})">${t.cerradas ? plata(t.ganancia) : "—"}</b></button>
       <button class="met ir" data-ir="ranking|#simulacion"><span>Abiertas en papel ›</span><b>${SIM_RES ? SIM_RES.abiertas || 0 : "—"}</b></button>
     </div></div>`;
@@ -283,7 +286,7 @@ function pintarReunion() {
 
 // ---------- libreta de pronósticos ----------
 const ESTADO_PRON = { se_dio: ["verde", "✅ Se dio"], fallo: ["rojo", "❌ Falló"], no_se_dio: ["", "➖ No se dio"], en_curso: ["amar", "⏳ En curso"], esperando: ["", "🕒 Espera apertura"] };
-const ORIGEN_PRON = { ganadores: "Cazador", anticipador: "Anticipador", anticipo: "Anticipo NY", mundo: "Corresponsal", jefe: "Jefe", oportunidad: "Oportunidad" };
+const ORIGEN_PRON = { ganadores: "Cazador", profesionales: "Wall Street", anticipador: "Anticipador", anticipo: "Anticipo NY", mundo: "Corresponsal", jefe: "Jefe", oportunidad: "Oportunidad" };
 let FILTRO_PRON = "fav";
 function ultimoPronostico(tk) { return (ESTADO.estado?.pronosticos || []).find((x) => x.ticker === tk); }
 function filaPron(x) {
@@ -613,6 +616,72 @@ function pintarGanadores() {
 
 const NOMBRE_REGLA_MIN = { acumula: "Acumula reservas", pierde: "Pierde reservas", tasa_real_alta: "Tasa real alta", tasa_real_negativa: "Tasa real negativa",
   inflacion_baja: "Inflación bajando", dolar_acelera: "Dólar acelerando", pago_cerca_con_reservas: "Pago de deuda cerca, con reservas" };
+// ---------- herramientas profesionales: analistas, insiders, sectores ----------
+function pintarProfesionales() {
+  const r = ESTADO.estado?.profesionales, box = $("#profesionales");
+  if (!box) return;
+  if (!r || (!Object.keys(r.lista || {}).length && !Object.keys(r.prueba || {}).length)) { box.innerHTML = ""; return; }
+  const pr = Object.entries(r.prueba || {}), act = new Set(pr.filter(([, x]) => x.activa).map(([k]) => k));
+  const NOM = { analistas: "📈 Analistas mejoran", insiders: "🧑‍💼 Compran los de adentro", sector: "🔄 Sector líder" };
+  const tabla = pr.length ? `<div class="tabla-scroll"><table><tr><th>Herramienta</th><th class="n">Plazo</th><th class="n">Acierta</th><th class="n">Le gana al promedio</th><th class="n">Casos</th></tr>
+    ${pr.map(([k, x]) => `<tr><td>${esc(NOM[k] || x.nombre || k)}${x.activa ? " ✅" : ""}</td><td class="n">${x.plazo || "—"} r.</td><td class="n">${x.acierto != null ? num(x.acierto, 0) + "%" : "—"}</td>
+      <td class="n" style="color:var(--${(x.exceso || 0) > 0 ? "verde" : "rojo"})">${x.exceso != null ? pct(x.exceso, 1) : "—"}</td><td class="n">${x.casos || "—"}</td></tr>`).join("")}</table></div>` : "";
+  const sec = Object.entries(r.sectores_3m || {});
+  const sectores = sec.length ? `<p style="margin-top:10px"><b>Rotación sectorial</b> <span class="tenue">· suba de los últimos 3 meses en EE.UU.</span></p><div class="tiras" style="margin-top:4px">
+    ${sec.map(([e, v]) => `<span class="chip ${(r.lideres || []).includes(e) ? "verde" : v < 0 ? "rojo" : ""}">${esc((r.nombres || {})[e] || e)} ${pct(v, 0)}</span>`).join("")}</div>` : "";
+  const filas = Object.entries(r.lista || {}).map(([tk, ev]) => [tk, ev, Object.keys(ev).filter((k) => k !== "sector" || Object.keys(ev).length > 1 || act.has("sector"))])
+    .filter(([, , ks]) => ks.length).sort((a, b) => b[2].length - a[2].length || (b[1].insiders ? 1 : 0) - (a[1].insiders ? 1 : 0)).slice(0, 15);
+  const lista = filas.map(([tk, ev]) => `<div class="agente"><b>${estrella(tk, "Wall Street")}<span class="link" data-abrir-debate="${esc(tk)}">${esc(tk)}</span></b>
+    <span>${Object.entries(ev).map(([k, t]) => `<span class="chip ${act.has(k) ? "verde" : ""}">${esc(NOM[k] || k)}</span> ${esc(t)}`).join("<br>")}</span></div>`).join("");
+  box.innerHTML = `<div class="card eco"><div class="fila"><b>🏛️ Herramientas de Wall Street</b><span class="tenue">lista del ${esc(fecha(r.fecha || ""))}</span></div>
+    <p class="tenue">Lo que miran los fondos grandes: si los analistas de los bancos mejoran su opinión, si los directivos compran acciones con su plata y qué sectores lideran. Cada una probada contra el promedio de los CEDEARs; en verde las que ganaron (solo esas votan).</p>
+    ${tabla}${sectores}${lista ? `<p style="margin-top:10px"><b>Hoy marcan</b></p>${lista}` : ""}</div>`;
+}
+
+// ---------- 🎯 radar de ganadores: todo lo que marcan las herramientas, junto ----------
+function radarGanadores() {
+  const e = ESTADO.estado || {}, m = new Map();
+  const add = (tk, her, txt, prueba) => { if (!tk) return; const x = m.get(tk) || { ticker: tk, h: [], n: 0, probadas: 0 };
+    if (x.h.some((y) => y.her === her)) return; x.h.push({ her, txt, prueba }); x.n++; if (prueba) x.probadas++; m.set(tk, x); };
+  const pg = e.ganadores?.prueba || {};
+  const NOMG = { tendencia: "Tendencia", maximo_52: "Máximo 52 sem.", gap: "Gap con volumen", contraccion: "Contracción" };
+  (e.ganadores?.lista || []).forEach((x) => Object.keys(x.estrategias || {}).forEach((k) => add(x.ticker, "🏆 " + (NOMG[k] || k), x.estrategias[k], pg[k]?.activa)));
+  const pp = e.profesionales?.prueba || {};
+  const NOMP = { analistas: "📈 Analistas", insiders: "🧑‍💼 Insiders", sector: "🔄 Sector líder" };
+  Object.entries(e.profesionales?.lista || {}).forEach(([tk, ev]) => Object.entries(ev).forEach(([k, t]) => { if (k !== "sector" || pp.sector?.activa || Object.keys(ev).length > 1) add(tk, NOMP[k] || k, t, pp[k]?.activa); }));
+  (e.anticipos || []).filter((a) => a.atraso > 0.5).forEach((a) => add(a.ticker, "⏩ Anticipo NY", `en NY ${num(a.us, 1)}%, le falta ${num(a.atraso, 1)}%`, true));
+  (e.anticipo_lista?.lista || []).forEach((x) => add(x.ticker, "⏩ Anticipador", (x.razones || []).join(" · "), e.anticipo_lista?.activo));
+  (e.mundo?.empresas || []).filter((x) => x.dir > 0).forEach((x) => add(x.ticker, "🌍 Corresponsal", ((x.titulares || [])[0] || {}).titulo || "", true));
+  Object.values(e.oportunidades || {}).flat().forEach((o) => add(o.ticker, "✅ Oportunidad de la mesa", o.resumen_jefe || "", true));
+  return [...m.values()].sort((a, b) => b.n - a.n || b.probadas - a.probadas);
+}
+function pintarRadarGanadores() {
+  const box = $("#radar-ganadores"); if (!box) return;
+  const xs = radarGanadores();
+  if (!xs.length) { box.innerHTML = ""; return; }
+  const enCartera = new Set((USUARIO.cartera || []).map((c) => String(c.ticker).toUpperCase()));
+  const fila = (x) => `<div class="rg-fila"><span class="rg-n" title="herramientas que lo marcan">${x.n}</span><div>
+    ${estrella(x.ticker, "Radar de ganadores")}<b class="link" data-abrir-debate="${esc(x.ticker)}">${esc(x.ticker)}</b>${enCartera.has(x.ticker) ? ' <span class="chip chico2">en tu cartera</span>' : ""}
+    <div class="tiras" style="margin-top:4px">${x.h.map((h) => `<span class="chip chico2 ${h.prueba ? "verde" : ""}" title="${esc(h.txt || "")}">${esc(h.her)}</span>`).join("")}</div></div></div>`;
+  const top = xs.slice(0, 8), resto = xs.slice(8, 40);
+  box.innerHTML = `<h2>🎯 Radar de ganadores <span class="tenue">· ${xs.length} papeles</span></h2><div class="card">
+    <p class="tenue" style="margin-top:0">Todo lo que marcan las herramientas para anticipar ganadores, en un solo lugar. El número es cuántas lo marcan a la vez (más es mejor); en verde, las que ya demostraron ganarle al promedio. Tocá ☆ para seguirlo o el nombre para ver el debate.</p>
+    ${top.map(fila).join("")}
+    ${resto.length ? `<details><summary>Ver ${resto.length} más</summary>${resto.map(fila).join("")}</details>` : ""}
+    <p class="tenue" style="margin-bottom:0"><button class="chico" data-ir="mercado|#ganadores">Detalle de cada herramienta ›</button></p></div>`;
+}
+
+// ---------- grupos de Mercado ----------
+let GRUPO_M = "todo";
+try { GRUPO_M = localStorage.getItem("mesa_grupo_m") || "todo"; } catch (_) {}
+function verGrupoMercado(g) {
+  GRUPO_M = g; try { localStorage.setItem("mesa_grupo_m", g); } catch (_) {}
+  document.querySelectorAll("#m-grupos [data-gm]").forEach((b) => b.classList.toggle("prim", b.dataset.gm === g));
+  document.querySelectorAll(".m-grupo").forEach((d) => d.classList.toggle("oculto", g !== "todo" && d.dataset.g !== g));
+}
+document.querySelectorAll("#m-grupos [data-gm]").forEach((b) => b.addEventListener("click", () => verGrupoMercado(b.dataset.gm)));
+verGrupoMercado(GRUPO_M);
+
 function pintarMinistro() {
   const r = ESTADO.estado?.ministro, box = $("#ministro");
   if (!box) return;
@@ -999,6 +1068,8 @@ document.addEventListener("click", (ev) => {
     if (!(o[PLAZO] || []).length) { const otro = PLAZO === "corto" ? "mediano" : "corto"; if ((o[otro] || []).length) document.querySelector(`#ops-plazo [data-plazo="${otro}"]`)?.click(); }
   }
   if (extra === "eventos") document.querySelector('#cal-vista [data-cal="eventos"]')?.click();
+  const g = sel && $(sel)?.closest(".m-grupo");  // si está en un grupo de Mercado oculto, se muestra
+  if (g && g.classList.contains("oculto")) verGrupoMercado(g.dataset.g);
   irYResaltar(vista, sel);
 });
 document.addEventListener("click", (ev) => { if (ev.target.closest("[data-ir-pron]")) { irA("ranking"); setTimeout(() => $("#titulo-pronosticos")?.scrollIntoView({ behavior: "smooth" }), 100); } });

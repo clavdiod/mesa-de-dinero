@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icono.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icono-192.png">
-<link rel="stylesheet" href="estilo.css?v=20261022c">
+<link rel="stylesheet" href="estilo.css?v=20261023d">
 </head>
 <body>
 <header class="barra">
@@ -42,6 +42,7 @@
   <!-- HOY: lo que hay que mirar y decidir -->
   <section id="v-propuestas" class="vista activa">
     <div id="resumen-hoy"></div>
+    <div id="radar-ganadores"></div>
     <div id="cobros-hoy"></div>
     <div id="licitaciones-hoy"></div>
     <div id="anticipos"></div>
@@ -59,18 +60,32 @@
   <section id="v-mercado" class="vista">
     <div id="hora-mercado" class="hora-datos"></div>
     <div id="clima" class="tiras"></div>
-    <div id="economista"></div>
-    <div id="wallstreet"></div>
-    <div id="ganadores"></div>
-    <div id="ministro"></div>
-    <div id="mundo"></div>
-    <div id="cripto"></div>
-    <div id="adr"></div>
-    <div id="mae"></div>
-    <h2>Indicadores <span class="hora" data-hora></span></h2>
-    <div id="indicadores" class="grilla"></div>
-    <h2>Informe por mercado <span class="hora" data-hora></span></h2>
-    <div id="informes"></div>
+    <div class="tiras" id="m-grupos"><button class="chico prim" data-gm="todo">Todo</button><button class="chico" data-gm="ar">🇦🇷 Argentina</button><button class="chico" data-gm="ws">🇺🇸 Wall Street</button><button class="chico" data-gm="mundo">🌍 Noticias</button><button class="chico" data-gm="cripto">₿ Cripto</button></div>
+    <div class="m-grupo" data-g="ws">
+      <h2 class="grupo-tit">🇺🇸 Wall Street y CEDEARs</h2>
+      <div id="wallstreet"></div>
+      <div id="ganadores"></div>
+      <div id="profesionales"></div>
+      <div id="adr"></div>
+    </div>
+    <div class="m-grupo" data-g="ar">
+      <h2 class="grupo-tit">🇦🇷 Argentina</h2>
+      <div id="economista"></div>
+      <div id="ministro"></div>
+      <div id="mae"></div>
+      <h2>Indicadores <span class="hora" data-hora></span></h2>
+      <div id="indicadores" class="grilla"></div>
+      <h2>Informe por mercado <span class="hora" data-hora></span></h2>
+      <div id="informes"></div>
+    </div>
+    <div class="m-grupo" data-g="mundo">
+      <h2 class="grupo-tit">🌍 Noticias del mundo</h2>
+      <div id="mundo"></div>
+    </div>
+    <div class="m-grupo" data-g="cripto">
+      <h2 class="grupo-tit">₿ Cripto</h2>
+      <div id="cripto"></div>
+    </div>
     <h2>Señales de los analistas <span class="hora" data-hora></span></h2>
     <input id="filtro-senales" placeholder="Filtrar por ticker o analista">
     <div id="senales"></div>
@@ -219,6 +234,6 @@
 </nav>
 
 <div id="toast" role="status"></div>
-<script src="app.js?v=20261023c"></script>
+<script src="app.js?v=20261023d"></script>
 </body>
 </html>
