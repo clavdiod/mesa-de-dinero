@@ -124,6 +124,59 @@ document.addEventListener("click", (ev) => {
   if (ev.target.closest("#panel-avisos [data-abrir-debate]")) abrirAvisos(false);
 });
 
+
+// ---------- secciones plegables: títulos compactos con un resumen; se despliegan al tocarlos ----------
+let PLEG_ABIERTOS = new Set();
+try { PLEG_ABIERTOS = new Set(JSON.parse(localStorage.getItem("mesa_plegables") || "[]")); } catch (_) {}
+const guardarPleg = () => { try { localStorage.setItem("mesa_plegables", JSON.stringify([...PLEG_ABIERTOS])); } catch (_) {} };
+const RESUMEN_PLEG = {
+  "radar-ganadores": () => radarGanadores().slice(0, 3).map((x) => `${x.ticker} (${x.n})`).join(" · "),
+  "cobros-hoy": () => { const c = (ESTADO.estado?.cobros || []).filter((x) => x.fecha >= HOY()).sort((a, b) => a.fecha.localeCompare(b.fecha))[0];
+    return c ? `próximo ${diaTxt(c.fecha)} · ${c.ticker}${c.total != null ? " " + plataMon(c.total, c.moneda) : ""}` : ""; },
+  "radar": () => { const r = ESTADO.estado?.radar || []; const a = r.filter((x) => x.severidad === "alta").length; return `${r.length} alerta${r.length === 1 ? "" : "s"}${a ? ` · ${a} alta${a > 1 ? "s" : ""}` : ""}`; },
+  "anticipos": () => { const e = ESTADO.estado || {}; const n = (e.anticipos || []).length, m = (e.anticipo_lista?.lista || []).length;
+    return [n ? `${n} hoy en NY` : "", m ? `${m} para los próximos días` : ""].filter(Boolean).join(" · "); },
+};
+function plegar(box) {
+  if (box.dataset.plegando) return;
+  box.dataset.plegando = "1";
+  try {
+    const id = box.id, h2 = box.firstElementChild;
+    if (h2 && h2.tagName === "H2" && box.children.length > 1) {  // sección de Hoy: título + contenido
+      const d = document.createElement("details"); d.className = "plegable";
+      const sm = document.createElement("summary"); const ir = h2.dataset.ir;
+      h2.querySelectorAll(".tenue").forEach((x) => { if (/ver /.test(x.textContent)) x.remove(); });
+      h2.removeAttribute("data-ir"); h2.classList.remove("ir");
+      const res = (RESUMEN_PLEG[id] || (() => ""))() || box.querySelectorAll(".evento, .agente, .rg-fila, details.grupo").length + " ítems";
+      sm.append(h2); sm.insertAdjacentHTML("beforeend", `<span class="pleg-res">${esc(res)}</span>`);
+      d.append(sm); const cu = document.createElement("div"); cu.className = "pleg-cuerpo";
+      while (box.firstChild) cu.append(box.firstChild);
+      if (ir) cu.insertAdjacentHTML("beforeend", `<p><button class="chico" data-ir="${esc(ir)}">Ver calendario ›</button></p>`);
+      d.append(cu); box.append(d);
+      d.open = PLEG_ABIERTOS.has(id);
+      d.addEventListener("toggle", () => { d.open ? PLEG_ABIERTOS.add(id) : PLEG_ABIERTOS.delete(id); guardarPleg(); });
+    } else if (h2 && h2.classList.contains("card") && h2.firstElementChild?.classList.contains("fila")) {  // tarjeta de Mercado
+      const d = document.createElement("details"); d.className = h2.className + " plegable-card";
+      const sm = document.createElement("summary"); sm.append(h2.firstElementChild);
+      d.append(sm); while (h2.firstChild) d.append(h2.firstChild); h2.replaceWith(d);
+      d.open = PLEG_ABIERTOS.has(id);
+      d.addEventListener("toggle", () => { d.open ? PLEG_ABIERTOS.add(id) : PLEG_ABIERTOS.delete(id); guardarPleg(); });
+    }
+  } finally { delete box.dataset.plegando; }
+}
+const OBS_PLEG = new MutationObserver((ms) => { for (const m of ms) if (m.target.id && !m.target.dataset.plegando && !m.target.querySelector(":scope > details")) plegar(m.target); });
+["radar-ganadores", "cobros-hoy", "licitaciones-hoy", "anticipos", "eventos-semana", "radar",
+  "economista", "wallstreet", "ganadores", "profesionales", "adr", "ministro", "mae", "mundo", "cripto"].forEach((id) => {
+  const b = document.getElementById(id); if (b) OBS_PLEG.observe(b, { childList: true });
+});
+// si un acceso directo apunta a algo plegado, se despliega
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-ir]"); if (!b) return;
+  const sel = b.dataset.ir.split("|")[1], el = sel && $(sel);
+  const d = el && (el.querySelector(":scope > details") || el.closest("details"));
+  if (d && !d.open) d.open = true;
+}, true);
+
 function pintarEstado() {
   const est = ESTADO.estado || {}, ind = est.indicadores || {}, rp = est.riesgo_pais || {};
   $("#sub").textContent = est.fecha ? `${mercadoAbierto() ? "● Abierto" : "Cerrado"} · ronda ${fecha(est.fecha)} ${est.hora}` : "Todavía no corrió ninguna ronda";

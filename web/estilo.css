@@ -164,3 +164,15 @@ table.ficha td:first-child { white-space: nowrap; padding-right: 10px; }
 .av-item summary { cursor: pointer; list-style: none; color: var(--txt); }
 .av-item summary::-webkit-details-marker { display: none; }
 .av-hora { color: var(--tenue); font-variant-numeric: tabular-nums; margin-right: 6px; }
+
+details.plegable > summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 10px 0 6px; border-bottom: 1px solid var(--borde); }
+details.plegable > summary::-webkit-details-marker, details.plegable-card > summary::-webkit-details-marker { display: none; }
+details.plegable > summary h2 { margin: 0; font-size: 17px; }
+details.plegable > summary::after, details.plegable-card > summary::after { content: "›"; margin-left: auto; color: var(--tenue); font-size: 20px; transition: transform .15s; }
+details.plegable[open] > summary::after, details.plegable-card[open] > summary::after { transform: rotate(90deg); }
+.pleg-res { color: var(--tenue); font-size: 13px; flex: 1 1 100%; order: 2; }
+details.plegable > summary h2 { order: 0; } details.plegable > summary::after { order: 1; }
+details.plegable-card > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+details.plegable-card > summary .fila { flex: 1; margin: 0; }
+details.plegable-card:not([open]) { padding-top: 10px; padding-bottom: 10px; }
+details.plegable > summary, details.plegable > summary h2, details.plegable-card > summary b { color: var(--txt); }
