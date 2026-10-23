@@ -144,4 +144,4 @@ def desde_ganadores(sens, hoy: date, hora: str, precio) -> list[dict]:
     """Ideas del Cazador de ganadores: objetivo +8% en su plazo (20 ruedas ≈ 4 semanas), stop -8%."""
     return [{"origen": s.agente, "ticker": s.ticker, "dir": 1, "objetivo_pct": 8.0, "stop_pct": 8.0,
              "vence": _vence(hoy, int((s.datos or {}).get("plazo") or 20) * 7 // 5), "fecha": hoy.isoformat(), "hora": hora,
-             "ref": precio(s.ticker), "texto": s.texto[:240]} for s in sens if s.agente in ("ganadores", "profesionales")]
+             "ref": precio(s.ticker), "texto": s.texto[:240]} for s in sens if s.agente in ("ganadores", "profesionales") and not (s.datos or {}).get("confirmacion")]

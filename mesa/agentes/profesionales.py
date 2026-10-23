@@ -205,9 +205,10 @@ def senales(lista: dict[str, dict], prueba: dict, existe) -> list[Senal]:
             continue
         hz = lambda k: her[k]["horizontes"].get(str(her[k]["plazo"])) or her[k]["horizontes"].get(her[k]["plazo"]) or {}
         exc = max(hz(k).get("exceso", 0) for k in act)
-        out.append(Senal("profesionales", tk, 1, round(min(0.8, 0.3 + 0.12 * len(act) + exc / 20), 2),
+        solo_sector = act == ["sector"]  # el sector líder solo confirma: no alcanza para una idea propia
+        out.append(Senal("profesionales", tk, 1, 0.2 if solo_sector else round(min(0.8, 0.3 + 0.12 * len(act) + exc / 20), 2),
                          "Herramientas de Wall Street — " + "; ".join(f"{HERRAMIENTAS[k]}: {ev[k]}" for k in act)
-                         + f". En la historia le ganó {exc:+.1f}% al promedio.", {"herramientas": act, "plazo": max(her[k]["plazo"] for k in act)}))
+                         + f". En la historia le ganó {exc:+.1f}% al promedio.", {"herramientas": act, "plazo": max(her[k]["plazo"] for k in act), "confirmacion": solo_sector}))
     return out
 
 
