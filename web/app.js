@@ -133,7 +133,7 @@ const RESUMEN_PLEG = {
   "radar-ganadores": () => radarGanadores().slice(0, 3).map((x) => `${x.ticker} (${x.n})`).join(" · "),
   "cobros-hoy": () => { const c = (ESTADO.estado?.cobros || []).filter((x) => x.fecha >= HOY()).sort((a, b) => a.fecha.localeCompare(b.fecha))[0];
     return c ? `próximo ${diaTxt(c.fecha)} · ${c.ticker}${c.total != null ? " " + plataMon(c.total, c.moneda) : ""}` : ""; },
-  "radar": () => { const r = ESTADO.estado?.radar || []; const a = r.filter((x) => x.severidad === "alta");
+  "radar": () => { const r = radarDelDia(); const a = r.filter((x) => x.severidad === "alta");
     return `${r.length} movimiento${r.length === 1 ? "" : "s"} raro${r.length === 1 ? "" : "s"}${a.length ? ` · ${a.length} fuerte${a.length > 1 ? "s" : ""}: ${a.slice(0, 3).map((x) => x.ticker).join(", ")}` : ""}`; },
   "anticipos": () => { const e = ESTADO.estado || {}; const n = (e.anticipos || []).length, m = (e.anticipo_lista?.lista || []).length;
     return [n ? `${n} hoy en NY` : "", m ? `${m} para los próximos días` : ""].filter(Boolean).join(" · "); },
@@ -568,7 +568,7 @@ function pintarAviso() {
   const nuevas = PROPS.filter((p) => p.decision === "pendiente" && p.fecha === HOY() && !VISTOS.has(p.id));
   const consejos = PROPS.filter((p) => p.decision === "aprobada" && ["salir", "subir_stop", "antes_balance", "cancelar"].includes(p.seguimiento?.consejo?.accion)
     && !VISTOS.has(p.id + "|" + p.seguimiento.consejo.accion));
-  const radarAltas = (ESTADO.estado?.radar || []).filter((r) => r.severidad === "alta" && ESTADO.estado?.fecha === HOY() && !VISTOS.has("radar|" + HOY() + "|" + r.ticker));
+  const radarAltas = radarDelDia().filter((r) => r.severidad === "alta" && !VISTOS.has("radar|" + HOY() + "|" + r.ticker));
   const box = $("#aviso-global");
   if (!nuevas.length && !consejos.length && !radarAltas.length) { box.style.display = "none"; document.title = "Mesa de dinero"; return; }
   const items = nuevas.map((p) => {
@@ -619,8 +619,11 @@ function pintarAnticipos() {
 
 // ---------- radar del mercado ----------
 const TIPO_RADAR = { volumen: "volumen anormal", precio: "movimiento fuerte", adr: "ADR despegado", macro: "macro" };
+// radar del día: lo más nuevo arriba; al día siguiente se limpia solo (hasta la primera ronda del día)
+const radarDelDia = () => (ESTADO.estado?.fecha === HOY() ? ESTADO.estado?.radar || [] : [])
+  .slice().sort((a, b) => String(b.primera || b.hora || "").localeCompare(String(a.primera || a.hora || "")));
 function pintarRadar() {
-  const rs = ESTADO.estado?.radar || [];
+  const rs = radarDelDia();
   if (!rs.length) { $("#radar").innerHTML = ""; return; }
   $("#radar").innerHTML = `<h2>📡 Radar del mercado <span class="hora">· ${esc(ESTADO.estado?.hora || "")}</span></h2>
     <p class="tenue">Todo lo anormal que vieron los analistas en esta ronda, con su análisis.</p>` + rs.map((r) => `
