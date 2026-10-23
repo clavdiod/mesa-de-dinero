@@ -701,7 +701,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         plan.tamano_r = r["tamano_r"]
         hist = next((s.datos for s in sh if s.agente == "historiador"), None)
         evaluados.append({"id": hashlib.sha1(f"{hoy}{tk}{ctx.hora}".encode()).hexdigest()[:10], "ticker": tk,
-                          "sector": sector(tk), "puntaje": puntajes[tk], "plan": plan.dict(), "riesgo": r,
+                          "sector": sector(tk), "puntaje": puntajes.get(tk, puntaje_ticker(sh, reg, ctx)), "plan": plan.dict(), "riesgo": r,
                           "senales": [s.dict() for s in sh], "historiador": hist,
                           "principal": principal, "ruedas": ruedas})
 
