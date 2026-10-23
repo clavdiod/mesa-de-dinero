@@ -14,6 +14,8 @@ dias = int(os.environ.get("DIAS", "10"))
 panel = (a.get("ui/panel") or {}).get("titulos") or {}
 r = revision.reunir(a, CacheHistorico(a), panel, hoy, dias)
 aj = revision.ajustes(r)
+# decisión de la reunión del 23/10: el Economista a la mitad por una semana (25% de aciertos en 93 señales; en 5 años, 41%)
+aj["economista"] = {"factor": 0.5, "hasta": (hoy + timedelta(days=7)).isoformat(), "motivo": "Reunión del 23/10: 25% de aciertos en 93 señales"}
 r["lecciones"], r["ajustes"] = revision.lecciones(r), aj
 a.put("revision/ultima", r)
 a.put("revision/ajustes", aj)

@@ -49,6 +49,8 @@ def reunir(almacen, cache, panel: dict[str, list], hoy: date, dias: int = 7) -> 
             if not s.get("precio") or not p1 or f == hoy.isoformat():
                 continue
             ret = (p1 / s["precio"] - 1) * 100
+            if abs(ret) > 40:  # en días no se mueve tanto: es un dato roto (cambio de línea o de ratio), no se cuenta
+                continue
             senales.append({**s, "fecha": f, "ret": round(ret, 2), "a_favor": round(ret * s["dir"], 2), "grupo": grupo.get(s["ticker"])})
 
     # 2) por analista
@@ -91,6 +93,8 @@ def reunir(almacen, cache, panel: dict[str, list], hoy: date, dias: int = 7) -> 
         mx = max([v.get("maximo") or v["cierre"] for v in tramo] + [p1])
         mn = min([v.get("minimo") or v["cierre"] for v in tramo] + [p1])
         ret = (p1 / t["precio_primera"] - 1) * 100
+        if abs(ret) > 40:
+            continue
         dir_mesa = 1 if t["votos"] > 0.3 else -1 if t["votos"] < -0.3 else 0
         papeles.append({"ticker": tk, "grupo": t["grupo"], "desde": t["primera"], "precio_desde": t["precio_primera"], "precio_hoy": p1,
                         "ret": round(ret, 2), "max": round((mx / t["precio_primera"] - 1) * 100, 2), "min": round((mn / t["precio_primera"] - 1) * 100, 2),
