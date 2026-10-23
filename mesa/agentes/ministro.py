@@ -168,3 +168,72 @@ def entrenar(series: dict[str, dict[str, float]], cierres: dict[str, dict[str, f
         elif v.get("casos", 0) >= 15 and ret < 0:
             activas[k] = False  # pocos casos pero claramente en contra: no vota
     return {"stats": stats, "activas": activas, "horizonte": horizonte}
+
+
+# ---------- el Ministro mira tu cartera ----------
+def _tipo(tk: str, grupo: str | None, desc: str) -> str:
+    d = (desc or "").upper()
+    if grupo == "cedears":
+        return "cedear"
+    if grupo == "acciones":
+        return "accion"
+    if "DUAL" in d or tk.startswith("TTD") or tk.startswith("TTJ") or tk.startswith("TTS") or tk.startswith("TTM"):
+        return "dual"
+    if "TAMAR" in d or "BADLAR" in d:
+        return "variable"
+    if "CER" in d or re.match(r"^(TX|TZX|DICP|PARP|CUAP)", tk):
+        return "cer"
+    if re.match(r"^(AL|GD|AE|AO)\d", tk):
+        return "soberano_usd"
+    if re.fullmatch(r"[ST]\d{2}[EFMAYJLGSOND]\d", tk):
+        return "lecap"
+    if any(w in d for w in ("MUNICIPALIDAD", "MUNIC", "PROVINCIA", "CABA", "CIUDAD", "CÓRDOBA", "CORDOBA")) or re.match(r"^(BA|BD|CO|PB|BP)", tk):
+        return "subsoberano"
+    return "otro"
+
+
+def opinion_cartera(f: dict, cartera: list[dict], grupo_de, descripcion_de, activas: dict | None = None) -> list[dict]:
+    """Qué piensa el Ministro de cada papel de tu cartera, según la política económica de hoy."""
+    activas = activas or {}
+    acumula = (f.get("reservas_20d") or 0) >= 500 or (f.get("compras_20d") or 0) >= 500
+    tr, infl, tc20 = f.get("tasa_real"), f.get("inflacion"), f.get("tc_20d_pct")
+    out = []
+    for pos in cartera:
+        tk = (pos.get("ticker") or "").upper()
+        if not tk:
+            continue
+        t = _tipo(tk, grupo_de(tk), descripcion_de(tk))
+        d, txt = 0, ""
+        if t == "soberano_usd":
+            d = 1 if acumula and activas.get("acumula") else 0
+            txt = ("El BCRA viene comprando dólares: el Tesoro tiene con qué pagar y el riesgo país tiende a bajar. Bono en dólares bien parado."
+                   if acumula else "Sin compras fuertes de dólares del BCRA: el bono depende del ánimo del mercado; mirar reservas.")
+            if (f.get("dias_pago_deuda") or 999) <= 45:
+                txt += f" Faltan {f['dias_pago_deuda']} días para el pago de deuda del {f['pago_deuda'][8:10]}/{f['pago_deuda'][5:7]}."
+        elif t == "variable":
+            if tr is not None:
+                txt = (f"Paga tasa variable (TAMAR/Badlar). Hoy la tasa le gana {tr:+.1f} puntos a la inflación esperada: cobrás por encima de la inflación. "
+                       if tr > 0 else f"Paga tasa variable, pero hoy la tasa queda {tr:.1f} puntos debajo de la inflación esperada: pierde contra la inflación. ")
+                txt += "Si el Ministerio sigue bajando tasas, los próximos cupones van a ser más chicos."
+        elif t == "dual":
+            txt = ("Bono dual: paga lo mejor entre tasa fija y TAMAR. "
+                   + (f"Con la TAMAR en {f['tamar']:.1f}% y la inflación esperada en {f['expectativa']:.1f}%, hoy rinde por encima de la inflación." if f.get("tamar") else ""))
+        elif t == "lecap":
+            txt = ("Tasa fija en pesos: gana si la inflación sigue bajando. "
+                   + (f"Inflación {infl:.1f}% mensual." if infl is not None else ""))
+        elif t == "cer":
+            txt = "Ajusta por inflación (CER): te cubre si la inflación se acelera; si baja, rinde menos que la tasa fija."
+        elif t == "subsoberano":
+            txt = ("Bono de provincia o municipio en pesos: depende de sus cuentas, pero con la Nación comprando dólares y la tasa real positiva "
+                   "el contexto lo ayuda." if acumula and (tr or 0) > 0 else "Bono de provincia o municipio: depende de sus cuentas; el contexto nacional no lo empuja hoy.")
+        elif t == "cedear":
+            txt = ("Con el dólar quieto " + (f"({tc20:+.1f}% en 20 ruedas) " if tc20 is not None else "")
+                   + "y tasa real positiva, el Ministerio prefiere el peso: el CEDEAR vale como cobertura y por la empresa, no por el dólar."
+                   if (tc20 is not None and tc20 < 2 and (tr or 0) > 0) else "El dólar se mueve: el CEDEAR cubre de una suba del dólar.")
+        elif t == "accion":
+            txt = ("Acción argentina: con reservas en suba y riesgo país en baja, el contexto ayuda (sobre todo a bancos)."
+                   if acumula else "Acción argentina: sin compras del BCRA, el contexto macro no empuja.")
+        else:
+            txt = "Sin una lectura de política económica específica para este papel."
+        out.append({"ticker": tk, "tipo": t, "dir": d, "texto": txt})
+    return out

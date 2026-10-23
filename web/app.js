@@ -349,6 +349,8 @@ function pintarUsuario() {
         <span class="item-precio">${num(u)}${r === null ? "" : ` <span class="chip ${color(r)}">${pct(r)}</span>`}</span>
         <button class="quitar" data-quitar-cartera="${i}" aria-label="Quitar ${esc(x.ticker)}">✕</button></div>
       <div class="item-det">${num(x.cantidad, 0)} nominales · compra ${num(x.precio)}${u ? "" : " · sin cotización en la ronda"}</div>
+      ${(() => { const m = (ESTADO.estado?.ministro?.cartera || []).find((y) => y.ticker === x.ticker.toUpperCase());
+        return m ? `<div class="item-det">🏛️ <b>Ministro:</b> ${esc(m.texto)}</div>` : ""; })()}
       ${(() => { const o = (ESTADO.estado?.opinion_cartera || {})[x.ticker.toUpperCase()]; if (!o) return "";
         return `<div class="item-det"><span class="chip ${o.veredicto === "a favor" ? "verde" : o.veredicto === "en contra" ? "rojo" : ""}">La mesa: ${esc(o.veredicto)}</span> ${o.favor} a favor · ${o.contra} en contra${o.balance ? ` · <b>balance el ${esc(fecha(o.balance))}</b>` : ""}</div>${o.principal ? `<div class="item-det">${esc(o.principal)}</div>` : ""}`; })()}</div>`;
   }).join("") : '<p class="tenue">Sin posiciones cargadas.</p>';
@@ -615,6 +617,7 @@ function pintarMinistro() {
     <div class="grilla">${ind.map(([t, v, d]) => `<div class="met"><span>${t}</span><b>${v}</b><span>${esc(d)}</span></div>`).join("")}</div>
     ${reglas ? `<p style="margin-top:10px"><b>Lo que hoy le dice a la mesa</b></p>${reglas}` : '<p class="tenue" style="margin-top:10px">Hoy ninguna señal de política económica fuerte.</p>'}
     ${tabla ? `<p class="tenue" style="margin-top:10px"><b>Probado con la historia</b> (cada regla, a 20 ruedas): solo votan las que ganaron más que la comisión.</p>${tabla}` : ""}
+    ${(r.cartera || []).length ? `<p style="margin-top:10px"><b>Tu cartera, según el Ministro</b></p>${r.cartera.map((c) => `<p class="tenue">• <b class="link" data-abrir-debate="${esc(c.ticker)}">${esc(c.ticker)}</b>: ${esc(c.texto)}</p>`).join("")}` : ""}
     ${tit ? `<p class="tenue" style="margin-top:10px"><b>Lo último del Ministro</b></p>${tit}` : ""}</div>`;
 }
 

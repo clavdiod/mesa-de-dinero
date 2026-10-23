@@ -363,7 +363,18 @@ def _senales_ministro(ctx, almacen, hoy, simular: bool) -> list[Senal]:
                                  "prueba": {k: {"casos": v["casos"], "acierto": round(v["aciertos"] / v["casos"] * 100, 1),
                                                 "promedio": round(v["suma_ret"] / v["casos"], 2), "activa": (prueba.get("activas") or {}).get(k)}
                                             for k, v in (prueba.get("stats") or {}).items() if v.get("casos")}}
-        return ministro.senales(f, lambda tk: ctx.titulo(tk) is not None, prueba.get("activas"))
+        # mira tu cartera: una opinión por papel (y voto cuando hay una regla probada detrás)
+        ons_u = ctx.extra.get("ons_usuario") or {}
+        desc = lambda tk: (ons_u.get(tk) or {}).get("emisor") or (ctx.titulo(tk) or {}).get("descripcion") or ""
+        op = ministro.opinion_cartera(f, ctx.cartera or [], lambda tk: (ctx.titulo(tk) or {}).get("grupo"), desc, prueba.get("activas"))
+        ctx.extra["ministro"]["cartera"] = op
+        sens = ministro.senales(f, lambda tk: ctx.titulo(tk) is not None, prueba.get("activas"))
+        ya = {s.ticker for s in sens}
+        for o in op:
+            if o["ticker"] not in ya:
+                sens.append(Senal("ministro", o["ticker"], o["dir"], 0.45 if o["dir"] else 0.0, f"Ministro: {o['texto']}",
+                                  {"regla": "cartera", "probada": bool(o["dir"])}, evaluable=bool(o["dir"])))
+        return sens
     except Exception as ex:
         print(f"[ministro] {ex}")
         return []
