@@ -13,7 +13,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 ORIGENES = {"anticipador": "Anticipador (días antes)", "anticipo": "Anticipo Nueva York (horas antes)",
-            "mundo": "Corresponsal (noticias)", "jefe": "Propuesta del Jefe", "oportunidad": "Oportunidad confirmada"}
+            "mundo": "Corresponsal (noticias)", "ganadores": "Cazador de ganadores", "jefe": "Propuesta del Jefe", "oportunidad": "Oportunidad confirmada"}
 MAX = 600
 
 
@@ -138,3 +138,10 @@ def desde_plan(origen: str, ticker: str, plan: dict, hoy: date, hora: str, texto
     return {"origen": origen, "ticker": ticker, "dir": 1, "objetivo_pct": round((o / e - 1) * 100, 2), "stop_pct": round((1 - st / e) * 100, 2),
             "vence": plan.get("vence") or _vence(hoy, 14), "fecha": hoy.isoformat(), "hora": hora, "ref": e, "clave": clave,
             "texto": texto[:240]}
+
+
+def desde_ganadores(sens, hoy: date, hora: str, precio) -> list[dict]:
+    """Ideas del Cazador de ganadores: objetivo +8% en su plazo (20 ruedas ≈ 4 semanas), stop -8%."""
+    return [{"origen": "ganadores", "ticker": s.ticker, "dir": 1, "objetivo_pct": 8.0, "stop_pct": 8.0,
+             "vence": _vence(hoy, int((s.datos or {}).get("plazo") or 20) * 7 // 5), "fecha": hoy.isoformat(), "hora": hora,
+             "ref": precio(s.ticker), "texto": s.texto[:240]} for s in sens if s.agente == "ganadores"]

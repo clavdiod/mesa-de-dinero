@@ -4,7 +4,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const num = (x, d = 2) => (x === null || x === undefined || isNaN(x) ? "—" : Number(x).toLocaleString("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d }));
 const pct = (x, d = 2) => (x === null || x === undefined ? "—" : `${x > 0 ? "+" : ""}${num(x, d)}%`);
 const NOMBRES = { acciones: "Acciones", cedears: "CEDEARs", ons: "ONs", soberanos: "Soberanos", pesos_tasas: "Pesos y tasas",
-  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", wallstreet: "Wall Street", cripto: "Cripto", adr: "Noche de Nueva York", panico: "Comprador de pánico", mundo: "Corresponsal (mundo)", ministro: "Ministro (política económica)", anticipo: "Anticipo (Nueva York)", anticipador: "Anticipador", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
+  tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", wallstreet: "Wall Street", cripto: "Cripto", adr: "Noche de Nueva York", panico: "Comprador de pánico", mundo: "Corresponsal (mundo)", ministro: "Ministro (política económica)", ganadores: "Cazador de ganadores", anticipo: "Anticipo (Nueva York)", anticipador: "Anticipador", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
   hechos_emisor: "Hechos del emisor", calificadoras: "Calificadoras", riesgo: "Riesgo", jefe: "Jefe" };
 
 function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("ver"); setTimeout(() => e.classList.remove("ver"), 2500); }
@@ -110,6 +110,7 @@ function pintarEstado() {
   pintarEconomista();
   pintarWallStreet();
   pintarMinistro();
+  pintarGanadores();
   pintarMundo();
   pintarCobros();
   pintarPronosticos();
@@ -282,7 +283,7 @@ function pintarReunion() {
 
 // ---------- libreta de pronósticos ----------
 const ESTADO_PRON = { se_dio: ["verde", "✅ Se dio"], fallo: ["rojo", "❌ Falló"], no_se_dio: ["", "➖ No se dio"], en_curso: ["amar", "⏳ En curso"], esperando: ["", "🕒 Espera apertura"] };
-const ORIGEN_PRON = { anticipador: "Anticipador", anticipo: "Anticipo NY", mundo: "Corresponsal", jefe: "Jefe", oportunidad: "Oportunidad" };
+const ORIGEN_PRON = { ganadores: "Cazador", anticipador: "Anticipador", anticipo: "Anticipo NY", mundo: "Corresponsal", jefe: "Jefe", oportunidad: "Oportunidad" };
 let FILTRO_PRON = "fav";
 function ultimoPronostico(tk) { return (ESTADO.estado?.pronosticos || []).find((x) => x.ticker === tk); }
 function filaPron(x) {
@@ -593,6 +594,23 @@ function pintarMAE() {
     ${tablaRes}${tablaPares}${hist}</div>`;
 }
 
+function pintarGanadores() {
+  const r = ESTADO.estado?.ganadores, box = $("#ganadores");
+  if (!box) return;
+  if (!r || (!(r.lista || []).length && !Object.keys(r.prueba || {}).length)) { box.innerHTML = ""; return; }
+  const pr = Object.entries(r.prueba || {});
+  const NOM = { tendencia: "Plantilla de tendencia", maximo_52: "Máximo de 52 semanas", gap: "Gap con volumen", contraccion: "Contracción de volatilidad" };
+  const tabla = pr.length ? `<div class="tabla-scroll"><table><tr><th>Estrategia</th><th class="n">Plazo</th><th class="n">Acierta</th><th class="n">Le gana al promedio</th><th class="n">Casos</th></tr>
+    ${pr.map(([k, x]) => `<tr><td>${esc(x.nombre || k)}${x.activa ? " ✅" : ""}</td><td class="n">${x.plazo || "—"} r.</td><td class="n">${x.acierto != null ? num(x.acierto, 0) + "%" : "—"}</td>
+      <td class="n" style="color:var(--${(x.exceso || 0) > 0 ? "verde" : "rojo"})">${x.exceso != null ? pct(x.exceso, 1) : "—"}</td><td class="n">${x.casos || "—"}</td></tr>`).join("")}</table></div>` : "";
+  const act = new Set(pr.filter(([, x]) => x.activa).map(([k]) => k));
+  const lista = (r.lista || []).slice(0, 10).map((x) => `<div class="agente"><b>${estrella(x.ticker, "Cazador")}<span class="link" data-abrir-debate="${esc(x.ticker)}">${esc(x.ticker)}</span><br><span class="tenue">RS ${x.rs}</span></b>
+    <span>${Object.entries(x.estrategias).map(([k, t]) => `<span class="chip ${act.has(k) ? "verde" : ""}">${esc(NOM[k] || k)}</span> ${esc(t)}`).join("<br>")}</span></div>`).join("");
+  box.innerHTML = `<div class="card eco"><div class="fila"><b>🏆 Cazador de ganadores</b><span class="tenue">lista del ${esc(fecha(r.fecha || ""))}</span></div>
+    <p class="tenue">Las herramientas de los profesionales de Wall Street (Minervini, CAN SLIM, máximos de 52 semanas, deriva post-resultados) aplicadas a los CEDEARs y probadas con 5 años. En verde, las que le ganaron al promedio: solo esas votan.</p>
+    ${tabla}${lista ? `<p style="margin-top:10px"><b>Hoy cumplen alguna</b></p>${lista}` : ""}</div>`;
+}
+
 const NOMBRE_REGLA_MIN = { acumula: "Acumula reservas", pierde: "Pierde reservas", tasa_real_alta: "Tasa real alta", tasa_real_negativa: "Tasa real negativa",
   inflacion_baja: "Inflación bajando", dolar_acelera: "Dólar acelerando", pago_cerca_con_reservas: "Pago de deuda cerca, con reservas" };
 function pintarMinistro() {
@@ -744,11 +762,16 @@ document.querySelectorAll("#cal-vista button").forEach((b) => b.addEventListener
 }));
 
 // ---------- aprendizajes ----------
+let APR_TODOS = false;
 function pintarAprendizajes() {
-  const xs = ESTADO.estado?.aprendizajes || [];
-  $("#aprendizajes").innerHTML = xs.length ? xs.map((a) => `<div class="card"><div class="fila"><b>${esc(a.caso)}</b><span class="tenue">${esc(a.fecha)}</span></div>
-    <p class="tenue">${esc(a.que_paso)}</p><p><b>Lección:</b> ${esc(a.leccion)}</p><p><b>Cambio:</b> ${esc(a.cambio)}</p></div>`).join("")
-    : '<p class="tenue">Todavía no hay aprendizajes registrados.</p>';
+  const xs = [...(ESTADO.estado?.aprendizajes || [])].sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+  if (!xs.length) { $("#aprendizajes").innerHTML = '<p class="tenue">Todavía no hay aprendizajes registrados.</p>'; return; }
+  const ver = APR_TODOS ? xs : xs.slice(0, 5);
+  $("#aprendizajes").innerHTML = `<div class="card">${ver.map((a) => `<details class="lic apr"><summary class="evento"><span class="ev-ic">📌</span>
+      <span><b>${esc(fecha(String(a.fecha)))}</b> · ${esc(a.caso)}</span><span class="tenue lic-mas">ver ›</span></summary>
+      <div class="lic-det"><p class="tenue">${esc(a.que_paso)}</p><p><b>Lección:</b> ${esc(a.leccion)}</p><p><b>Cambio:</b> ${esc(a.cambio)}</p></div></details>`).join("")}
+    ${xs.length > 5 ? `<p><button class="chico" id="apr-todos">${APR_TODOS ? "Ver solo los últimos 5" : `Ver los ${xs.length} aprendizajes`}</button></p>` : ""}</div>`;
+  const b = $("#apr-todos"); if (b) b.onclick = () => { APR_TODOS = !APR_TODOS; pintarAprendizajes(); };
 }
 
 // ---------- simulación en papel ----------

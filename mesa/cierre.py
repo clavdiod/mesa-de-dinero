@@ -174,7 +174,14 @@ def diario(simular: bool = False) -> dict:
                 from concurrent.futures import ThreadPoolExecutor
                 uni = _universo_cedears(a)
                 with ThreadPoolExecutor(8) as ex:
-                    ser = {tk: f for tk, f in zip(uni, ex.map(lambda t: _g2.yahoo_ohlcv(t.replace(".", "-"), "6mo"), uni)) if len(f) > 60}
+                    ser = {tk: f for tk, f in zip(uni, ex.map(lambda t: _g2.yahoo_ohlcv(t.replace(".", "-"), "2y"), uni)) if len(f) > 60}
+                # Cazador de ganadores: con las mismas velas (2 años) arma la lista del día
+                try:
+                    from .agentes import ganadores as _gan
+                    lg = _gan.lista_hoy({tk: f for tk, f in ser.items() if len(f) > 300})
+                    a.put("ganadores/lista", {"fecha": lg[0]["fecha"] if lg else hoy.isoformat(), "lista": lg[:15]})
+                except Exception as ex2:
+                    print(f"[cierre] ganadores: {ex2}")
                 for tk in cache.indice:
                     vs = cache.velas(tk)
                     if tk not in ser and len(vs) > 60 and tk in {t.get("simbolo") for t in paneles.get("acciones", [])}:
@@ -329,6 +336,15 @@ def entrenar() -> dict:
     # Comprador de pánico: CEDEARs 5 años en dólares + acciones locales con el riesgo país
     from .agentes import panico
     acciones = {tk: cache.velas(tk) for tk in cache.indice if grupos.get(tk) == "acciones"}
+    try:  # Cazador de ganadores: estrategias de Wall Street con 5 años de CEDEARs
+        from concurrent.futures import ThreadPoolExecutor
+        from .agentes import ganadores as _gan
+        uni = _universo_cedears(a)
+        with ThreadPoolExecutor(8) as ex:
+            s5 = {tk: f for tk, f in zip(uni, ex.map(lambda t: gratis.yahoo_ohlcv(t.replace(".", "-"), "5y"), uni)) if len(f) > 300}
+        a.put("ganadores/prueba", _gan.entrenar(s5))
+    except Exception as ex:
+        print(f"[entrenar] ganadores: {ex}")
     try:  # el Ministro: reglas de política económica contra la historia
         from .agentes import ministro as _min
         from datetime import date as _d

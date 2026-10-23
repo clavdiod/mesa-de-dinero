@@ -130,7 +130,8 @@ def senales(lista: list[dict], prueba: dict, existe) -> list[Senal]:
         act = [e for e in x["estrategias"] if (est.get(e) or {}).get("activa")]
         if not act or not existe(x["ticker"]):
             continue
-        exc = max(est[e]["horizontes"][est[e]["plazo"]]["exceso"] for e in act)
+        hz = lambda e: est[e]["horizontes"].get(str(est[e]["plazo"])) or est[e]["horizontes"].get(est[e]["plazo"]) or {}
+        exc = max(hz(e).get("exceso", 0) for e in act)
         fuerza = round(min(0.8, 0.35 + 0.1 * len(act) + exc / 20), 2)
         txt = "; ".join(f"{ESTRATEGIAS[e]}: {x['estrategias'][e]}" for e in act)
         plazo = max(est[e]["plazo"] for e in act)
