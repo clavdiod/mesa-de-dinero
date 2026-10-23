@@ -299,7 +299,8 @@ def yahoo_ohlcv(simbolo: str, rango: str = "5y") -> list[dict]:
             c = q["close"][k]
             if c:
                 out.append({"fecha": datetime.fromtimestamp(ts, timezone.utc).date().isoformat(), "c": round(c, 4),
-                            "h": round(q["high"][k] or c, 4), "l": round(q["low"][k] or c, 4), "v": q["volume"][k] or 0})
+                            "h": round(q["high"][k] or c, 4), "l": round(q["low"][k] or c, 4), "v": q["volume"][k] or 0,
+                            "o": round((q.get("open") or [None] * (k + 1))[k] or c, 4)})
         return out
     except Exception as e:
         print(f"[yahoo ohlcv] {simbolo}: {e}")
