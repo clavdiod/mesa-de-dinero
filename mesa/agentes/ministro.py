@@ -179,7 +179,7 @@ def _tipo(tk: str, grupo: str | None, desc: str) -> str:
         return "accion"
     if "DUAL" in d or tk.startswith("TTD") or tk.startswith("TTJ") or tk.startswith("TTS") or tk.startswith("TTM"):
         return "dual"
-    if "TAMAR" in d or "BADLAR" in d:
+    if "TAMAR" in d or "BADLAR" in d or "VARIABLE" in d:
         return "variable"
     if "CER" in d or re.match(r"^(TX|TZX|DICP|PARP|CUAP)", tk):
         return "cer"
