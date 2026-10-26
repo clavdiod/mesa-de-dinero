@@ -250,6 +250,11 @@ def diario(simular: bool = False) -> dict:
 
     reg = Registro(a)
     cambios = reg.actualizar_seguimiento(precios, hoy)
+    try:  # memoria por papel: cada idea cerrada deja su lección para el próximo debate de ese papel
+        from .nucleo import protecciones as _prot
+        a.put("memoria/papeles", _prot.memoria(reg.propuestas, a.get("pronosticos/libreta") or []))
+    except Exception as ex:
+        print(f"[cierre] memoria: {ex}")
     fechas = sorted({v["fecha"] for tk in cache.indice for v in cache.velas(tk)})[-40:]
     cierres = {tk: {v["fecha"]: v["cierre"] for v in cache.velas(tk)} for tk in cache.indice}
     reg.evaluar_senales(fechas, cierres)

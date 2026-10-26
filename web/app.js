@@ -243,7 +243,11 @@ function pintarResumenHoy() {
   const pend = PROPS.filter((p) => p.decision === "pendiente" && (p.fecha === est.fecha || ["pendiente", "abierta"].includes(p.seguimiento?.estado))).length;
   const ops = Object.values(est.oportunidades || {}).reduce((n, l) => n + l.length, 0);
   const clima = est.clima || "—", t = SIM_RES?.total || {};
-  $("#resumen-hoy").innerHTML = `<div class="card resumen">
+  const pr = est.fecha === HOY() ? est.protecciones || {} : {}, pens = Object.entries(pr.penitencia || {});
+  const freno = pr.pausa || pens.length ? `<div class="card" style="border-color:var(--rojo)"><b>🛑 ${pr.pausa ? "Protección activa: hoy el Jefe no propone compras" : "Papeles en penitencia"}</b>
+    ${(pr.motivos || []).map((m) => `<p class="tenue" style="margin:4px 0 0">${esc(m)}</p>`).join("")}
+    ${pens.length ? `<p class="tenue" style="margin:6px 0 0">${pens.map(([tk, x]) => `<b class="link" data-abrir-debate="${esc(tk)}">${esc(tk)}</b> hasta el ${esc(fecha(x.hasta))}`).join(" · ")} <span>(perdieron sus 2 últimas propuestas)</span></p>` : ""}</div>` : "";
+  $("#resumen-hoy").innerHTML = freno + `<div class="card resumen">
     <div class="tiras" style="margin-top:0"><button class="chip ir ${clima === "malo" ? "rojo" : clima === "bueno" ? "verde" : "amar"}" data-ir="mercado|#economista">Clima ${esc(clima)} ›</button>
       <button class="chip ir" data-ir="mercado|#indicadores">Riesgo país ${num(rp.valor, 0)} ›</button><button class="chip ir" data-ir="mercado|#indicadores">MEP ${num(ind.mep_al30, 0)} ›</button>${licChip()}${cobChip()}</div>
     <div class="grilla" style="margin-top:10px">
@@ -1106,6 +1110,10 @@ async function verDebate(tk) {
     let html = `<div class="card"><div class="fila"><div><div style="font-size:20px;font-weight:700">${estrella(tk, "Debate")}${esc(tk)}</div>
       <span class="tenue">${e ? `Debate de la ronda ${esc(fecha(e.fecha))} ${esc(e.hora)}` : `Precio de la ronda ${esc(fecha(p.fecha))} ${esc(p.hora)}`}</span></div>
       <div style="text-align:right"><b style="font-size:18px">${num(ult)}</b><br><span class="chip ${vari > 0 ? "verde" : vari < 0 ? "rojo" : ""}">${pct(vari)}</span></div></div></div>`;
+    // memoria por papel: lo que pasó las veces anteriores que la mesa tuvo una idea con este papel
+    const mem = (ESTADO.estado?.memoria || {})[tk] || [], pen = (ESTADO.estado?.protecciones?.penitencia || {})[tk];
+    if (pen) html += `<div class="card" style="border-color:var(--rojo)"><b>🛑 En penitencia</b><p class="tenue" style="margin:4px 0 0">${esc(pen.motivo)}</p></div>`;
+    if (mem.length) html += `<div class="card"><b>📓 La última vez con ${esc(tk)}</b>${mem.map((m) => `<div class="evento"><span class="ev-ic">${m.ok ? "✅" : "❌"}</span><span>${esc(m.texto)}</span></div>`).join("")}</div>`;
     if (e) {
       const [col, eti] = VEREDICTO[e.supervisor.veredicto] || VEREDICTO.neutral;
       html += `<div class="card sup ${col}"><div class="fila"><b>Opinión del supervisor</b><span class="chip ${col}">${eti}</span></div>

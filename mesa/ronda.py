@@ -771,6 +771,20 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
             debatidos = [e for e in debatidos if (e.get("prob_modelo") or 0) >= modelo.get("umbral", 0.5)]
         except Exception as ex:
             print(f"[jefe-modelo] {ex}")
+    # protecciones automáticas: frenos fijos que el Jefe no puede discutir (racha de stops, mala semana, penitencia)
+    prot = {}
+    try:
+        from .nucleo import protecciones as _prot
+        prot = _prot.evaluar(reg.propuestas, hoy)
+        castigados = [e["ticker"] for e in debatidos if e["ticker"] in prot["penitencia"]]
+        debatidos = [e for e in debatidos if e["ticker"] not in prot["penitencia"]]
+        if prot["pausa"]:
+            for e in debatidos:
+                descartes[e["ticker"]] = e["puntaje"]
+            debatidos = []
+        prot["frenados_hoy"] = castigados
+    except Exception as ex:
+        print(f"[protecciones] {ex}")
     elegidos = con_ia.jefe(ia, debatidos, cupo, contexto_txt)
     ids_elegidos = {e["id"] for e in elegidos}
     for e in debatidos:
@@ -938,6 +952,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "ministro": ctx.extra.get("ministro"),
         "ganadores": ctx.extra.get("ganadores"),
         "profesionales": ctx.extra.get("profesionales"),
+        "protecciones": prot,
+        "memoria": None if simular else (almacen.get("memoria/papeles") or {}),
         "pronosticos": libreta[:200],
         "reunion": None if simular else almacen.get("revision/ultima"),
         "alertas_disparadas": None if simular else (almacen.get("alertas/disparadas") or {}),
