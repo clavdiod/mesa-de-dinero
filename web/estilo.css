@@ -176,3 +176,6 @@ details.plegable-card > summary { list-style: none; cursor: pointer; display: fl
 details.plegable-card > summary .fila { flex: 1; margin: 0; }
 details.plegable-card:not([open]) { padding-top: 10px; padding-bottom: 10px; }
 details.plegable > summary, details.plegable > summary h2, details.plegable-card > summary b { color: var(--txt); }
+
+.proy { margin: 6px 0 2px; padding: 8px 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--borde); font-size: 14px; }
+.proy .item-det { margin-top: 4px; }

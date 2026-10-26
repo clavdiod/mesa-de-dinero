@@ -916,6 +916,17 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     except Exception as ex:
         print(f"[cobros] {ex}")
 
+    proy_cartera = {}
+    try:  # proyección de cada cosa que tenés: consejo (mantener, sumar, vender), objetivo, piso y rango a 1 mes
+        from .agentes import proyeccion
+        # precio en EE.UU. del cierre anterior (para pasar el objetivo de los analistas a pesos)
+        precio_usa = {} if simular else ((almacen.get("profesionales/lista") or {}).get("precios_usd") or {})
+        cons_d = {} if simular else ((almacen.get("profesionales/consensos") or {}).get("datos") or {})
+        proy_cartera = proyeccion.para_cartera(cartera, ctx.titulo, cache.velas, opinion_cartera, reg.propuestas, cons_d, precio_usa,
+                                               (ctx.extra.get("ministro") or {}).get("cartera"), mis_cobros, (prot or {}).get("penitencia"))
+    except Exception as ex:
+        print(f"[proyeccion] {ex}")
+
     eventos_cal = _calendario(almacen, ctx, hoy, ops, abiertas, cartera, simular)  # antes del resumen: carga licitaciones y avisos
 
     resumen = {
@@ -953,6 +964,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "ganadores": ctx.extra.get("ganadores"),
         "profesionales": ctx.extra.get("profesionales"),
         "protecciones": prot,
+        "proyeccion_cartera": proy_cartera,
         "memoria": None if simular else (almacen.get("memoria/papeles") or {}),
         "pronosticos": libreta[:200],
         "reunion": None if simular else almacen.get("revision/ultima"),

@@ -450,6 +450,14 @@ function pintarUsuario() {
         <span class="item-precio">${num(u)}${r === null ? "" : ` <span class="chip ${color(r)}">${pct(r)}</span>`}</span>
         <button class="quitar" data-quitar-cartera="${i}" aria-label="Quitar ${esc(x.ticker)}">✕</button></div>
       <div class="item-det">${num(x.cantidad, 0)} nominales · compra ${num(x.precio)}${u ? "" : " · sin cotización en la ronda"}</div>
+      ${(() => { const p = (ESTADO.estado?.proyeccion_cartera || {})[x.ticker.toUpperCase()]; if (!p) return "";
+        const col = /Vender/.test(p.consejo) ? "rojo" : /Tomar|Vigilar/.test(p.consejo) ? "amar" : "verde";
+        const lin = [p.objetivo ? `🎯 Objetivo <b>${num(p.objetivo)}</b> (${pct(p.potencial_pct, 1)})` : "",
+          p.piso ? `🛟 Piso <b>${num(p.piso)}</b> (${pct(p.a_piso_pct, 1)})` : ""].filter(Boolean).join(" · ");
+        return `<div class="proy"><span class="chip ${col}"><b>${esc(p.consejo)}</b></span> <span>${esc(p.motivo || "")}</span>
+          ${lin ? `<div class="item-det">${lin}${p.fuente_objetivo ? ` <span class="tenue">· objetivo: ${esc(p.fuente_objetivo)}</span>` : ""}</div>` : ""}
+          ${p.rango_1m ? `<div class="item-det">📈 En 1 mes, lo normal (2 de cada 3 veces): entre <b>${num(p.rango_1m[0])}</b> y <b>${num(p.rango_1m[1])}</b></div>` : ""}
+          ${p.proyeccion ? `<div class="item-det">💵 ${esc(p.proyeccion)}</div>` : ""}</div>`; })()}
       ${(() => { const m = (ESTADO.estado?.ministro?.cartera || []).find((y) => y.ticker === x.ticker.toUpperCase());
         return m ? `<div class="item-det">🏛️ <b>Ministro:</b> ${esc(m.texto)}</div>` : ""; })()}
       ${(() => { const o = (ESTADO.estado?.opinion_cartera || {})[x.ticker.toUpperCase()]; if (!o) return "";

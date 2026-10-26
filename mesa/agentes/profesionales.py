@@ -256,7 +256,8 @@ def armar_lista(a, uni: list[str], ultimos: dict[str, float], hoy: date) -> dict
     rs = {e: round((s[-1][1] / s[-64][1] - 1) * 100, 1) for e, s in etfs.items() if len(s) > 64}
     lista = lista_hoy(ultimos, d["consensos"], d["insiders"], d["sectores"], lid)
     out = {"fecha": hoy.isoformat(), "lideres": lid, "sectores_3m": dict(sorted(rs.items(), key=lambda x: -x[1])),
-           "nombres": {e: NOMBRE_SECTOR[e] for e in NOMBRE_SECTOR}, "lista": lista}
+           "nombres": {e: NOMBRE_SECTOR[e] for e in NOMBRE_SECTOR}, "lista": lista,
+           "precios_usd": {tk: round(v, 4) for tk, v in ultimos.items() if v}}
     a.put("profesionales/lista", out)
     return out
 
