@@ -181,3 +181,10 @@ details.plegable > summary, details.plegable > summary h2, details.plegable-card
 .proy .item-det { margin-top: 4px; }
 
 tr.fila-ir { cursor: pointer; } tr.fila-ir.sel td { background: var(--verde-bg); }
+
+details.dia-pron { margin: 8px 0; border: 1px solid var(--borde); border-radius: var(--r); padding: 0 12px; background: var(--card); }
+details.dia-pron > summary { list-style: none; cursor: pointer; padding: 12px 0; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; color: var(--txt); }
+details.dia-pron > summary::-webkit-details-marker { display: none; }
+details.dia-pron > summary::after { content: "›"; margin-left: auto; color: var(--tenue); font-size: 20px; transition: transform .15s; }
+details.dia-pron[open] > summary::after { transform: rotate(90deg); }
+details.dia-pron[open] { padding-bottom: 8px; }

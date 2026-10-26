@@ -396,6 +396,7 @@ function filaPron(x) {
     ${x.texto ? `<div class="item-det tenue">${esc(x.texto)}</div>` : ""}</div>`;
 }
 let FILTRO_ORIG = null;
+const DIAS_PRON_ABIERTOS = new Set();
 function pintarPronosticos() {
   const box = $("#pronosticos"); if (!box) return;
   const xs = ESTADO.estado?.pronosticos || [];
@@ -410,12 +411,23 @@ function pintarPronosticos() {
   const pasa = (x) => FILTRO_PRON === "fav" ? esFav(x.ticker) : FILTRO_PRON === "abiertos" ? ["en_curso", "esperando"].includes(x.estado)
     : FILTRO_PRON === "cerrados" ? ["se_dio", "fallo", "no_se_dio"].includes(x.estado) : true;
   const lista = xs.filter((x) => pasa(x) && (!FILTRO_ORIG || x.origen === FILTRO_ORIG))
-    .sort((a, b) => (["en_curso", "esperando"].includes(b.estado) - ["en_curso", "esperando"].includes(a.estado)) || String(b.fecha).localeCompare(String(a.fecha)));
+    .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)) || (["en_curso", "esperando"].includes(b.estado) - ["en_curso", "esperando"].includes(a.estado))
+      || String(b.hora || "").localeCompare(String(a.hora || "")));
+  // agrupado por el día en que se sugirió, lo más nuevo arriba
+  const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+  const tituloDia = (f) => { if (f === HOY()) return "Hoy"; const d = new Date(f + "T12:00:00"); return `${DIAS[d.getDay()][0].toUpperCase() + DIAS[d.getDay()].slice(1)} ${fecha(f)}`; };
+  const porDia = []; for (const x of lista.slice(0, 80)) { const u = porDia[porDia.length - 1]; if (u && u[0] === x.fecha) u[1].push(x); else porDia.push([x.fecha, [x]]); }
+  const listaHtml = porDia.map(([f, l]) => { const ok = l.filter((x) => x.estado === "se_dio").length, mal = l.filter((x) => ["fallo", "no_se_dio"].includes(x.estado)).length;
+    const abierto = DIAS_PRON_ABIERTOS.has(f) || (!DIAS_PRON_ABIERTOS.size && f === porDia[0][0]);
+    return `<details class="dia-pron" data-dia="${esc(f)}" ${abierto ? "open" : ""}><summary><b>${esc(tituloDia(f))}</b> <span class="tenue">· ${l.length} sugerido${l.length > 1 ? "s" : ""}${ok || mal ? ` · ✅ ${ok} · ❌ ${mal}` : ""}${l.some((x) => ["en_curso", "esperando"].includes(x.estado)) ? ` · ⏳ ${l.filter((x) => ["en_curso", "esperando"].includes(x.estado)).length}` : ""}</span></summary>${l.map(filaPron).join("")}</details>`; }).join("");
   box.innerHTML = `<div class="card">${tabla}<p class="tenue">Acierto = llegó al objetivo dentro del plazo. Prom. = resultado promedio a favor del pronóstico.</p></div>
     <div class="tiras" id="filtro-pron">${filtros.map(([k, t]) => `<button class="chico ${FILTRO_PRON === k ? "prim" : ""}" data-fpron="${k}">${t}</button>`).join("")}</div>
     ${FILTRO_ORIG ? `<p id="pron-orig" style="margin:8px 0"><span class="chip verde">Solo ${esc(ORIGEN_PRON[FILTRO_ORIG] || FILTRO_ORIG)} · ${lista.length}</span> <button class="chico" data-forig-x>✕ Ver todos</button></p>` : '<p class="tenue" style="margin:6px 0">Tocá un nombre de la tabla para ver solo sus pronósticos.</p>'}
-    ${lista.length ? lista.slice(0, 60).map(filaPron).join("") : `<p class="tenue">${FILTRO_PRON === "fav" ? "Ninguno de tus favoritos tiene pronósticos todavía. Marcá ☆ en los papeles que te interesen." : "Nada para mostrar con este filtro."}</p>`}`;
+    ${lista.length ? listaHtml : `<p class="tenue">${FILTRO_PRON === "fav" ? "Ninguno de tus favoritos tiene pronósticos todavía. Marcá ☆ en los papeles que te interesen." : "Nada para mostrar con este filtro."}</p>`}`;
   box.querySelectorAll("[data-fpron]").forEach((b) => b.onclick = () => { FILTRO_PRON = b.dataset.fpron; pintarPronosticos(); });
+  box.querySelectorAll("details.dia-pron").forEach((d) => d.addEventListener("toggle", () => {
+    if (!DIAS_PRON_ABIERTOS.size) box.querySelectorAll("details.dia-pron[open]").forEach((x) => DIAS_PRON_ABIERTOS.add(x.dataset.dia));
+    d.open ? DIAS_PRON_ABIERTOS.add(d.dataset.dia) : DIAS_PRON_ABIERTOS.delete(d.dataset.dia); }));
   box.querySelectorAll("[data-forig]").forEach((tr) => tr.onclick = () => {
     FILTRO_ORIG = FILTRO_ORIG === tr.dataset.forig ? null : tr.dataset.forig; FILTRO_PRON = "todos"; pintarPronosticos();
     setTimeout(() => $("#filtro-pron")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); });
