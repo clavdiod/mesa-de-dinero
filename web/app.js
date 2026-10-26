@@ -395,6 +395,7 @@ function filaPron(x) {
       ${x.ref ? ` · desde ${num(x.ref)} → ahora ${num(x.ultimo ?? x.ref)} (<b style="color:var(--${x.ahora_pct > 0 ? "verde" : x.ahora_pct < 0 ? "rojo" : "texto"})">${pct(x.ahora_pct, 1)}</b> a favor) · mejor ${pct(x.mejor, 1)} · peor ${pct(x.peor, 1)}` : " · toma el precio en la primera ronda con BYMA abierto"}</div>
     ${x.texto ? `<div class="item-det tenue">${esc(x.texto)}</div>` : ""}</div>`;
 }
+let FILTRO_ORIG = null;
 function pintarPronosticos() {
   const box = $("#pronosticos"); if (!box) return;
   const xs = ESTADO.estado?.pronosticos || [];
@@ -403,16 +404,22 @@ function pintarPronosticos() {
   for (const x of xs) { const r = (res[x.origen] ||= { se_dio: 0, fallo: 0, no_se_dio: 0, abiertos: 0, suma: 0 });
     if (["se_dio", "fallo", "no_se_dio"].includes(x.estado)) { r[x.estado]++; r.suma += x.estado === "se_dio" ? x.objetivo_pct : x.estado === "fallo" ? -(x.stop_pct || 0) : x.ahora_pct || 0; } else r.abiertos++; }
   const tabla = `<div class="tabla-scroll"><table><tr><th>Quién</th><th class="n">Se dio</th><th class="n">No / falló</th><th class="n">Acierto</th><th class="n">Prom.</th><th class="n">Abiertos</th></tr>
-    ${Object.entries(res).map(([o, r]) => { const c = r.se_dio + r.fallo + r.no_se_dio; return `<tr><td>${esc(ORIGEN_PRON[o] || o)}</td><td class="n">${r.se_dio}</td><td class="n">${r.no_se_dio + r.fallo}</td>
+    ${Object.entries(res).map(([o, r]) => { const c = r.se_dio + r.fallo + r.no_se_dio; return `<tr class="fila-ir ${FILTRO_ORIG === o ? "sel" : ""}" data-forig="${esc(o)}"><td><span class="link">${esc(ORIGEN_PRON[o] || o)}</span> ›</td><td class="n">${r.se_dio}</td><td class="n">${r.no_se_dio + r.fallo}</td>
       <td class="n">${c ? num(r.se_dio / c * 100, 0) + "%" : "—"}</td><td class="n">${c ? pct(r.suma / c, 1) : "—"}</td><td class="n">${r.abiertos}</td></tr>`; }).join("")}</table></div>`;
   const filtros = [["fav", "⭐ Favoritos"], ["abiertos", "⏳ En curso"], ["cerrados", "Cerrados"], ["todos", "Todos"]];
   const pasa = (x) => FILTRO_PRON === "fav" ? esFav(x.ticker) : FILTRO_PRON === "abiertos" ? ["en_curso", "esperando"].includes(x.estado)
     : FILTRO_PRON === "cerrados" ? ["se_dio", "fallo", "no_se_dio"].includes(x.estado) : true;
-  const lista = xs.filter(pasa);
+  const lista = xs.filter((x) => pasa(x) && (!FILTRO_ORIG || x.origen === FILTRO_ORIG))
+    .sort((a, b) => (["en_curso", "esperando"].includes(b.estado) - ["en_curso", "esperando"].includes(a.estado)) || String(b.fecha).localeCompare(String(a.fecha)));
   box.innerHTML = `<div class="card">${tabla}<p class="tenue">Acierto = llegó al objetivo dentro del plazo. Prom. = resultado promedio a favor del pronóstico.</p></div>
     <div class="tiras" id="filtro-pron">${filtros.map(([k, t]) => `<button class="chico ${FILTRO_PRON === k ? "prim" : ""}" data-fpron="${k}">${t}</button>`).join("")}</div>
+    ${FILTRO_ORIG ? `<p id="pron-orig" style="margin:8px 0"><span class="chip verde">Solo ${esc(ORIGEN_PRON[FILTRO_ORIG] || FILTRO_ORIG)} · ${lista.length}</span> <button class="chico" data-forig-x>✕ Ver todos</button></p>` : '<p class="tenue" style="margin:6px 0">Tocá un nombre de la tabla para ver solo sus pronósticos.</p>'}
     ${lista.length ? lista.slice(0, 60).map(filaPron).join("") : `<p class="tenue">${FILTRO_PRON === "fav" ? "Ninguno de tus favoritos tiene pronósticos todavía. Marcá ☆ en los papeles que te interesen." : "Nada para mostrar con este filtro."}</p>`}`;
   box.querySelectorAll("[data-fpron]").forEach((b) => b.onclick = () => { FILTRO_PRON = b.dataset.fpron; pintarPronosticos(); });
+  box.querySelectorAll("[data-forig]").forEach((tr) => tr.onclick = () => {
+    FILTRO_ORIG = FILTRO_ORIG === tr.dataset.forig ? null : tr.dataset.forig; FILTRO_PRON = "todos"; pintarPronosticos();
+    setTimeout(() => $("#filtro-pron")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); });
+  box.querySelector("[data-forig-x]")?.addEventListener("click", () => { FILTRO_ORIG = null; pintarPronosticos(); });
 }
 
 // ---------- alertas de nivel de cada favorito ----------
@@ -623,7 +630,7 @@ function pintarAnticipos() {
       const [c, e] = pr ? ESTADO_PRON[pr.estado] || ["", ""] : ["", ""];
       return `<div class="agente"><b>${estrella(x.ticker, "Anticipador")}<span class="link" data-abrir-debate="${esc(x.ticker)}">${esc(x.ticker)}</span><br><span class="tenue">${num(x.prob * 100, 0)}%</span></b>
         <span>${esc((x.razones || []).join(" · ") || "combinación de precursores")}${x.fr_contra ? ' <span class="chip rojo">entre los más débiles: pesa la mitad</span>' : ""}${pr ? `<br><span class="chip ${c}">${e}</span> ${pr.ref ? `desde ${num(pr.ref)}: va ${pct(pr.ahora_pct, 1)}, mejor ${pct(pr.mejor, 1)}` : ""}` : ""}</span></div>`; }).join("")}
-    <p><button class="chico" data-ir-pron>📋 Ver cómo van todos los pronósticos</button></p>` : "";
+    <p><button class="chico" data-ir-pron="anticipador">📋 Ver cómo van los pronósticos del Anticipador</button></p>` : "";
   const pl = es?.plazos?.al_cierre;
   const est = pl?.casos ? `<p class="tenue" style="margin-top:8px">Estadística propia de los anticipos (desde ${esc(fecha(es.desde))}): acertaron ${num(pl.aciertos / pl.casos * 100, 0)}% de ${pl.casos}, ${pct(pl.suma_ret / pl.casos, 2)} promedio hasta el cierre.</p>` : "";
   $("#anticipos").innerHTML = `<h2>⏩ Anticipos <span class="hora">· ${esc(e.hora || "")}</span></h2><div class="card eco">${tablaAt}${tablaLi}${est}</div>`;
@@ -1186,7 +1193,9 @@ document.addEventListener("click", (ev) => {
   if (g && g.classList.contains("oculto")) verGrupoMercado(g.dataset.g);
   irYResaltar(vista, sel);
 });
-document.addEventListener("click", (ev) => { if (ev.target.closest("[data-ir-pron]")) { irA("ranking"); setTimeout(() => $("#titulo-pronosticos")?.scrollIntoView({ behavior: "smooth" }), 100); } });
+document.addEventListener("click", (ev) => { const b = ev.target.closest("[data-ir-pron]"); if (!b) return;
+  if (b.dataset.irPron && b.dataset.irPron !== "1") { FILTRO_ORIG = b.dataset.irPron; FILTRO_PRON = "todos"; pintarPronosticos(); }
+  irA("ranking"); setTimeout(() => (FILTRO_ORIG ? $("#filtro-pron") : $("#titulo-pronosticos"))?.scrollIntoView({ behavior: "smooth" }), 100); });
 $("#form-debate").addEventListener("submit", (ev) => { ev.preventDefault(); verDebate(ev.target.ticker.value.trim().toUpperCase()); });
 $("#form-letras").addEventListener("submit", async (ev) => {
   ev.preventDefault(); const mes = ev.target.mes.value; const box = $("#lista-letras");

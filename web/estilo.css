@@ -179,3 +179,5 @@ details.plegable > summary, details.plegable > summary h2, details.plegable-card
 
 .proy { margin: 6px 0 2px; padding: 8px 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--borde); font-size: 14px; }
 .proy .item-det { margin-top: 4px; }
+
+tr.fila-ir { cursor: pointer; } tr.fila-ir.sel td { background: var(--verde-bg); }
