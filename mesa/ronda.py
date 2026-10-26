@@ -923,7 +923,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         precio_usa = {} if simular else ((almacen.get("profesionales/lista") or {}).get("precios_usd") or {})
         cons_d = {} if simular else ((almacen.get("profesionales/consensos") or {}).get("datos") or {})
         proy_cartera = proyeccion.para_cartera(cartera, ctx.titulo, cache.velas, opinion_cartera, reg.propuestas, cons_d, precio_usa,
-                                               (ctx.extra.get("ministro") or {}).get("cartera"), mis_cobros, (prot or {}).get("penitencia"))
+                                               (ctx.extra.get("ministro") or {}).get("cartera"), mis_cobros, (prot or {}).get("penitencia"),
+                                               {str(x.get("ticker", "")).upper(): x.get("alertas") or [] for x in (ctx.lista or [])})
     except Exception as ex:
         print(f"[proyeccion] {ex}")
 

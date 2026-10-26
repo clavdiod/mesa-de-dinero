@@ -39,12 +39,28 @@ def _tecnico(velas: list[dict], precio: float) -> tuple[float | None, float | No
     return obj, piso
 
 
+def _m(x, d: int = 2) -> str:
+    """Número a la argentina: 1.234,56."""
+    return f"{x:,.{d}f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _cob(c: dict) -> str:
+    mon = "US$ " if c.get("moneda") in ("USD", "US$") else "$"
+    return f"{c['fecha'][8:10]}/{c['fecha'][5:7]} {mon}{_m(c['total']) if c.get('total') is not None else '—'}"
+
+
 def _f(x):
     return None if x is None else round(x, 2)
 
 
+def _tecnico_cercano(velas: list[dict], precio: float) -> float | None:
+    v1 = [v.get("maximo") or v["cierre"] for v in velas[-21:] if v.get("cierre")]
+    return max(v1) if v1 and max(v1) > precio * 1.03 else None
+
+
 def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuestas: list[dict], consensos: dict,
-                 precio_usa: dict, ministro: list[dict] | None, cobros: list[dict], penitencia: dict | None = None) -> dict:
+                 precio_usa: dict, ministro: list[dict] | None, cobros: list[dict], penitencia: dict | None = None,
+                 alertas: dict | None = None) -> dict:
     """Devuelve {ticker: {...}} para cada posición de la cartera."""
     out = {}
     min_por = {m.get("ticker"): m for m in ministro or []}
@@ -53,7 +69,13 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
     for pos in cartera:
         tk = str(pos.get("ticker") or "").upper()
         t = titulo(tk) if tk else None
-        if not tk or not t or not t.get("ultimo"):
+        if not tk:
+            continue
+        if not t or not t.get("ultimo"):
+            prox = [c for c in cobros if c.get("ticker") == tk][:2]
+            if prox:  # renta fija que no estuvo en los paneles de la ronda: igual se muestra lo que vas a cobrar
+                out[tk] = {"ticker": tk, "grupo": "renta fija", "consejo": "Mantener", "motivo": "Renta fija: se tiene para cobrar.",
+                           "proyeccion": "Próximos cobros: " + "; ".join(_cob(c) for c in prox)}
             continue
         precio, grupo = float(t["ultimo"]), t.get("grupo")
         compra = float(pos.get("precio") or 0) or None
@@ -66,8 +88,7 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
             prox = [c for c in cobros if c.get("ticker") == tk][:2]
             x["consejo"] = "Vigilar" if (m.get("dir") or 0) < 0 else "Mantener"
             x["motivo"] = ("Renta fija: se tiene para cobrar. " + (m.get("texto") or "")).strip()
-            x["proyeccion"] = ("Próximos cobros: " + "; ".join(f"{c['fecha'][8:10]}/{c['fecha'][5:7]} {c.get('moneda', '')} {c.get('total')}"
-                                                              for c in prox)) if prox else "Sin cobros en los próximos 60 días."
+            x["proyeccion"] = ("Próximos cobros: " + "; ".join(_cob(c) for c in prox)) if prox else "Sin cobros en los próximos 60 días."
             out[tk] = x
             continue
         velas = velas_de(tk) or []
@@ -80,13 +101,24 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
         else:
             co = consensos.get(tk) or {}
             us = precio_usa.get(tk)
-            if grupo == "cedears" and co.get("objetivo") and us:
-                objetivo = float(co["objetivo"]) / us * precio
-                n_an = (co.get("buy") or 0) + (co.get("hold") or 0) + (co.get("sell") or 0)
-                fuente = f"promedio de {n_an} analistas de Wall Street" + (" (muy optimista: tomalo con pinzas)" if objetivo > precio * 1.6 else "")
             o2, piso = _tecnico(velas, precio)
+            if grupo == "cedears" and co.get("objetivo") and us:
+                obj_an = float(co["objetivo"]) / us * precio
+                n_an = (co.get("buy") or 0) + (co.get("hold") or 0) + (co.get("sell") or 0)
+                if obj_an <= precio * 1.6:
+                    objetivo, fuente = obj_an, f"promedio de {n_an} analistas de Wall Street"
+                else:  # un objetivo de +60% o más es de antes de una caída grande: se usa el técnico cercano
+                    oc = _tecnico_cercano(velas, precio) or o2
+                    if oc:
+                        objetivo = oc
+                        fuente = f"técnico (máximo del último mes); los analistas apuntan a {_m(obj_an, 0)} (+{(obj_an / precio - 1) * 100:.0f}%), muy lejos"
             if objetivo is None and o2:
                 objetivo, fuente = o2, "técnico (máximo de 3 meses)"
+            # tu propio stop (una alerta de baja que dice "stop") manda sobre el técnico
+            mio = [al for al in (alertas or {}).get(tk, []) if al.get("tipo") == "baja" and "stop" in str(al.get("nota", "")).lower()
+                   and al.get("moneda", "ARS") == "ARS" and al.get("nivel")]
+            if mio:
+                piso = max(float(al["nivel"]) for al in mio)
             if piso is None and rg:
                 piso = rg[0]
         pot = round((objetivo / precio - 1) * 100, 1) if objetivo else None
@@ -96,6 +128,8 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
             consejo, motivo = "Vigilar", "La mesa perdió sus 2 últimas ideas con este papel: está en penitencia."
         elif piso and precio <= piso:
             consejo, motivo = "Vender", "Perforó el piso" + (" (stop del plan)" if p else "") + ": la idea no se está dando."
+        elif a_piso is not None and a_piso > -3:
+            consejo, motivo = "Vigilar", f"Está a {_m(abs(a_piso), 1)}% del piso: si lo perfora, salir."
         elif pot is not None and pot <= 3:
             consejo, motivo = "Tomar ganancia", "Está a menos de 3% del objetivo: la mayor parte de la suba ya se dio."
         elif mesa == "en contra" and (res or 0) > 0:
