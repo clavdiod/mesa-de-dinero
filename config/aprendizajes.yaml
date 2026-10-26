@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: "2026-10-26"
+  caso: "Brasil: Lula reelecto, se desploman el real y la bolsa, y el Corresponsal no lo vio"
+  que_paso: "El domingo 25/10 Lula ganó la segunda vuelta. El lunes el real cayó fuerte, la bolsa de San Pablo se desplomó y los bancos brasileños perdieron casi un tercio en Nueva York. El Corresponsal leía 63 titulares sobre el tema pero no tenía un tema 'Brasil': solo conocía petróleo, Fed, aranceles, China, Vaca Muerta, FMI y sequía."
+  leccion: "Brasil es el principal socio comercial de Argentina y lo que pasa allá contagia: tenía que estar entre los temas que se vigilan."
+  cambio: "Se suman los temas 'Brasil: cae la bolsa o se desploma el real' (en contra de las brasileñas, MercadoLibre, Ternium, Aluar y los bonos argentinos por contagio) y 'Brasil: rebota la bolsa o el real', con búsquedas propias de noticias de Brasil."
+- fecha: "2026-10-26"
   caso: "Ideas de los repos grandes de GitHub: memoria por papel, protecciones y control de trampa con el futuro"
   que_paso: "Se revisaron TradingAgents, ai-hedge-fund, freqtrade, qlib y quantstats. Con el control de freqtrade se volvieron a correr todas las pruebas entrando cuando de verdad se puede (la apertura del día siguiente, porque las listas salen después del cierre de EE.UU.) en vez de al cierre del día de la señal. Gap con volumen: +3,9% contra el promedio igual que antes. Anticipador: 50 de cada 100 marcados suben 5% en la semana (antes 51), pero la ganancia promedio a 5 ruedas baja de +2,1% a +1,7%. Analistas: siguen sin servir, aun contando el consenso un mes después. Compras de insiders: quedan apenas por encima de la vara a 60 ruedas."
   leccion: "Las pruebas no estaban infladas por usar el futuro, salvo una parte de la ganancia del Anticipador: comprar al día siguiente cuesta cerca de 0,3% por idea. Desde ahora todas las pruebas usan la entrada realista."
