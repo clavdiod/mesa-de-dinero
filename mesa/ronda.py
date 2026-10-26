@@ -922,7 +922,14 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         # precio en EE.UU. del cierre anterior (para pasar el objetivo de los analistas a pesos)
         precio_usa = {} if simular else ((almacen.get("profesionales/lista") or {}).get("precios_usd") or {})
         cons_d = {} if simular else ((almacen.get("profesionales/consensos") or {}).get("datos") or {})
-        proy_cartera = proyeccion.para_cartera(cartera, ctx.titulo, cache.velas, opinion_cartera, reg.propuestas, cons_d, precio_usa,
+        panel_prev = {} if simular else ((almacen.get("ui/panel") or {}).get("titulos") or {})
+        def _tit(tk):  # si en esta ronda no vino el papel, el último precio conocido
+            t = ctx.titulo(tk)
+            if t and t.get("ultimo"):
+                return t
+            x = panel_prev.get(tk)
+            return {"ultimo": x[0], "grupo": x[4]} if x and x[0] else None
+        proy_cartera = proyeccion.para_cartera(cartera, _tit, cache.velas, opinion_cartera, reg.propuestas, cons_d, precio_usa,
                                                (ctx.extra.get("ministro") or {}).get("cartera"), mis_cobros, (prot or {}).get("penitencia"),
                                                {str(x.get("ticker", "")).upper(): x.get("alertas") or [] for x in (ctx.lista or [])})
     except Exception as ex:

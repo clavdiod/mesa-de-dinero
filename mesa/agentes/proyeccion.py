@@ -73,9 +73,9 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
             continue
         if not t or not t.get("ultimo"):
             prox = [c for c in cobros if c.get("ticker") == tk][:2]
-            if prox:  # renta fija que no estuvo en los paneles de la ronda: igual se muestra lo que vas a cobrar
-                out[tk] = {"ticker": tk, "grupo": "renta fija", "consejo": "Mantener", "motivo": "Renta fija: se tiene para cobrar.",
-                           "proyeccion": "Próximos cobros: " + "; ".join(_cob(c) for c in prox)}
+            # sin precio en esta ronda (renta fija que opera poco): igual se muestra lo que vas a cobrar
+            out[tk] = {"ticker": tk, "grupo": "renta fija", "consejo": "Mantener", "motivo": "Renta fija: se tiene para cobrar.",
+                       "proyeccion": ("Próximos cobros: " + "; ".join(_cob(c) for c in prox)) if prox else "Sin cobros en los próximos 60 días."}
             continue
         precio, grupo = float(t["ultimo"]), t.get("grupo")
         compra = float(pos.get("precio") or 0) or None
@@ -114,6 +114,13 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
                         fuente = f"técnico (máximo del último mes); los analistas apuntan a {_m(obj_an, 0)} (+{(obj_an / precio - 1) * 100:.0f}%), muy lejos"
             if objetivo is None and o2:
                 objetivo, fuente = o2, "técnico (máximo de 3 meses)"
+            # un objetivo técnico muy lejano (+30% o más) no es realista a un mes: se usa el techo normal de un mes
+            if rg and (objetivo is None or (fuente or "").startswith("técnico") and objetivo > precio * 1.3):
+                if objetivo:
+                    fuente = f"techo normal a 1 mes (el máximo reciente, {_m(objetivo, 0)}, queda {(objetivo / precio - 1) * 100:.0f}% arriba)"
+                else:
+                    fuente = "techo normal a 1 mes (no hay un máximo reciente arriba)"
+                objetivo = rg[1]
             # tu propio stop (una alerta de baja que dice "stop") manda sobre el técnico
             mio = [al for al in (alertas or {}).get(tk, []) if al.get("tipo") == "baja" and "stop" in str(al.get("nota", "")).lower()
                    and al.get("moneda", "ARS") == "ARS" and al.get("nivel")]
