@@ -199,7 +199,7 @@ PAISES = {
     "jp": ("Japón", r"jap[oó]n|japan|japanese|japon[eé]s|nikkei|\byen\b|tokio|tokyo", ["EWJ", "TM", "SONY", "HMC", "MUFG"], False, 6),
     "eu": ("Europa", r"europa|europe|eurozona|eurozone|\bbce\b|\becb\b|\beuro\b|alemania|germany|francia|france|italia|italy|espa[nñ]a|spain|\bdax\b|\bcac\b", ["EWG", "VGK", "SAP", "ASML", "NVO"], False, 8),
     "uk": ("Reino Unido", r"reino unido|\buk\b|britain|british|brit[aá]nic|londres|london|libra esterlina|\bpound\b|sterling|ftse", ["EWU", "BP", "SHEL", "HSBC", "GSK", "AZN"], False, 6),
-    "in": ("India", r"\bindia\b|indian|\bindio\b|rupee|rupia|sensex|nifty|modi", ["INDA", "IBN", "HDB", "INFY", "WIT"], False, 5),
+    "in": ("India", r"\bindia\b|indian|\bindio\b|rupee|rupia\b|sensex|nifty|modi", ["INDA", "IBN", "HDB", "INFY", "WIT"], False, 5),
     "tw": ("Taiwán", r"taiw[aá]n|taiwanese|taipei", ["TSM", "UMC", "ASX"], False, 4),
     "kr": ("Corea del Sur", r"corea del sur|south korea|surcorean|korean won|kospi|se[uú]l|seoul", ["EWY", "KB", "PKX"], False, 4),
     "tr": ("Turquía", r"turqu[ií]a|turkey|t[uü]rkiye|turkish|lira turca|erdogan", ["TUR"], False, 4),
@@ -225,7 +225,7 @@ def detectar_paises(titulares: list[dict]) -> list[dict]:
         rx = _r(patron)
         malos, buenos = [], []
         for n in titulares:
-            t = n.get("titulo") or ""
+            t = re.sub(r"\s+[-–|]\s+[^-–|]{2,45}$", "", n.get("titulo") or "")  # sin el " - Nikkei Asia" del final (es la fuente)
             if not rx.search(t):
                 continue
             m, b = SACUDON_MAL.search(t), SACUDON_BIEN.search(t)
