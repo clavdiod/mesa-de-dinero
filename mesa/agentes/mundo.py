@@ -6,6 +6,9 @@ Lee cada 30 minutos portales y diarios del mundo y de Argentina (Reuters, Bloomb
 1) Temas del mundo que mueven precios: clima de guerra en el Golfo (sube el petróleo y el oro), la OPEP recorta,
    la Reserva Federal baja o sube tasas, aranceles, estímulo en China, sequía, Vaca Muerta, el FMI...
    Cada tema tiene su "mapa de efectos": qué papeles suben y cuáles bajan.
+   Además, un detector general por país: si de golpe aparecen muchos titulares de un país con palabras de crisis
+   (se desploma la bolsa o la moneda, default, golpe, elecciones con mala reacción, terremoto...) o de alivio, es un
+   "sacudón" aunque nadie haya armado ese tema: pega en los papeles ligados a ese país y, si es vecino, en los bonos.
 2) Empresas: rumores y hechos (cierra sucursales, despidos, concurso, nuevo desarrollo, inversión, adquisición).
 
 Para no reaccionar a un solo titular, un tema necesita aparecer en al menos 2 titulares distintos (o 1 de una fuente
@@ -36,9 +39,11 @@ FUENTES_RSS = [
     "https://www.iproup.com/rss",
 ]
 # búsquedas en Google Noticias (agrupa Reuters, Bloomberg, AP, FT, WSJ y diarios locales)
-BUSQUEDAS_EN = ["Brazil markets real Bovespa", "oil prices Middle East", "Strait of Hormuz", "OPEC output", "Federal Reserve rates", "tariffs trade war",
+BUSQUEDAS_EN = ["world markets today", "emerging markets selloff", "currency plunges", "election markets reaction", "stocks plunge country",
+                "Latin America markets", "oil prices Middle East", "Strait of Hormuz", "OPEC output", "Federal Reserve rates", "tariffs trade war",
                 "China stimulus", "stock market today", "Reuters business"]
-BUSQUEDAS_ES = ["Brasil mercados real Bovespa", "elecciones Brasil mercados", "petróleo Medio Oriente", "Wall Street hoy", "empresa cierra sucursales Argentina", "despidos empresa Argentina",
+BUSQUEDAS_ES = ["mercados internacionales hoy", "mercados emergentes", "elecciones mercados reacción", "se desploma la moneda",
+                "bolsas de América Latina", "petróleo Medio Oriente", "Wall Street hoy", "empresa cierra sucursales Argentina", "despidos empresa Argentina",
                 "Vaca Muerta inversión", "nuevo desarrollo empresa argentina"]
 FUENTES_GRANDES = ("reuters", "bloomberg", "cnbc", "bbc", "financial times", "wsj", "wall street journal", "ap news", "associated press",
                    "ámbito", "ambito", "cronista", "infobae", "la nación", "lanacion", "clarín", "clarin")
@@ -101,15 +106,6 @@ TEMAS = [
     ("sequia", "Sequía / problemas en la cosecha argentina",
      [_r(r"sequ[ií]a|drought|helada|inundaci"), _r(r"campo|cosecha|soja|ma[ií]z|trigo|agro|crop|harvest")], {"CRES": -1}, 0.3,
      "Menos cosecha: menos dólares y pierde el agro."),
-    ("brasil_crisis", "Brasil: cae la bolsa o se desploma el real",
-     [_r(r"brasil|brazil|bovespa|ibovespa|\breal brasile|brazilian real|lula|bolsonaro"),
-      _r(r"desplom|derrumb|hunde|se cae|caen|cae |p[aá]nico|crisis|plunge|slump|tumble|sell-?off|crash|sink|devalu|d[eé]ficit|fiscal|deuda p[uú]blica|record low|m[ií]nimo hist")],
-     {**{t: -1 for t in BRASIL}, "TXAR": -1, "ALUA": -1, "AL30": -1, "GD30": -1}, 0.45,
-     "Brasil es el principal socio comercial de Argentina: si se cae su bolsa o su moneda, pierden las empresas brasileñas (Petrobras, Vale, bancos, Nubank, MercadoLibre) y las argentinas que le venden (acero, aluminio, autos); además suele subir el riesgo país argentino (contagio)."),
-    ("brasil_alivio", "Brasil: rebota la bolsa o se fortalece el real",
-     [_r(r"brasil|brazil|bovespa|ibovespa|\breal brasile|brazilian real"),
-      _r(r"(bovespa|ibovespa|bolsa|real|acciones|stocks|shares|brazilian assets)\W+(\w+\W+){0,4}(rebot|recuper|sube|suben|repunt|rall|rebound|recover|surge|jump|soar)|ajuste fiscal|fiscal (plan|package|deal)")],
-     {t: 1 for t in BRASIL}, 0.35, "Se calma Brasil: rebotan las brasileñas y MercadoLibre."),
     ("huracan_golfo", "Huracán en el Golfo de México",
      [_r(r"hurac[aá]n|hurricane|tormenta tropical|tropical storm"), _r(r"golfo de m[eé]xico|gulf of mexico|texas|louisiana|luisiana")],
      {t: 1 for t in ["XOM", "CVX", "OXY", "YPFD", "VIST"]}, 0.25, "Un huracán frena pozos y refinerías del Golfo: sube el crudo."),
@@ -179,7 +175,80 @@ def detectar_temas(titulares: list[dict]) -> list[dict]:
         out = [t for t in out if t["tema"] != ("petroleo_baja" if a["n"] >= b["n"] else "petroleo_sube")]
     if "tension_golfo" in claves:
         out = [t for t in out if t["tema"] != "petroleo_sube"]
+    out += detectar_paises(titulares)  # cualquier país, aunque no tenga un tema armado
     return sorted(out, key=lambda t: -t["n"])
+
+
+# ---------- sacudones en cualquier país (sin tener que armar un tema a mano) ----------
+# Cada país: cómo se lo nombra en los titulares, qué papeles de acá dependen de él, si contagia a la Argentina
+# (vecinos y socios: suben el riesgo país y bajan los bonos) y cuántos titulares hacen falta (los países que
+# están siempre en las noticias, como EE.UU. o China, necesitan más para que sea un sacudón y no ruido de fondo).
+PAISES = {
+    "br": ("Brasil", r"brasil|brazil|bovespa|ibovespa|real brasile|brazilian real|\blula\b|bolsonaro|petrobras|planalto", BRASIL + ["TXAR", "ALUA"], True, 4),
+    "cl": ("Chile", r"\bchile\b|chilen|chilean|peso chileno|\bipsa\b|santiago de chile|\bsqm\b", ["SQM", "ECH"], True, 4),
+    "mx": ("México", r"m[eé]xico|mexican|mexicano|peso mexicano|sheinbaum|banxico", ["EWW", "AMX", "FMX", "KOF", "TV", "BSMX"], True, 4),
+    "co": ("Colombia", r"colombia|colombian|peso colombiano|petro\b", ["EC", "CIB"], True, 4),
+    "pe": ("Perú", r"\bper[uú]\b|peruan|peruvian|\blima\b", ["SCCO", "BAP", "BVN"], True, 4),
+    "uy": ("Uruguay", r"uruguay", [], True, 4),
+    "py": ("Paraguay", r"paraguay", [], True, 4),
+    "bo": ("Bolivia", r"bolivia", [], True, 4),
+    "ec": ("Ecuador", r"ecuador", [], True, 4),
+    "ve": ("Venezuela", r"venezuel|maduro|pdvsa", ["XOM", "CVX"], True, 4),
+    "us": ("EE.UU.", r"estados unidos|ee\.?\s?uu|\bu\.?s\.? (stocks|markets|economy)|wall street|trump|white house|casa blanca|treasur", INDICES, False, 12),
+    "cn": ("China", r"\bchina\b|chin[ao]s?\b|chinese|beijing|pek[ií]n|shanghai|hong kong|\byuan\b|xi jinping", ["FXI", "BABA", "BIDU", "JD", "PDD", "NIO", "TCEHY", "VALE"], False, 10),
+    "jp": ("Japón", r"jap[oó]n|japan|japanese|japon[eé]s|nikkei|\byen\b|tokio|tokyo", ["EWJ", "TM", "SONY", "HMC", "MUFG"], False, 6),
+    "eu": ("Europa", r"europa|europe|eurozona|eurozone|\bbce\b|\becb\b|\beuro\b|alemania|germany|francia|france|italia|italy|espa[nñ]a|spain|\bdax\b|\bcac\b", ["EWG", "VGK", "SAP", "ASML", "NVO"], False, 8),
+    "uk": ("Reino Unido", r"reino unido|\buk\b|britain|british|brit[aá]nic|londres|london|libra esterlina|\bpound\b|sterling|ftse", ["EWU", "BP", "SHEL", "HSBC", "GSK", "AZN"], False, 6),
+    "in": ("India", r"\bindia\b|indian|\bindio\b|rupee|rupia|sensex|nifty|modi", ["INDA", "IBN", "HDB", "INFY", "WIT"], False, 5),
+    "tw": ("Taiwán", r"taiw[aá]n|taiwanese|taipei", ["TSM", "UMC", "ASX"], False, 4),
+    "kr": ("Corea del Sur", r"corea del sur|south korea|surcorean|korean won|kospi|se[uú]l|seoul", ["EWY", "KB", "PKX"], False, 4),
+    "tr": ("Turquía", r"turqu[ií]a|turkey|t[uü]rkiye|turkish|lira turca|erdogan", ["TUR"], False, 4),
+    "ru": ("Rusia", r"rusia|russia|kremlin|kreml|putin|moscow|mosc[uú]|ruble|rublo", PETROLEO + ORO, False, 6),
+    "ua": ("Ucrania", r"ucrania|ukrain|kiev|kyiv|zelensk", ["ADM", "BG"] + DEFENSA, False, 6),
+    "za": ("Sudáfrica", r"sud[aá]frica|south africa|\brand\b|johannesburg", ["EZA", "GFI", "HMY", "SBSW"], False, 4),
+    "ca": ("Canadá", r"canad[aá]|canadian|ottawa|toronto", ["EWC", "SHOP", "CNQ", "SU", "ENB", "RY", "TD", "BNS"], False, 6),
+}
+SACUDON_MAL = _r(r"desplom|derrumb|se hunde|hunde|colaps|p[aá]nico|crisis|default|impago|cesaci[oó]n de pagos|devalu|golpe de estado|\bcoup\b|"
+                 r"estado de sitio|protestas|disturbios|huelga general|terremoto|earthquake|tsunami|sanci[oó]n|sanction|plunge|crash|slump|tumble|"
+                 r"sell-?off|turmoil|unrest|downgrade|rebaja (de )?(la )?calificaci|recesi[oó]n|recession|bancarrota|bankrupt|corralito|"
+                 r"capital controls|control de cambios|guerra|invasi[oó]n|invade|fuga de capitales|capital flight|mínimo hist|record low|"
+                 r"se dispara el d[oó]lar|cae (la|el) |caen (las|los) |sinks?\b|slides?\b|tanks?\b")
+SACUDON_BIEN = _r(r"\brally|r[eé]cord(?!\s+(low|bajo|m[ií]nimo|ca[ií]da|drop|loss))|repunt|rebot|surge|soar|upgrade|mejora (de )?(la )?calificaci|acuerdo comercial|trade deal|"
+                  r"est[ií]mulo|stimulus|alto el fuego|ceasefire|acuerdo de paz|peace deal|se recupera|recover")
+MIN_SACUDON_LIMITE = 3  # un país vecino con 3 titulares duros ya es noticia
+
+
+def detectar_paises(titulares: list[dict]) -> list[dict]:
+    """Un país 'sacudido': muchos titulares de ese país con palabras de crisis (o de alivio) a la vez."""
+    out = []
+    for cod, (nombre, patron, papeles, contagia, minimo) in PAISES.items():
+        rx = _r(patron)
+        malos, buenos = [], []
+        for n in titulares:
+            t = n.get("titulo") or ""
+            if not rx.search(t):
+                continue
+            m, b = SACUDON_MAL.search(t), SACUDON_BIEN.search(t)
+            if m and not b:
+                malos.append(n)
+            elif b and not m:
+                buenos.append(n)
+        for lado, hits, d in (("crisis", malos, -1), ("alivio", buenos, 1)):
+            unicos = list({n["titulo"][:70].lower(): n for n in hits}.values())
+            if len(unicos) < minimo:
+                continue
+            efectos = {t: d for t in papeles}
+            if contagia:  # vecino o socio: mueve el riesgo país y los bonos argentinos
+                efectos.update({"AL30": d, "GD30": d})
+            if cod == "us":
+                efectos.update({t: d for t in EMERGENTES})
+            expl = (f"Sacudón en {nombre}: " + ("muchas noticias de crisis a la vez (caída de la bolsa o la moneda, conflicto, default, elecciones con mala reacción...)."
+                                               if d < 0 else "muchas noticias de alivio a la vez (rebote, acuerdo, mejora).")
+                    + (f" Pega en los papeles ligados a {nombre}" + (" y, por contagio, en los bonos argentinos." if contagia else ".") if efectos else ""))
+            out.append({"tema": f"pais_{cod}_{lado}", "nombre": f"{nombre}: {'sacudón' if d < 0 else 'alivio'}", "explica": expl,
+                        "efectos": efectos, "n": len(unicos), "fuerza": round(min(0.5, 0.3 + 0.02 * (len(unicos) - minimo)), 2),
+                        "titulares": [{"titulo": n["titulo"], "link": n.get("link"), "fuente": n.get("fuente")} for n in unicos[:5]]})
+    return out
 
 
 def claves_empresas(emisores: dict) -> dict[str, list[str]]:
