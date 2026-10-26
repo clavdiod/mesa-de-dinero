@@ -93,8 +93,11 @@ def lideres_sector(etfs: dict[str, list[list]], fecha: str, n: int = 3, ventana:
 
 
 # ---------- prueba con la historia ----------
+REALISTA = True  # entrar el día hábil siguiente al dato (el mismo día sería usar información que todavía no se tenía)
+
+
 def _ret(serie: list[list], fecha: str, h: int) -> float | None:
-    idx = next((i for i, (f, _) in enumerate(serie) if f >= fecha), None)
+    idx = next((i for i, (f, _) in enumerate(serie) if (f > fecha if REALISTA else f >= fecha)), None)
     if idx is None or idx + h >= len(serie):
         return None
     r = (serie[idx + h][1] / serie[idx][1] - 1) * 100
@@ -133,9 +136,11 @@ def entrenar(precios: dict[str, list[list]], etfs: dict[str, list[list]], sector
             p_ahora, p_antes = h[i]["buy"] / tot(h[i]), h[i - 3]["buy"] / tot(h[i - 3])
             if p_ahora - p_antes >= 0.05 and tk in precios:
                 for hz in (20, 60):
-                    r = _ret(precios[tk], h[i]["fecha"], hz)
+                    # Nasdaq fecha la foto el día 1 pero puede ser la de fin de mes: se cuenta recién un mes después
+                    fe = (date.fromisoformat(h[i]["fecha"]) + timedelta(days=31)).isoformat() if REALISTA else h[i]["fecha"]
+                    r = _ret(precios[tk], fe, hz)
                     if r is not None:
-                        res["analistas"][hz].append((tk, h[i]["fecha"], r))
+                        res["analistas"][hz].append((tk, fe, r))
     # 2) insiders: desde la fecha en que se presentó (cuando el mercado se entera), una por papel y mes
     vistos = set()
     for c in insiders:

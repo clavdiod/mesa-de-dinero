@@ -69,7 +69,13 @@ def _rs(series: dict[str, list[dict]], fecha_idx: dict[str, dict[str, int]], fec
     return {tk: (k + 1) / n for k, tk in enumerate(orden)} if n >= 10 else {}
 
 
-def entrenar(series: dict[str, list[dict]], paso: int = 3) -> dict:
+def _p0(f: list[dict], i: int, realista: bool) -> float:
+    """Precio de entrada: la lista se arma después del cierre de EE.UU., así que lo primero que se puede comprar
+    es la apertura del día siguiente (comprar al cierre del día de la señal sería usar el futuro)."""
+    return (f[i + 1].get("o") or f[i + 1]["c"]) if realista else f[i]["c"]
+
+
+def entrenar(series: dict[str, list[dict]], paso: int = 3, realista: bool = True) -> dict:
     """Prueba cada estrategia en 5 años: retorno a 20 y 60 ruedas contra el promedio de todos los días."""
     idx = {tk: {x["fecha"]: k for k, x in enumerate(f)} for tk, f in series.items()}
     fechas = sorted({x["fecha"] for f in series.values() for x in f})
@@ -82,15 +88,18 @@ def entrenar(series: dict[str, list[dict]], paso: int = 3) -> dict:
             i = idx[tk].get(fe)
             if i is None or i + 60 >= len(f):
                 continue
+            p0 = _p0(f, i, realista)
+            if not p0:
+                continue
             for h in (20, 60):
-                base[h].append((f[i + h]["c"] / f[i]["c"] - 1) * 100)
+                base[h].append((f[i + h]["c"] / p0 - 1) * 100)
             for e in evaluar_dia(f, i, rs.get(tk)):
                 if n - ultimo.get((tk, e), -99) < 7:  # no contar 7 veces la misma subida
                     continue
                 ultimo[(tk, e)] = n
                 for h in (20, 60):
-                    res[e][h].append((f[i + h]["c"] / f[i]["c"] - 1) * 100)
-    out = {"base": {h: {"casos": len(v), "promedio": round(st.mean(v), 2), "acierto": round(sum(1 for x in v if x > 0) / len(v) * 100, 1)}
+                    res[e][h].append((f[i + h]["c"] / p0 - 1) * 100)
+    out = {"realista": realista, "base": {h: {"casos": len(v), "promedio": round(st.mean(v), 2), "acierto": round(sum(1 for x in v if x > 0) / len(v) * 100, 1)}
                     for h, v in base.items() if v}, "estrategias": {}}
     for e, hs in res.items():
         d = {}

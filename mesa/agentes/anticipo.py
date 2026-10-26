@@ -99,7 +99,7 @@ def contexto_mkt(fecha: str, spy: dict[str, float], vix: dict[str, float], btc: 
     return {"spy5": r5(spy), "vix": vix[fv[-1]] if fv else 20.0, "btc5": r5(btc)}
 
 
-def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, paso: int = 2) -> dict:
+def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, paso: int = 2, realista: bool = True) -> dict:
     """Aprende con el 70% inicial del tiempo y se prueba con el 30% final.
     Objetivo: ¿sube 5% o más (en algún cierre) en las 5 ruedas siguientes?"""
     filas = []
@@ -113,9 +113,13 @@ def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, pas
             x = rasgos(f, i, ctx_cache[fe])
             if x is None:
                 continue
-            futuro = max(y["c"] for y in f[i + 1: i + 1 + HORIZONTE]) / f[i]["c"] - 1
-            peor = min(y["c"] for y in f[i + 1: i + 1 + HORIZONTE]) / f[i]["c"] - 1
-            r5 = f[i + HORIZONTE]["c"] / f[i]["c"] - 1
+            # la lista sale al cierre: lo primero comprable es la apertura del día siguiente (sin "o", su cierre)
+            p0 = (f[i + 1].get("o") or f[i + 1]["c"]) if realista else f[i]["c"]
+            if not p0:
+                continue
+            futuro = max(y["c"] for y in f[i + 1: i + 1 + HORIZONTE]) / p0 - 1
+            peor = min(y["c"] for y in f[i + 1: i + 1 + HORIZONTE]) / p0 - 1
+            r5 = f[i + HORIZONTE]["c"] / p0 - 1
             filas.append((fe, tk, x, 1.0 if futuro * 100 >= META else 0.0, r5 * 100, 1.0 if peor * 100 <= -META else 0.0))
     if len(filas) < 2000:
         return {"activo": False, "motivo": f"Pocos casos ({len(filas)})."}
