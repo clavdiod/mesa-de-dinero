@@ -396,6 +396,8 @@ function filaPron(x) {
     ${x.texto ? `<div class="item-det tenue">${esc(x.texto)}</div>` : ""}</div>`;
 }
 let FILTRO_ORIG = null;
+const DIAS_SEM = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+function tituloDia(f) { if (f === HOY()) return "Hoy"; const d = new Date(f + "T12:00:00"); return `${DIAS_SEM[d.getDay()][0].toUpperCase() + DIAS_SEM[d.getDay()].slice(1)} ${fecha(f)}`; }
 const DIAS_PRON_ABIERTOS = new Set();
 function pintarPronosticos() {
   const box = $("#pronosticos"); if (!box) return;
@@ -414,8 +416,6 @@ function pintarPronosticos() {
     .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)) || (["en_curso", "esperando"].includes(b.estado) - ["en_curso", "esperando"].includes(a.estado))
       || String(b.hora || "").localeCompare(String(a.hora || "")));
   // agrupado por el día en que se sugirió, lo más nuevo arriba
-  const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
-  const tituloDia = (f) => { if (f === HOY()) return "Hoy"; const d = new Date(f + "T12:00:00"); return `${DIAS[d.getDay()][0].toUpperCase() + DIAS[d.getDay()].slice(1)} ${fecha(f)}`; };
   const porDia = []; for (const x of lista.slice(0, 80)) { const u = porDia[porDia.length - 1]; if (u && u[0] === x.fecha) u[1].push(x); else porDia.push([x.fecha, [x]]); }
   const listaHtml = porDia.map(([f, l]) => { const ok = l.filter((x) => x.estado === "se_dio").length, mal = l.filter((x) => ["fallo", "no_se_dio"].includes(x.estado)).length;
     const abierto = DIAS_PRON_ABIERTOS.has(f) || (!DIAS_PRON_ABIERTOS.size && f === porDia[0][0]);
@@ -635,14 +635,26 @@ function pintarAnticipos() {
     <div class="tabla-scroll"><table><tr><th>CEDEAR</th><th class="n">En NY</th><th class="n">CEDEAR</th><th class="n">Le falta</th></tr>
     ${at.slice(0, 12).map((a) => `<tr><td>${estrella(a.ticker, "Anticipo NY")}<span class="link" data-abrir-debate="${esc(a.ticker)}">${esc(a.ticker)}</span></td><td class="n">${pct(a.us, 1)}</td>
       <td class="n">${a.antes_de_abrir ? "<span class='tenue'>sin abrir</span>" : pct(a.cedear, 1)}</td><td class="n" style="color:var(--${col(a.atraso)})"><b>${pct(a.atraso, 1)}</b></td></tr>`).join("")}</table></div>` : "";
-  const p = li.prueba || {};
-  const tablaLi = (li.lista || []).length ? `<p class="tenue" style="margin-top:10px"><b>Para los próximos días</b> (lista del cierre ${esc(fecha(li.fecha))}): papeles con las señales que suelen aparecer antes de una suba de 5% o más en la semana.
+  const p = li.prueba || {}, prons = (e.pronosticos || []).filter((x) => x.origen === "anticipador");
+  const resumenDia = (l) => { const ok = l.filter((x) => x.estado === "se_dio").length, mal = l.filter((x) => ["fallo", "no_se_dio"].includes(x.estado)).length,
+    va = l.filter((x) => ["en_curso", "esperando"].includes(x.estado)).length; return `${l.length} sugerido${l.length > 1 ? "s" : ""}${ok ? ` · ✅ ${ok}` : ""}${mal ? ` · ❌ ${mal}` : ""}${va ? ` · ⏳ ${va}` : ""}`; };
+  const filaAnt = (tk, pr, extra) => { const [c, eq] = pr ? ESTADO_PRON[pr.estado] || ["", ""] : ["", ""];
+    return `<div class="agente"><b>${estrella(tk, "Anticipador")}<span class="link" data-abrir-debate="${esc(tk)}">${esc(tk)}</span>${extra.prob ? `<br><span class="tenue">${num(extra.prob * 100, 0)}%</span>` : ""}</b>
+      <span>${extra.txt ? esc(extra.txt) : ""}${extra.fr ? ' <span class="chip rojo">entre los más débiles: pesa la mitad</span>' : ""}${pr ? `${extra.txt ? "<br>" : ""}<span class="chip ${c}">${eq}</span> ${pr.ref ? `desde ${num(pr.ref)}: va ${pct(pr.ahora_pct, 1)}, mejor ${pct(pr.mejor, 1)}` : ""}` : ""}</span></div>`; };
+  // la lista vigente (la del último cierre, para hoy y los próximos días) + las de días anteriores con su resultado
+  const dias = [];
+  if ((li.lista || []).length) {
+    const l = li.lista.slice(0, 10), prs = l.map((x) => prons.find((y) => y.ticker === x.ticker && y.fecha === li.fecha)).filter(Boolean);
+    dias.push([li.fecha, (li.fecha === HOY() ? "📌 Para mañana · lista de hoy al cierre" : `📌 Para hoy · lista del ${esc(tituloDia(li.fecha).toLowerCase())}`), resumenDia(prs.length ? prs : l),
+      l.map((x) => filaAnt(x.ticker, prons.find((y) => y.ticker === x.ticker && y.fecha === li.fecha), { prob: x.prob, txt: (x.razones || []).join(" · ") || "combinación de precursores", fr: x.fr_contra })).join("")]);
+  }
+  const otras = {}; prons.filter((x) => x.fecha !== li.fecha).forEach((x) => (otras[x.fecha] ||= []).push(x));
+  Object.keys(otras).sort().reverse().slice(0, 6).forEach((f) => { const l = otras[f].sort((a, b) => (b.mejor || 0) - (a.mejor || 0));
+    dias.push([f, `Sugeridos el ${esc(tituloDia(f).toLowerCase())}`, resumenDia(l), l.map((x) => filaAnt(x.ticker, x, { prob: x.prob })).join("")]); });
+  const tablaLi = dias.length ? `<p class="tenue" style="margin-top:10px"><b>Para los próximos días:</b> papeles con las señales que suelen aparecer antes de una suba de 5% o más en la semana.
       ${p.base_pct ? `En la prueba con datos que no vio, de cada 100 marcados subieron así ${num(p.top10_pct, 0)}, contra ${num(p.base_pct, 0)} al azar.` : ""}${li.activo ? "" : " (todavía no supera la prueba: solo informativo)"}</p>
-    ${li.lista.slice(0, 10).map((x) => { const pr = (ESTADO.estado?.pronosticos || []).find((p) => p.origen === "anticipador" && p.ticker === x.ticker && p.fecha === li.fecha);
-      const [c, e] = pr ? ESTADO_PRON[pr.estado] || ["", ""] : ["", ""];
-      return `<div class="agente"><b>${estrella(x.ticker, "Anticipador")}<span class="link" data-abrir-debate="${esc(x.ticker)}">${esc(x.ticker)}</span><br><span class="tenue">${num(x.prob * 100, 0)}%</span></b>
-        <span>${esc((x.razones || []).join(" · ") || "combinación de precursores")}${x.fr_contra ? ' <span class="chip rojo">entre los más débiles: pesa la mitad</span>' : ""}${pr ? `<br><span class="chip ${c}">${e}</span> ${pr.ref ? `desde ${num(pr.ref)}: va ${pct(pr.ahora_pct, 1)}, mejor ${pct(pr.mejor, 1)}` : ""}` : ""}</span></div>`; }).join("")}
-    <p><button class="chico" data-ir-pron="anticipador">📋 Ver cómo van los pronósticos del Anticipador</button></p>` : "";
+    ${dias.map(([f, tit, res, filas], k) => `<details class="dia-pron" ${k === 0 ? "open" : ""}><summary><b>${tit}</b> <span class="tenue">· ${res}</span></summary>${filas}</details>`).join("")}
+    <p><button class="chico" data-ir-pron="anticipador">📋 Ver todos los pronósticos del Anticipador</button></p>` : "";
   const pl = es?.plazos?.al_cierre;
   const est = pl?.casos ? `<p class="tenue" style="margin-top:8px">Estadística propia de los anticipos (desde ${esc(fecha(es.desde))}): acertaron ${num(pl.aciertos / pl.casos * 100, 0)}% de ${pl.casos}, ${pct(pl.suma_ret / pl.casos, 2)} promedio hasta el cierre.</p>` : "";
   $("#anticipos").innerHTML = `<h2>⏩ Anticipos <span class="hora">· ${esc(e.hora || "")}</span></h2><div class="card eco">${tablaAt}${tablaLi}${est}</div>`;
