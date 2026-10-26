@@ -36,9 +36,9 @@ FUENTES_RSS = [
     "https://www.iproup.com/rss",
 ]
 # búsquedas en Google Noticias (agrupa Reuters, Bloomberg, AP, FT, WSJ y diarios locales)
-BUSQUEDAS_EN = ["oil prices Middle East", "Strait of Hormuz", "OPEC output", "Federal Reserve rates", "tariffs trade war",
+BUSQUEDAS_EN = ["Brazil markets real Bovespa", "oil prices Middle East", "Strait of Hormuz", "OPEC output", "Federal Reserve rates", "tariffs trade war",
                 "China stimulus", "stock market today", "Reuters business"]
-BUSQUEDAS_ES = ["petróleo Medio Oriente", "Wall Street hoy", "empresa cierra sucursales Argentina", "despidos empresa Argentina",
+BUSQUEDAS_ES = ["Brasil mercados real Bovespa", "elecciones Brasil mercados", "petróleo Medio Oriente", "Wall Street hoy", "empresa cierra sucursales Argentina", "despidos empresa Argentina",
                 "Vaca Muerta inversión", "nuevo desarrollo empresa argentina"]
 FUENTES_GRANDES = ("reuters", "bloomberg", "cnbc", "bbc", "financial times", "wsj", "wall street journal", "ap news", "associated press",
                    "ámbito", "ambito", "cronista", "infobae", "la nación", "lanacion", "clarín", "clarin")
@@ -46,6 +46,7 @@ FUENTES_GRANDES = ("reuters", "bloomberg", "cnbc", "bbc", "financial times", "ws
 PETROLEO = ["YPFD", "VIST", "PAMP", "XOM", "CVX", "OXY", "PBR", "SLB"]
 ORO = ["GLD", "GOLD", "NEM"]
 DEFENSA = ["LMT", "RTX", "NOC"]
+BRASIL = ["PBR", "VALE", "ITUB", "BBD", "NU", "XP", "STNE", "PAGS", "MELI", "EWZ", "ERJ", "SID", "GGB", "BSBR", "ABEV"]
 INDICES = ["SPY", "QQQ", "DIA"]
 EMERGENTES = ["EWZ", "GGAL", "BMA", "YPFD"]
 
@@ -100,6 +101,15 @@ TEMAS = [
     ("sequia", "Sequía / problemas en la cosecha argentina",
      [_r(r"sequ[ií]a|drought|helada|inundaci"), _r(r"campo|cosecha|soja|ma[ií]z|trigo|agro|crop|harvest")], {"CRES": -1}, 0.3,
      "Menos cosecha: menos dólares y pierde el agro."),
+    ("brasil_crisis", "Brasil: cae la bolsa o se desploma el real",
+     [_r(r"brasil|brazil|bovespa|ibovespa|\breal brasile|brazilian real|lula|bolsonaro"),
+      _r(r"desplom|derrumb|hunde|se cae|caen|cae |p[aá]nico|crisis|plunge|slump|tumble|sell-?off|crash|sink|devalu|d[eé]ficit|fiscal|deuda p[uú]blica|record low|m[ií]nimo hist")],
+     {**{t: -1 for t in BRASIL}, "TXAR": -1, "ALUA": -1}, 0.45,
+     "Brasil es el principal socio comercial de Argentina: si se cae su bolsa o su moneda, pierden las empresas brasileñas (Petrobras, Vale, bancos, Nubank, MercadoLibre) y las argentinas que le venden (acero, aluminio, autos)."),
+    ("brasil_alivio", "Brasil: rebota la bolsa o se fortalece el real",
+     [_r(r"brasil|brazil|bovespa|ibovespa|\breal brasile|brazilian real"),
+      _r(r"rebot|recuper|sube|suben|repunt|r[eé]cord|rall|rebound|recover|surge|jump|soar|ajuste fiscal|fiscal (plan|package|deal)")],
+     {t: 1 for t in BRASIL}, 0.35, "Se calma Brasil: rebotan las brasileñas y MercadoLibre."),
     ("huracan_golfo", "Huracán en el Golfo de México",
      [_r(r"hurac[aá]n|hurricane|tormenta tropical|tropical storm"), _r(r"golfo de m[eé]xico|gulf of mexico|texas|louisiana|luisiana")],
      {t: 1 for t in ["XOM", "CVX", "OXY", "YPFD", "VIST"]}, 0.25, "Un huracán frena pozos y refinerías del Golfo: sube el crudo."),
