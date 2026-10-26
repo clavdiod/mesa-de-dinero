@@ -101,7 +101,7 @@ def _leccion_pron(x: dict) -> str:
     extra = f"; llegó a {_r(mejor)}% en el mejor momento" if isinstance(mejor, (int, float)) else ""
     lec = {"se_dio": "esta herramienta acertó con este papel", "fallo": "con este papel la señal falló: tomarla con más cuidado",
            "no_se_dio": "no reaccionó en el plazo"}.get(x["estado"], "")
-    return f"{org} lo marcó el {fecha_corta(x['fecha'])} (objetivo {x.get('objetivo_pct', 0):+.0f}%): {ESTADO_PRON.get(x['estado'], x['estado'])}{extra}. Lección: {lec}."
+    return f"{org} lo marcó el {fecha_corta(x['fecha'])} (objetivo {_r(x.get('objetivo_pct') or 0)}%): {ESTADO_PRON.get(x['estado'], x['estado'])}{extra}. Lección: {lec}."
 
 
 def memoria(props: list[dict], libreta: list[dict], maximo: int = 6) -> dict[str, list[dict]]:
