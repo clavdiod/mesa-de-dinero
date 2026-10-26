@@ -16,5 +16,9 @@ if not pl.get("precios_usd"):
     a.put("profesionales/lista", pl)
     print("::notice::USD " + json.dumps(pu))
 est = a.get("ui/estado") or {}
+import os
+solo = os.environ.get("TK", "LRCX,IBB,IREN").split(",")
 for k, x in (est.get("proyeccion_cartera") or {}).items():
+    if k not in solo:
+        continue
     print(f"::notice::{est.get('hora')} {k} | {x.get('consejo')} | {x.get('motivo')} | obj {x.get('objetivo')} ({x.get('potencial_pct')}) {x.get('fuente_objetivo')} | piso {x.get('piso')} ({x.get('a_piso_pct')}) | rango {x.get('rango_1m')} | {x.get('proyeccion')} | res {x.get('resultado_pct')} | precio {x.get('precio')}")
