@@ -802,6 +802,12 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         previo_c = {} if simular else (almacen.get("ui/estado") or {}).get("comite") or {}
         actas = [a for a in (previo_c.get("acta") or []) if previo_c.get("fecha") == hoy.isoformat() and a["ticker"] not in {x["ticker"] for x in acta}]
         comite_estado = {"fecha": hoy.isoformat(), "hora": ctx.hora, "pesos": pesos_v, "acta": (acta + actas)[:20]}
+        # historial por día (lo de hoy pisa lo de hoy): para entrar por fecha y ver qué se votó
+        hist_c = {k: v for k, v in (previo_c.get("historial") or {}).items() if k != hoy.isoformat()}
+        if comite_estado["acta"]:
+            hist_c[hoy.isoformat()] = [{**{k: a[k] for k in ("ticker", "aprobada", "favor", "contra", "motivo", "ruedas")},
+                                        "votos": a["votos"][:5]} for a in comite_estado["acta"]]
+        comite_estado["historial"] = dict(sorted(hist_c.items())[-15:])
     except Exception as ex:
         print(f"[comite] {ex}")
         elegidos = con_ia.jefe(ia, debatidos, cupo, contexto_txt)

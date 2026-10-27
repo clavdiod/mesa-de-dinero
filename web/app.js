@@ -130,8 +130,8 @@ let PLEG_ABIERTOS = new Set();
 try { PLEG_ABIERTOS = new Set(JSON.parse(localStorage.getItem("mesa_plegables") || "[]")); } catch (_) {}
 const guardarPleg = () => { try { localStorage.setItem("mesa_plegables", JSON.stringify([...PLEG_ABIERTOS])); } catch (_) {} };
 const RESUMEN_PLEG = {
-  "comite": () => { const a = ESTADO.estado?.comite?.acta || []; const ok = a.filter((x) => x.aprobada);
-    return `${a.length} votado${a.length === 1 ? "" : "s"} · ${ok.length ? "aprobado: " + ok.map((x) => x.ticker).join(", ") : "ninguno aprobado"}`; },
+  "comite": () => { const c = ESTADO.estado?.comite || {}, a = c.fecha === HOY() ? c.acta || [] : []; const ok = a.filter((x) => x.aprobada);
+    return ok.length ? "aprobado: " + ok.map((x) => x.ticker).join(", ") + (a.length > ok.length ? ` · ${a.length - ok.length} filtradas` : "") : `ninguno aprobado hoy${a.length ? ` · ${a.length} filtradas` : ""}`; },
   "radar-ganadores": () => radarGanadores().slice(0, 3).map((x) => `${x.ticker} (${x.n})`).join(" · "),
   "cobros-hoy": () => { const c = (ESTADO.estado?.cobros || []).filter((x) => x.fecha >= HOY()).sort((a, b) => a.fecha.localeCompare(b.fecha))[0];
     return c ? `próximo ${diaTxt(c.fecha)} · ${c.ticker}${c.total != null ? " " + plataMon(c.total, c.moneda) : ""}` : ""; },
@@ -852,17 +852,23 @@ const NOMBRE_REGLA_MIN = { acumula: "Acumula reservas", pierde: "Pierde reservas
 function pintarComite() {
   const box = $("#comite"); if (!box) return;
   const c = ESTADO.estado?.comite || {};
-  if (c.fecha !== HOY() || !(c.acta || []).length) { box.innerHTML = ""; return; }
+  const hoyActa = c.fecha === HOY() ? c.acta || [] : [];
+  const hist = Object.entries(c.historial || {}).filter(([f]) => f !== HOY()).sort((a, b) => b[0].localeCompare(a[0]));
+  if (!hoyActa.length && !hist.length) { box.innerHTML = ""; return; }
   const x = (p) => "x" + num(p, 1);
   const fila = (a) => `<div class="rg-fila"><span class="rg-n" style="${a.aprobada ? "" : "background:var(--borde);color:var(--tenue)"}">${a.aprobada ? "✔" : "✕"}</span><div>
     ${estrella(a.ticker, "Comité")}<b class="link" data-abrir-debate="${esc(a.ticker)}">${esc(a.ticker)}</b>
     <span class="tenue">· a favor ${num(a.favor, 1)} · en contra ${num(a.contra, 1)}${a.ruedas ? ` · plazo ${a.ruedas} ruedas` : ""}</span>
     <div class="tiras" style="margin-top:4px">${(a.votos || []).map((v) => `<span class="chip chico2 ${v.voto > 0 ? "verde" : "rojo"}" title="${esc(v.texto || "")}">${v.voto > 0 ? "▲" : "▼"} ${esc(v.nombre)} ${x(v.peso)}</span>`).join("")}</div>
     ${a.aprobada ? "" : `<div class="tenue" style="font-size:13px;margin-top:2px">${esc(a.motivo || "")}</div>`}</div></div>`;
+  const bloque = (acta) => { const ok = acta.filter((a) => a.aprobada), no = acta.filter((a) => !a.aprobada);
+    return (ok.length ? ok.map(fila).join("") : '<p class="tenue">Ninguna aprobada.</p>')
+      + (no.length ? `<details><summary>Filtradas · ${no.length}</summary>${no.map(fila).join("")}</details>` : ""); };
   const pes = Object.entries(c.pesos || {}).sort((a, b) => b[1].peso - a[1].peso);
   box.innerHTML = `<h2>🗳️ Comité <span class="hora">· ${esc(c.hora || "")}</span></h2><div class="card">
-    <p class="tenue" style="margin-top:0">Los analistas votan cada candidato que pasó Riesgo. Cada voto pesa según cuánto acertó de verdad (x1 = como tirar una moneda). Se aprueba con 2 o más a favor y al menos 1,6 veces más peso a favor que en contra.</p>
-    ${c.acta.map(fila).join("")}
+    <p class="tenue" style="margin-top:0">Solo se muestran las que el Comité aprobó (2 o más a favor y al menos 1,6 veces más peso a favor). Cada voto pesa según cuánto acertó de verdad.</p>
+    ${hoyActa.length ? bloque(hoyActa) : '<p class="tenue">Hoy todavía no votó nada.</p>'}
+    ${hist.length ? `<details><summary>Días anteriores</summary>${hist.map(([f, acta]) => `<details class="dia-pron"><summary><b>${esc(tituloDia(f))}</b> <span class="tenue">· ${acta.filter((a) => a.aprobada).length} aprobada${acta.filter((a) => a.aprobada).length === 1 ? "" : "s"} · ${acta.filter((a) => !a.aprobada).length} filtradas</span></summary>${bloque(acta)}</details>`).join("")}</details>` : ""}
     ${pes.length ? `<details><summary>Peso de cada analista hoy</summary>${pes.map(([k, p]) => `<div class="evento"><span class="ev-ic">⚖️</span><span><b>${esc(nombreAg(k))}</b> ${x(p.peso)} <span class="tenue">· acertó ${p.acierto}% de ${p.casos} (${esc(p.fuente)})</span></span></div>`).join("")}</details>` : ""}</div>`;
 }
 
