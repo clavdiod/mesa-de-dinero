@@ -13,7 +13,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 ORIGENES = {"anticipador": "Anticipador (días antes)", "anticipo": "Anticipo Nueva York (horas antes)",
-            "mundo": "Corresponsal (noticias)", "ganadores": "Cazador de ganadores", "profesionales": "Herramientas de Wall Street", "jefe": "Propuesta del Jefe", "oportunidad": "Oportunidad confirmada"}
+            "mundo": "Corresponsal (noticias)", "ganadores": "Cazador de ganadores", "profesionales": "Herramientas de Wall Street", "jefe": "Comité", "oportunidad": "Oportunidad confirmada"}
 MAX = 600
 
 

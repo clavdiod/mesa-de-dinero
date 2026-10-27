@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: "2026-10-27"
+  caso: "El Jefe casi no sumaba: lo reemplaza un Comité que vota"
+  que_paso: "Sin IA disponible, el Jefe elegía 'por puntaje': ordenaba la suma de votos y nada más. Mientras tanto, los anticipadores venían acertando mucho más que el resto, pero sus votos pesaban igual que los de cualquiera."
+  leccion: "Una decisión de mesa tiene que mostrar quién votó qué, y el voto de cada uno tiene que pesar según lo que acertó de verdad."
+  cambio: "Nace el Comité: vota cada candidato que pasó Riesgo. Cada voto pesa entre x0,4 y x2 según su acierto en vivo (los anticipadores por su libreta de pronósticos, el resto por sus señales a 10 ruedas). Se aprueba con 2 o más analistas a favor y al menos 1,6 veces más peso a favor que en contra. El modelo de combinaciones deja de filtrar y pasa a ser un voto más. La conclusión dice quién votó qué y el plazo para tenerla; Riesgo sigue con veto. Además, Mi cartera tiene seguimiento diario con plazo, qué cambió hoy y un cartel para decidir (la decisión es tuya)."
+- fecha: "2026-10-27"
   caso: "BAK: la diferencia entre compra y venta era 5,9% y la mesa medía como si fuera gratis"
   que_paso: "La mesa marcó BAK por el Anticipo NY (le faltaba +8,2%) pero la diferencia entre la punta compradora y la vendedora era 5,9%. Entrar y salir enseguida costaba más de 7% con la comisión: el anticipo casi no dejaba nada. Además, las pruebas con la historia se miraban sumando todos los años juntos."
   leccion: "En papeles que operan poco, la diferencia entre compra y venta es un costo tan real como la comisión. Y una herramienta que gana solo en un año bueno no está probada."

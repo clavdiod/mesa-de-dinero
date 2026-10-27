@@ -174,8 +174,8 @@ async function textoAviso(env) {
   const [estado, alertas, props] = await Promise.all([leer(env, "ui/estado", {}), leer(env, "ui/alertas", []), leer(env, "registro/propuestas", [])]);
   const nuevas = estado.nuevas || [], p = props.find((x) => nuevas.includes(x.id)), a = alertas[0];
   const n = (x) => Number(x).toLocaleString("es-AR", { maximumFractionDigits: 2 });
-  if (p) return { importante: true, titulo: `🔔 Comprar ${p.ticker} con límite ${n(p.plan.entrada)}`,
-    cuerpo: `Objetivo ${n(p.plan.objetivo)} · stop ${n(p.plan.stop)}. ${nuevas.length > 1 ? `(+${nuevas.length - 1} más) ` : ""}Entrá para ver el debate y decidir.` };
+  if (p) return { importante: true, titulo: `🗳️ Comité: comprar ${p.ticker} con límite ${n(p.plan.entrada)}`,
+    cuerpo: `Objetivo ${n(p.plan.objetivo)} · stop ${n(p.plan.stop)}${p.ruedas ? ` · plazo ${p.ruedas} ruedas` : ""}. ${nuevas.length > 1 ? `(+${nuevas.length - 1} más) ` : ""}Entrá para ver los votos y decidir.` };
   if (a) { const imp = /salir|stop|balance|cancel/i.test(a.texto); return { importante: imp, titulo: `${imp ? "⚠️ " : ""}${a.ticker}`, cuerpo: a.texto }; }
   return { importante: false, titulo: "Mesa de dinero", cuerpo: "Hay novedades en la mesa." };
 }

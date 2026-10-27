@@ -219,7 +219,7 @@ def _radar_investigar(ctx, almacen, hoy, alertas: list[dict], por_ticker: dict) 
     from .nucleo.config import emisores
     nombres = {"tecnico": "Técnico", "historiador": "Historiador", "fuerza_relativa": "Fuerza relativa", "volumen_flujo": "Volumen y flujo",
                "economista": "Economista", "wallstreet": "Wall Street", "cripto": "Cripto", "adr": "Noche de Nueva York", "panico": "Comprador de pánico",
-               "mundo": "Corresponsal (mundo)", "ministro": "Ministro (política económica)", "ganadores": "Cazador de ganadores", "profesionales": "Herramientas de Wall Street", "acciones": "Acciones", "cedears": "CEDEARs", "soberanos": "Soberanos", "ons": "ONs", "macro_dolar": "Macro / dólar",
+               "mundo": "Corresponsal (mundo)", "ministro": "Ministro (política económica)", "ganadores": "Cazador de ganadores", "profesionales": "Herramientas de Wall Street", "combinaciones": "Combinaciones (historia)", "acciones": "Acciones", "cedears": "CEDEARs", "soberanos": "Soberanos", "ons": "ONs", "macro_dolar": "Macro / dólar",
                "noticias": "Noticias", "hechos_emisor": "Hechos del emisor", "calificadoras": "Calificadoras",
                "oportunidades_corto": "Oportunidades (corto)", "oportunidades_mediano": "Oportunidades (mediano)"}
     cache_n = almacen.get(f"radar/noticias/{hoy.isoformat()}") or {}
@@ -768,7 +768,14 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                     if s_.get("direccion") and abs(s_["direccion"] * s_["fuerza"]) > abs(sen.get(s_["agente"], 0)):
                         sen[s_["agente"]] = s_["direccion"] * s_["fuerza"]
                 e["prob_modelo"] = combinador.probabilidad(modelo, sen, cx)
-            debatidos = [e for e in debatidos if (e.get("prob_modelo") or 0) >= modelo.get("umbral", 0.5)]
+            # ya no filtra: es un voto más en el Comité (lo que aprendió de combinaciones parecidas en la historia)
+            for e in debatidos:
+                pm = e.get("prob_modelo")
+                if pm is not None:
+                    a_fav = pm >= modelo.get("umbral", 0.5)
+                    e["senales"].append({"agente": "combinaciones", "ticker": e["ticker"], "direccion": 1 if a_fav else -1, "fuerza": 0.5,
+                                         "texto": f"En la historia, combinaciones de analistas parecidas ganaron más que la comisión a 20 ruedas "
+                                                  f"el {pm * 100:.0f}% de las veces ({'a favor' if a_fav else 'no alcanza'})."})
         except Exception as ex:
             print(f"[jefe-modelo] {ex}")
     # protecciones automáticas: frenos fijos que el Jefe no puede discutir (racha de stops, mala semana, penitencia)
@@ -785,7 +792,19 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         prot["frenados_hoy"] = castigados
     except Exception as ex:
         print(f"[protecciones] {ex}")
-    elegidos = con_ia.jefe(ia, debatidos, cupo, contexto_txt)
+    # el Comité: votan los analistas, cada uno con el peso de lo que acertó de verdad (reemplaza al Jefe)
+    comite_estado = {}
+    try:
+        from .agentes import comite as _com
+        pesos_v = _com.pesos_vivos([] if simular else (almacen.get("pronosticos/libreta") or []),
+                                   {} if simular else (almacen.get("ranking/stats") or {}))
+        elegidos, acta = _com.decidir(debatidos, pesos_v, cupo)
+        previo_c = {} if simular else (almacen.get("ui/estado") or {}).get("comite") or {}
+        actas = [a for a in (previo_c.get("acta") or []) if previo_c.get("fecha") == hoy.isoformat() and a["ticker"] not in {x["ticker"] for x in acta}]
+        comite_estado = {"fecha": hoy.isoformat(), "hora": ctx.hora, "pesos": pesos_v, "acta": (acta + actas)[:20]}
+    except Exception as ex:
+        print(f"[comite] {ex}")
+        elegidos = con_ia.jefe(ia, debatidos, cupo, contexto_txt)
     ids_elegidos = {e["id"] for e in elegidos}
     for e in debatidos:
         if e["id"] not in ids_elegidos:
@@ -987,6 +1006,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "ganadores": ctx.extra.get("ganadores"),
         "profesionales": ctx.extra.get("profesionales"),
         "protecciones": prot,
+        "comite": comite_estado,
         "proyeccion_cartera": proy_cartera,
         "seguimiento_cartera": seg_cartera,
         "memoria": None if simular else (almacen.get("memoria/papeles") or {}),
