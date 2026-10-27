@@ -122,7 +122,7 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
                     fuente = "techo normal a 1 mes (no hay un máximo reciente arriba)"
                 objetivo = rg[1]
             # tu propio stop (una alerta de baja que dice "stop") manda sobre el técnico
-            mio = [al for al in (alertas or {}).get(tk, []) if al.get("tipo") == "baja" and "stop" in str(al.get("nota", "")).lower()
+            mio = [al for al in (alertas or {}).get(tk, []) if al.get("tipo") == "baja" and "stop" in str(al.get("nota", "")).lower() and "cerca" not in str(al.get("nota", "")).lower()
                    and al.get("moneda", "ARS") == "ARS" and al.get("nivel")]
             if mio:
                 piso = max(float(al["nivel"]) for al in mio)
