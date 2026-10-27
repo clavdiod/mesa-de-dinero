@@ -33,7 +33,7 @@ function mercadoAbierto() {
   return d >= 1 && d <= 5 && m >= 630 && m <= 1020;
 }
 
-let ESTADO = {}, PROPS = [], USUARIO = { lista: [], cartera: [], ons: {}, capital: {} };
+let ESTADO = {}, PROPS = [], USUARIO = { lista: [], cartera: [], ons: {}, capital: {}, decisiones: {}, operaciones: [] };
 
 // ---------- propuestas ----------
 const CONSEJO_TXT = { mantener: "Mantener", subir_stop: "Subir el stop", salir: "Salir", antes_balance: "Ojo, balance", cerca_stop: "Cerca del stop", cancelar: "Cancelar la orden", esperar: "Esperando precio" };
@@ -449,6 +449,88 @@ function alertasItem(x, i) {
     </details></div>`;
 }
 
+
+// ---------- seguimiento diario de lo que tenés: plazo, qué cambió hoy y decidir (la decisión es tuya) ----------
+const NOM_ACC = { mantener: "Mantener", subir_stop: "Subir el stop", vender_mitad: "Vender la mitad", vender_todo: "Vender todo" };
+const decidioHoy = (tk, acc) => { const d = USUARIO.decisiones?.[tk]; return d && d.fecha === HOY() && (!acc || d.sugerida === acc); };
+function segCartera(tk) {
+  const g = (ESTADO.estado?.seguimiento_cartera || {})[tk]; if (!g) return "";
+  const pr = g.total ? Math.min(100, Math.round((g.dias || 0) / g.total * 100)) : 0;
+  const d = USUARIO.decisiones?.[tk], hoyDec = d && d.fecha === HOY();
+  return `<div class="seg">
+    ${g.total ? `<div class="fila"><b>Día ${g.dias} de ${g.total}</b><span class="tenue">hasta el ${esc(fecha(g.vence))}${g.plazo_cumplido ? " · <b>plazo cumplido</b>" : ""}</span></div>
+      <div class="barra-plazo"><i style="width:${pr}%;${g.plazo_cumplido ? "background:var(--amar)" : ""}"></i></div><div class="tenue" style="font-size:12px">${esc(g.plazo_motivo || "")}</div>`
+      : '<div class="tenue">Sin fecha de compra: cargala de nuevo con fecha para seguir el plazo.</div>'}
+    <div class="item-det"><b>Hoy:</b> ${g.cambios.map(esc).join(" ")}</div>
+    <div class="item-det">Sugerido: <span class="chip ${g.sugerida === "vender_todo" ? "rojo" : g.sugerida === "mantener" ? "verde" : "amar"}"><b>${NOM_ACC[g.sugerida]}</b></span> ${esc(g.por_que || "")}</div>
+    ${hoyDec ? `<div class="item-det">✔ Hoy decidiste: <b>${esc(NOM_ACC[d.accion] || d.accion)}</b>${d.detalle ? ` (${esc(d.detalle)})` : ""}</div>` : ""}
+    <button class="chico ${hoyDec ? "" : "prim"}" data-decidir="${esc(tk)}" style="margin-top:6px">${hoyDec ? "Cambiar decisión" : "Decidir"}</button></div>`;
+}
+function abrirDecidir(tk) {
+  const g = (ESTADO.estado?.seguimiento_cartera || {})[tk]; if (!g) return;
+  const caja = $("#decidir");
+  caja.innerHTML = `<div class="fila"><b style="font-size:18px">${esc(tk)}</b><span class="tenue">${g.cantidad} · compra ${num(g.compra)} · ahora ${num(g.precio)} ${g.resultado_pct != null ? `(${pct(g.resultado_pct, 1)})` : ""}</span></div>
+    ${g.total ? `<p class="tenue" style="margin:4px 0">Día ${g.dias} de ${g.total} (hasta el ${esc(fecha(g.vence))}).</p>` : ""}
+    <p style="margin:6px 0"><b>Hoy:</b> ${g.cambios.map(esc).join(" ")}</p>
+    ${g.compra_punta ? `<p class="tenue">⚠️ ${esc(g.compra_punta)}</p>` : ""}
+    <div id="decidir-ops">${g.opciones.map((o, i) => `<button class="opcion ${o.sugerida ? "sug" : ""}" data-op="${i}"><b>${esc(NOM_ACC[o.accion])}</b>${o.sugerida ? ' <span class="chip verde">sugerido</span>' : ""}<small>${esc(o.texto)}</small></button>`).join("")}</div>
+    <div id="decidir-form"></div>
+    <p class="tenue" style="margin-bottom:0">La mesa no opera: lo hacés en tu broker y acá anotás lo que hiciste. <button class="chico" id="decidir-cerrar">Después</button></p>`;
+  $("#decidir-fondo").style.display = "";
+  $("#decidir-cerrar").onclick = cerrarDecidir;
+  caja.querySelectorAll("[data-op]").forEach((b) => b.onclick = () => formDecidir(tk, g, g.opciones[+b.dataset.op]));
+}
+function cerrarDecidir() { $("#decidir-fondo").style.display = "none"; DECIDIR_POSPUESTOS.add(HOY()); }
+const DECIDIR_POSPUESTOS = new Set();
+function formDecidir(tk, g, o) {
+  const f = $("#decidir-form");
+  if (o.accion === "mantener") {
+    f.innerHTML = `<div class="card"><p style="margin-top:0">Mantenés <b>${esc(tk)}</b>. ${esc(o.texto)}</p><button class="prim" id="ok-dec" style="width:100%">Mantener</button></div>`;
+  } else if (o.accion === "subir_stop") {
+    f.innerHTML = `<div class="card"><label>Nuevo stop <input id="dec-nivel" inputmode="decimal" value="${String(o.nivel).replace(".", ",")}"></label>
+      <p class="tenue">Te queda como alerta al celular. En Cocos no hay orden stop: si te llega, vendés a mano.</p><button class="prim" id="ok-dec" style="width:100%">Subir el stop</button></div>`;
+  } else {
+    f.innerHTML = `<div class="card"><label>Cantidad que vendiste <input id="dec-cant" inputmode="numeric" value="${o.cantidad}"></label>
+      <label>Precio al que vendiste <input id="dec-precio" inputmode="decimal" value="${String(g.precio).replace(".", ",")}"></label>
+      <p class="tenue">Cargalo después de vender en tu broker (o con el precio de la orden que dejaste).</p><button class="prim" id="ok-dec" style="width:100%">Anotar la venta</button></div>`;
+  }
+  f.scrollIntoView({ behavior: "smooth" });
+  $("#ok-dec").onclick = async () => {
+    try {
+      let detalle = "";
+      if (o.accion === "subir_stop") {
+        const nivel = aNum($("#dec-nivel").value); if (!nivel) return toast("Poné el precio");
+        let it = USUARIO.lista.find((y) => y.ticker === tk); if (!it) { it = { ticker: tk, precio: g.compra, nota: "" }; USUARIO.lista.push(it); }
+        it.alertas = (it.alertas || []).filter((a) => !(a.tipo === "baja" && /stop/i.test(a.nota || "")));
+        it.alertas.push({ id: `stop-${Date.now().toString(36)}`, tipo: "baja", nivel, moneda: "ARS", creada: HOY(), nota: `Stop (lo subiste el ${fecha(HOY())}): salir.` });
+        await put("usuario/lista", USUARIO.lista); detalle = `stop en ${num(nivel)}`;
+      } else if (o.accion !== "mantener") {
+        const n = Math.round(aNum($("#dec-cant").value)), pv = aNum($("#dec-precio").value);
+        const i = USUARIO.cartera.findIndex((y) => String(y.ticker).toUpperCase() === tk); if (i < 0 || !n || !pv) return toast("Revisá cantidad y precio");
+        const pos = USUARIO.cartera[i], cant = Math.min(n, pos.cantidad);
+        USUARIO.operaciones.unshift({ fecha: HOY(), ticker: tk, cantidad: cant, precio: pv, compra: pos.precio, fecha_compra: pos.fecha || null,
+          resultado_pct: pos.precio ? Math.round((pv / pos.precio - 1) * 10000) / 100 : null, ganancia: pos.precio ? Math.round((pv - pos.precio) * cant) : null });
+        pos.cantidad -= cant; if (pos.cantidad <= 0) USUARIO.cartera.splice(i, 1);
+        await put("usuario/operaciones", USUARIO.operaciones.slice(0, 300)); await put("usuario/cartera", USUARIO.cartera);
+        detalle = `vendiste ${cant} a ${num(pv)}`;
+      }
+      USUARIO.decisiones[tk] = { fecha: HOY(), accion: o.accion, sugerida: g.sugerida, detalle };
+      await put("usuario/decisiones_cartera", USUARIO.decisiones);
+      $("#decidir-fondo").style.display = "none"; pintarUsuario(); toast("Anotado: " + (NOM_ACC[o.accion] || o.accion) + (detalle ? ` (${detalle})` : ""));
+      setTimeout(abrirDecisionPendiente, 400);
+    } catch (x) { toast("No se pudo guardar: " + x.message); }
+  };
+}
+// apenas entrás: si la mesa sugiere algo distinto de mantener y no decidiste hoy, aparece el cartel
+function abrirDecisionPendiente() {
+  if (DECIDIR_POSPUESTOS.has(HOY()) || $("#decidir-fondo").style.display !== "none") return;
+  const g = Object.values(ESTADO.estado?.seguimiento_cartera || {}).find((x) => x.sugerida !== "mantener" && !decidioHoy(x.ticker, x.sugerida)
+    && ESTADO.estado?.fecha === HOY());
+  if (g) abrirDecidir(g.ticker);
+}
+document.addEventListener("click", (ev) => { const b = ev.target.closest("[data-decidir]"); if (b) abrirDecidir(b.dataset.decidir); });
+$("#decidir-fondo").addEventListener("click", (ev) => { if (ev.target.id === "decidir-fondo") cerrarDecidir(); });
+
 // ---------- Mi lista, cartera, capital ----------
 function pintarUsuario() {
   const precios = ESTADO.estado?.precios || {};
@@ -469,6 +551,7 @@ function pintarUsuario() {
         <span class="item-precio">${num(u)}${r === null ? "" : ` <span class="chip ${color(r)}">${pct(r)}</span>`}</span>
         <button class="quitar" data-quitar-cartera="${i}" aria-label="Quitar ${esc(x.ticker)}">✕</button></div>
       <div class="item-det">${num(x.cantidad, 0)} nominales · compra ${num(x.precio)}${u ? "" : " · sin cotización en la ronda"}</div>
+      ${segCartera(x.ticker.toUpperCase())}
       ${(() => { const p = (ESTADO.estado?.proyeccion_cartera || {})[x.ticker.toUpperCase()]; if (!p) return "";
         const col = /Vender/.test(p.consejo) ? "rojo" : /Tomar|Vigilar/.test(p.consejo) ? "amar" : "verde";
         const lin = [p.objetivo ? `🎯 Objetivo <b>${num(p.objetivo)}</b> (${pct(p.potencial_pct, 1)})` : "",
@@ -483,6 +566,10 @@ function pintarUsuario() {
       ${(() => { const o = (ESTADO.estado?.opinion_cartera || {})[x.ticker.toUpperCase()]; if (!o) return "";
         return `<div class="item-det"><span class="chip ${o.veredicto === "a favor" ? "verde" : o.veredicto === "en contra" ? "rojo" : ""}">La mesa: ${esc(o.veredicto)}</span> ${o.favor} a favor · ${o.contra} en contra${o.balance ? ` · <b>balance el ${esc(fecha(o.balance))}</b>` : ""}</div>${o.principal ? `<div class="item-det">${esc(o.principal)}</div>` : ""}`; })()}</div>`;
   }).join("") : '<p class="tenue">Sin posiciones cargadas.</p>';
+  const ops = USUARIO.operaciones || [];
+  $("#operaciones").innerHTML = ops.length ? `<details class="dia-pron"><summary><b>📒 Ventas anotadas</b> <span class="tenue">· ${ops.length} · resultado ${plata(ops.reduce((a, o) => a + (o.ganancia || 0), 0))}</span></summary>
+    ${ops.slice(0, 40).map((o) => `<div class="evento"><span class="ev-ic">${(o.ganancia || 0) >= 0 ? "✅" : "❌"}</span><span><b>${esc(fecha(o.fecha))}</b> · ${esc(o.ticker)} ${o.cantidad} a ${num(o.precio)}
+      ${o.compra ? `<span class="tenue">(compra ${num(o.compra)}: ${pct(o.resultado_pct, 1)}, ${plata(o.ganancia)})</span>` : ""}</span></div>`).join("")}</details>` : "";
   const cap = USUARIO.capital || {};
   $("#capital-info").textContent = cap.monto_ars ? `1R = ${num(cap.monto_ars * (cap.riesgo_pct || 1) / 100, 0)} pesos de pérdida máxima por operación.` : "Si no lo cargás, se usa el de la configuración.";
   document.querySelectorAll("[data-quitar-alerta]").forEach((b) => b.onclick = async () => {
@@ -512,7 +599,7 @@ $("#form-lista").addEventListener("submit", async (ev) => {
 });
 $("#form-cartera").addEventListener("submit", async (ev) => {
   ev.preventDefault(); const d = leerForm(ev.target);
-  USUARIO.cartera.push({ ticker: d.ticker.trim().toUpperCase(), cantidad: aNum(d.cantidad), precio: aNum(d.precio) });
+  USUARIO.cartera.push({ ticker: d.ticker.trim().toUpperCase(), cantidad: aNum(d.cantidad), precio: aNum(d.precio), fecha: HOY() });
   await put("usuario/cartera", USUARIO.cartera); ev.target.reset(); pintarUsuario(); toast("Cartera actualizada");
 });
 $("#form-capital").addEventListener("submit", async (ev) => {
@@ -1317,7 +1404,10 @@ async function cargar() {
   try {
     [ESTADO, PROPS, USUARIO.lista, USUARIO.cartera, USUARIO.ons, USUARIO.capital] = await Promise.all([
       api("estado"), api("propuestas"), api("usuario/lista"), api("usuario/cartera"), api("usuario/ons"), api("usuario/capital")]);
+    try { const [dc, op] = await Promise.all([api("usuario/decisiones_cartera"), api("usuario/operaciones")]);
+      USUARIO.decisiones = Array.isArray(dc) ? {} : dc || {}; USUARIO.operaciones = Array.isArray(op) ? op : []; } catch (_) {}
     pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes(); pintarAnticipos(); pintarRadar(); pintarAviso();
+    setTimeout(abrirDecisionPendiente, 600);
     $("#login").style.display = "none"; $("#bloqueo").style.display = "none"; document.querySelector("main").style.display = "";
   } catch (e) {
     if (String(e.message).includes("bloqueada")) { mostrarBloqueo(); return; }

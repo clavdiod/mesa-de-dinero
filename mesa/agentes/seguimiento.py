@@ -72,6 +72,11 @@ def revisar(reg, ctx, por_ticker: dict, puntaje_fn) -> list[dict]:
     return alertas
 
 
+def _nom(a: str) -> str:
+    from .revision import nombre
+    return nombre(a)
+
+
 def opinion_cartera(ctx, cartera: list[dict], por_ticker: dict, puntaje_fn) -> dict:
     """Qué opina la mesa de cada cosa que tenés (sin stop ni objetivo: solo el pulso)."""
     out = {}
@@ -86,5 +91,7 @@ def opinion_cartera(ctx, cartera: list[dict], por_ticker: dict, puntaje_fn) -> d
         out[tk] = {"favor": sum(1 for s in sen if s.direccion > 0), "contra": sum(1 for s in sen if s.direccion < 0),
                    "puntaje": round(pj, 2), "veredicto": "a favor" if pj >= 0.5 else "en contra" if pj <= -0.5 else "neutral",
                    "principal": (max(sen, key=lambda s: s.fuerza).texto if sen else ""),
+                   "a_favor": sorted({_nom(s.agente) for s in sen if s.direccion > 0}),
+                   "en_contra": sorted({_nom(s.agente) for s in sen if s.direccion < 0}),
                    "balance": bal["fecha"] if bal else None}
     return out

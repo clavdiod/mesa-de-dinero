@@ -935,6 +935,21 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     except Exception as ex:
         print(f"[proyeccion] {ex}")
 
+    seg_cartera, avisos_cartera = {}, []
+    try:  # seguimiento diario de cada cosa que tenés: plazo, qué cambió hoy y opciones (la decisión es tuya)
+        from .agentes import seguimiento_cartera as segc
+        foto = {} if simular else (almacen.get("cartera/foto") or {})
+        ayer_f = foto if (foto.get("fecha") or "") < hoy.isoformat() else (foto.get("previa") or {})
+        avis = {} if simular else (almacen.get("cartera/avisados") or {})
+        antes_av = dict(avis)
+        seg_cartera, avisos_cartera = segc.armar(cartera, proy_cartera, opinion_cartera, reg.propuestas,
+                                                 [] if simular else (almacen.get("pronosticos/libreta") or []),
+                                                 ayer_f.get("tks") or {}, avis, hoy, ctx.hora)
+        if avis != antes_av and not simular:
+            almacen.put("cartera/avisados", avis)
+    except Exception as ex:
+        print(f"[seguimiento_cartera] {ex}")
+
     eventos_cal = _calendario(almacen, ctx, hoy, ops, abiertas, cartera, simular)  # antes del resumen: carga licitaciones y avisos
 
     resumen = {
@@ -973,6 +988,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "profesionales": ctx.extra.get("profesionales"),
         "protecciones": prot,
         "proyeccion_cartera": proy_cartera,
+        "seguimiento_cartera": seg_cartera,
         "memoria": None if simular else (almacen.get("memoria/papeles") or {}),
         "pronosticos": libreta[:200],
         "reunion": None if simular else almacen.get("revision/ultima"),
@@ -1003,6 +1019,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     alertas_lista = [a for a in alertas_seg + avisos_radar + _alertas_lista(ctx, lista) if (a["fecha"], a["ticker"]) not in ya_avisadas]
     alertas_lista += alertas_niv  # las de nivel avisan siempre (cada una una sola vez)
     alertas_lista += avisos_cobro  # cobros de hoy / mañana / la semana (una vez por día)
+    alertas_lista += avisos_cartera  # la sugerencia sobre algo que tenés cambió: decidir en la app
     if alertas_lista:
         almacen.put("ui/alertas", (alertas_lista + previas)[:60])
     consumo.guardar()

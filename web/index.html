@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icono.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icono-192.png">
-<link rel="stylesheet" href="estilo.css?v=20261026e">
+<link rel="stylesheet" href="estilo.css?v=20261027b">
 </head>
 <body>
 <header class="barra">
@@ -23,6 +23,7 @@
   </div>
 </header>
 <div id="aviso-global" style="display:none"></div>
+<div id="decidir-fondo" class="decidir-fondo" style="display:none"><div id="decidir" class="decidir card" role="dialog" aria-label="Decidir"></div></div>
 <div id="panel-avisos" class="panel-avisos" style="display:none" role="dialog" aria-label="Avisos">
   <div class="fila"><b>🔔 Avisos</b><button id="cerrar-avisos" class="chico">Cerrar</button></div>
   <div id="lista-avisos"></div>
@@ -138,6 +139,7 @@
       <button>Agregar</button>
     </form>
     <div id="cartera"></div>
+    <div id="operaciones"></div>
     <h2>Calendario</h2>
     <div class="tiras" id="cal-vista"><button class="chico prim" data-cal="cobros">Mis cobros</button><button class="chico" data-cal="eventos">Eventos</button></div>
     <div id="calendario"></div>
@@ -238,6 +240,6 @@
 </nav>
 
 <div id="toast" role="status"></div>
-<script src="app.js?v=20261027a"></script>
+<script src="app.js?v=20261027b"></script>
 </body>
 </html>

@@ -250,6 +250,15 @@ def diario(simular: bool = False) -> dict:
 
     reg = Registro(a)
     cambios = reg.actualizar_seguimiento(precios, hoy)
+    try:  # foto del seguimiento de tu cartera: mañana se compara contra esto ("qué cambió hoy")
+        sc = (a.get("ui/estado") or {}).get("seguimiento_cartera") or {}
+        if sc:
+            foto0 = a.get("cartera/foto") or {}
+            previa = foto0 if foto0.get("fecha") and foto0["fecha"] < hoy.isoformat() else foto0.get("previa")
+            a.put("cartera/foto", {"fecha": hoy.isoformat(), "tks": {tk: v.get("ahora") for tk, v in sc.items() if v.get("ahora")},
+                                   "previa": {k: v for k, v in (previa or {}).items() if k != "previa"}})
+    except Exception as ex:
+        print(f"[cierre] foto cartera: {ex}")
     try:  # memoria por papel: cada idea cerrada deja su lección para el próximo debate de ese papel
         from .nucleo import protecciones as _prot
         a.put("memoria/papeles", _prot.memoria(reg.propuestas, a.get("pronosticos/libreta") or []))

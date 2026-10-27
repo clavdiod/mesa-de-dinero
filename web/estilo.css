@@ -188,3 +188,12 @@ details.dia-pron > summary::-webkit-details-marker { display: none; }
 details.dia-pron > summary::after { content: "›"; margin-left: auto; color: var(--tenue); font-size: 20px; transition: transform .15s; }
 details.dia-pron[open] > summary::after { transform: rotate(90deg); }
 details.dia-pron[open] { padding-bottom: 8px; }
+
+.decidir-fondo { position: fixed; inset: 0; background: #0008; z-index: 30; display: grid; place-items: end center; }
+.decidir { width: min(560px, 100%); max-height: 88vh; overflow-y: auto; margin: 0; border-radius: 16px 16px 0 0; padding: 16px; }
+.opcion { display: block; width: 100%; text-align: left; margin: 8px 0; padding: 12px; border-radius: 12px; border: 1px solid var(--borde); background: var(--bg); color: var(--txt); font-size: 15px; }
+.opcion.sug { border: 2px solid var(--verde); }
+.opcion small { display: block; color: var(--tenue); margin-top: 2px; }
+.seg { margin: 6px 0 2px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--borde); font-size: 14px; }
+.barra-plazo { height: 6px; border-radius: 3px; background: var(--borde); margin: 6px 0; overflow: hidden; }
+.barra-plazo i { display: block; height: 100%; background: var(--verde); }

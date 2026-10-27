@@ -12,7 +12,7 @@ const json = (d, s = 200) => new Response(JSON.stringify(d), { status: s, header
 const nope = (m, s = 403) => json({ error: m }, s);
 
 // Claves que la web puede escribir (todo lo demás es de solo lectura para el navegador)
-const ESCRIBIBLES_WEB = new Set(["usuario/lista", "usuario/cartera", "usuario/ons", "usuario/capital"]);
+const ESCRIBIBLES_WEB = new Set(["usuario/lista", "usuario/cartera", "usuario/ons", "usuario/capital", "usuario/operaciones", "usuario/decisiones_cartera"]);
 
 function iguales(a, b) {
   if (!a || !b || a.length !== b.length) return false;
