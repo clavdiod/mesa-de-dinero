@@ -1,5 +1,10 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
+- fecha: "2026-10-27"
+  caso: "BAK: la diferencia entre compra y venta era 5,9% y la mesa medía como si fuera gratis"
+  que_paso: "La mesa marcó BAK por el Anticipo NY (le faltaba +8,2%) pero la diferencia entre la punta compradora y la vendedora era 5,9%. Entrar y salir enseguida costaba más de 7% con la comisión: el anticipo casi no dejaba nada. Además, las pruebas con la historia se miraban sumando todos los años juntos."
+  leccion: "En papeles que operan poco, la diferencia entre compra y venta es un costo tan real como la comisión. Y una herramienta que gana solo en un año bueno no está probada."
+  cambio: "Riesgo calcula la relación ganancia/pérdida con el costo real (comisión + diferencia de puntas) y lo muestra; el Anticipo NY dice cuánto queda neto y pesa poco si no cubre el costo; la simulación compra a la punta vendedora; Mi cartera avisa cuándo vender con orden límite. Nueva etiqueta por agente en Resultados: 'habilidad probada', 'prometedor', 'todavía es ruido' o 'erra de más', midiendo día por día. Nuevo informe profesional de la simulación (peor caída, ganancia/pérdida promedio, factor de ganancia, peor racha). Las herramientas de Wall Street se prueban año por año: hacen falta 3 años o más y ganarle al promedio en al menos 60% de ellos (el gap con volumen pasa: 3 de 4 años)."
 - fecha: "2026-10-26"
   caso: "Noticias internacionales: Lula reelecto en Brasil, se desploman el real y la bolsa, y el Corresponsal no lo vio"
   que_paso: "El domingo 25/10 Lula ganó la segunda vuelta. El lunes el real cayó fuerte, la bolsa de San Pablo se desplomó y los bancos brasileños perdieron casi un tercio en Nueva York. El Corresponsal leía 63 titulares sobre el tema pero no tenía un tema 'Brasil': solo conocía petróleo, Fed, aranceles, China, Vaca Muerta, FMI y sequía."
