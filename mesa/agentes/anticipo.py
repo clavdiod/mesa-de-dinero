@@ -111,18 +111,23 @@ def contexto_mkt(fecha: str, spy: dict[str, float], vix: dict[str, float], btc: 
     return {"spy5": r5(spy), "vix": vix[fv[-1]] if fv else 20.0, "btc5": r5(btc)}
 
 
-def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, paso: int = 2, realista: bool = True) -> dict:
+def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, paso: int = 2, realista: bool = True,
+             ctx_fn=None, rasgos_fn=None, nombres: list[str] | None = None) -> dict:
     """Aprende con el 70% inicial del tiempo y se prueba con el 30% final.
-    Objetivo: ¿sube 5% o más (en algún cierre) en las 5 ruedas siguientes?"""
+    Objetivo: ¿sube 5% o más (en algún cierre) en las 5 ruedas siguientes?
+    ctx_fn(fecha) y rasgos_fn(f, i, ctx, ticker) permiten otros anticipadores (Argentina, Mundo) con el mismo método."""
     filas = []
     ctx_cache: dict[str, dict] = {}
     spy_o, vix_o, btc_o = dict(sorted(spy.items())), dict(sorted(vix.items())), dict(sorted(btc.items()))
+    ctx_fn = ctx_fn or (lambda fe: contexto_mkt(fe, spy_o, vix_o, btc_o))
+    rasgos_fn = rasgos_fn or (lambda f, i, cx, tk: rasgos(f, i, cx))
+    nombres = nombres or NOMBRES
     for tk, f in series.items():
         for i in range(60, len(f) - HORIZONTE, paso):
             fe = f[i]["fecha"]
             if fe not in ctx_cache:
-                ctx_cache[fe] = contexto_mkt(fe, spy_o, vix_o, btc_o)
-            x = rasgos(f, i, ctx_cache[fe])
+                ctx_cache[fe] = ctx_fn(fe)
+            x = rasgos_fn(f, i, ctx_cache[fe], tk)
             if x is None:
                 continue
             # la lista sale al cierre: lo primero comprable es la apertura del día siguiente (sin "o", su cierre)
@@ -163,7 +168,7 @@ def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, pas
     ret10 = sum(r[2] for r in top10) / len(top10)
     ret_base = sum(r[4] for r in te) / len(te)
     activo = prec10 >= base * 1.5 and prec10 >= base + 0.05 and ret10 - ret_base >= 0.5 and ret10 > 1.2
-    importancia = sorted(((NOMBRES[k], round(float(w[1 + k]), 3)) for k in range(len(NOMBRES))), key=lambda t: -abs(t[1]))[:5]
+    importancia = sorted(((nombres[k], round(float(w[1 + k]), 3)) for k in range(len(nombres))), key=lambda t: -abs(t[1]))[:5]
     return {"activo": activo, "mu": mu.tolist(), "sd": sd.tolist(), "w": w.tolist(), "umbral": round(umbral, 4),
             "prueba": {"casos": len(te), "base_pct": round(base * 100, 1), "top5_pct": round(prec5 * 100, 1),
                        "top10_pct": round(prec10 * 100, 1), "lift10": round(prec10 / base, 2) if base else None,
@@ -175,15 +180,16 @@ def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, pas
                        f"contra {ret_base:+.1f}% al azar. " + ("Se activa." if activo else "No alcanza: queda solo como información.") if base else "")}
 
 
-def puntuar(modelo: dict, series: dict[str, list[dict]], ctx_mkt: dict, tickers: list[str] | None = None) -> list[dict]:
+def puntuar(modelo: dict, series: dict[str, list[dict]], ctx_mkt: dict, tickers: list[str] | None = None, rasgos_fn=None) -> list[dict]:
     if not modelo or not modelo.get("w"):
         return []
     mu, sd, w = np.array(modelo["mu"]), np.array(modelo["sd"]), np.array(modelo["w"])
+    rasgos_fn = rasgos_fn or (lambda f, i, cx, tk: rasgos(f, i, cx))
     out = []
     for tk, f in series.items():
         if tickers is not None and tk not in tickers or len(f) < 61:
             continue
-        x = rasgos(f, len(f) - 1, ctx_mkt)
+        x = rasgos_fn(f, len(f) - 1, ctx_mkt, tk)
         if x is None:
             continue
         z = (np.array(x) - mu) / sd
