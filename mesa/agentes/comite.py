@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from datetime import date
 
-ORIGENES = ("anticipador", "anticipo", "mundo", "ganadores", "profesionales")
+ORIGENES = ("anticipador", "anticipador_arg", "anticipador_mundo", "anticipo", "mundo", "ganadores", "profesionales")
 MINIMO_FAVOR, RELACION, MIN_AGENTES = 1.0, 1.6, 2
 
 

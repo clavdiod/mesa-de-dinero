@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: "2026-10-27"
+  caso: "Anticipador ARG y Anticipador Mundo: examinados con la historia"
+  que_paso: "Anticipador ARG (50 acciones argentinas, con Merval, riesgo país y CCL): de cada 100 marcados, 30 subieron 5% o más en la semana (al azar 12) y cayeron menos, pero en promedio ganaron +0,5% a 5 ruedas, que no cubre la comisión de 1,2%. Anticipador Mundo (CEDEARs con petróleo, oro, cobre, dólar global, tasas, Japón, Alemania y el sector de cada empresa): 47 de cada 100 subieron 5%, igual que el Anticipador común (47,5): elige casi los mismos papeles."
+  leccion: "Lo que pasa en el mundo ya se ve en el gráfico de cada CEDEAR: sumar esos datos no mejoró la anticipación. En acciones argentinas el método marca bien pero todavía no deja ganancia neta, y la historia guardada es corta (unos 270 días por acción)."
+  cambio: "Los dos quedan en observación: no votan ni se muestran hasta que pasen el examen (se vuelve a tomar cada viernes, y el de Argentina mejora a medida que se junta historia). El Anticipador Mundo además tiene que superar al común para votar, así no se cuenta dos veces la misma idea. En el Comité solo se ven las aprobadas; las filtradas quedan plegadas y los días anteriores se consultan por fecha."
+- fecha: "2026-10-27"
   caso: "El Jefe casi no sumaba: lo reemplaza un Comité que vota"
   que_paso: "Sin IA disponible, el Jefe elegía 'por puntaje': ordenaba la suma de votos y nada más. Mientras tanto, los anticipadores venían acertando mucho más que el resto, pero sus votos pesaban igual que los de cualquiera."
   leccion: "Una decisión de mesa tiene que mostrar quién votó qué, y el voto de cada uno tiene que pesar según lo que acertó de verdad."

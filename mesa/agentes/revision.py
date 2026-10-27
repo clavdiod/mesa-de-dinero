@@ -15,7 +15,7 @@ from datetime import date, timedelta
 
 NOMBRES = {"tecnico": "Técnico", "historiador": "Historiador", "fuerza_relativa": "Fuerza relativa", "volumen_flujo": "Volumen y flujo",
            "economista": "Economista", "wallstreet": "Wall Street", "cripto": "Cripto", "adr": "Noche de Nueva York",
-           "panico": "Comprador de pánico", "anticipo": "Anticipo NY", "anticipador": "Anticipador", "mundo": "Corresponsal", "ministro": "Ministro", "ganadores": "Cazador de ganadores", "profesionales": "Herramientas de Wall Street", "combinaciones": "Combinaciones (historia)",
+           "panico": "Comprador de pánico", "anticipo": "Anticipo NY", "anticipador": "Anticipador", "mundo": "Corresponsal", "ministro": "Ministro", "ganadores": "Cazador de ganadores", "profesionales": "Herramientas de Wall Street", "combinaciones": "Combinaciones (historia)", "anticipador_arg": "Anticipador ARG", "anticipador_mundo": "Anticipador Mundo",
            "noticias": "Noticias", "hechos_emisor": "Hechos del emisor", "calificadoras": "Calificadoras", "macro_dolar": "Macro / dólar",
            "acciones": "Acciones", "cedears": "CEDEARs", "soberanos": "Soberanos", "ons": "ONs", "pesos_tasas": "Pesos y tasas",
            "oportunidades_corto": "Oportunidades (corto)", "oportunidades_mediano": "Oportunidades (mediano)", "jefe": "Comité"}

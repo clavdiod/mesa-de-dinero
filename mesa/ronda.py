@@ -219,7 +219,7 @@ def _radar_investigar(ctx, almacen, hoy, alertas: list[dict], por_ticker: dict) 
     from .nucleo.config import emisores
     nombres = {"tecnico": "Técnico", "historiador": "Historiador", "fuerza_relativa": "Fuerza relativa", "volumen_flujo": "Volumen y flujo",
                "economista": "Economista", "wallstreet": "Wall Street", "cripto": "Cripto", "adr": "Noche de Nueva York", "panico": "Comprador de pánico",
-               "mundo": "Corresponsal (mundo)", "ministro": "Ministro (política económica)", "ganadores": "Cazador de ganadores", "profesionales": "Herramientas de Wall Street", "combinaciones": "Combinaciones (historia)", "acciones": "Acciones", "cedears": "CEDEARs", "soberanos": "Soberanos", "ons": "ONs", "macro_dolar": "Macro / dólar",
+               "mundo": "Corresponsal (mundo)", "ministro": "Ministro (política económica)", "ganadores": "Cazador de ganadores", "profesionales": "Herramientas de Wall Street", "combinaciones": "Combinaciones (historia)", "anticipador_arg": "Anticipador ARG", "anticipador_mundo": "Anticipador Mundo", "acciones": "Acciones", "cedears": "CEDEARs", "soberanos": "Soberanos", "ons": "ONs", "macro_dolar": "Macro / dólar",
                "noticias": "Noticias", "hechos_emisor": "Hechos del emisor", "calificadoras": "Calificadoras",
                "oportunidades_corto": "Oportunidades (corto)", "oportunidades_mediano": "Oportunidades (mediano)"}
     cache_n = almacen.get(f"radar/noticias/{hoy.isoformat()}") or {}
@@ -648,18 +648,19 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     if ctx.extra.get("regimen"):
         senales += economista.senales(ctx, ctx.extra["regimen"], candidatos)
     senales += anticipo.senales_atraso(ctx.extra.get("anticipos") or [])
-    lista_ant = {} if simular else (almacen.get("anticipo/lista") or {})
-    ctx.extra["anticipo_lista"] = lista_ant
+    # los tres anticipadores (CEDEARs, Argentina y Mundo): cada uno vota solo si pasó su examen con la historia
+    from .agentes import anticipadores as _antic
     fr_debil = {s.ticker for s in senales if s.agente == "fuerza_relativa" and s.direccion < 0 and s.fuerza >= 0.8}
-    for x in lista_ant.get("lista") or []:
-        x["fr_contra"] = x["ticker"] in fr_debil
-    if lista_ant.get("activo"):
-        for x in lista_ant.get("lista") or []:
-            if ctx.titulo(x["ticker"]):
-                # Reunión del 22/10: los marcados que además estaban entre los más débiles (Fuerza relativa) siguieron cayendo
-                senales.append(Senal("anticipador", x["ticker"], 1, round(min(0.8, 0.3 + x["prob"]) * (0.5 if x["fr_contra"] else 1), 2),
-                                     f"Precursores de suba para esta semana ({x['prob'] * 100:.0f}% de probabilidad de subir 5% o más): "
-                                     + (", ".join(x["razones"]) or "combinación de señales previas") + ".", x))
+    listas_ant = {}
+    for ag_, (clave_, _nom) in _antic.AGENTES.items():
+        listas_ant[ag_] = {} if simular else (almacen.get(clave_) or {})
+        # Reunión del 22/10: los marcados que además estaban entre los más débiles (Fuerza relativa) siguieron cayendo
+        senales += _antic.senales(ag_, listas_ant[ag_], lambda tk: ctx.titulo(tk) is not None, fr_debil)
+        for x in listas_ant[ag_].get("lista") or []:
+            x["fr_contra"] = x["ticker"] in fr_debil
+    lista_ant = listas_ant["anticipador"]
+    ctx.extra["anticipo_lista"] = lista_ant
+    ctx.extra["anticipo_listas"] = {k: v for k, v in listas_ant.items() if k != "anticipador" and v.get("activo")}
     senales += _senales_ws(ctx, ws_datos, candidatos + [t for t in ctx.tickers_lista()])
     senales += _senales_cripto(ctx, almacen, reg, senales, candidatos + ctx.tickers_lista() + cripto.CEDEARS_CRIPTO, simular)
     senales += _senales_adr(ctx, almacen, hoy, ya, simular)
@@ -677,6 +678,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     senales += hechos
     # --- Corresponsal en el debate: noticias de cada papel que se debate (incluye la lista del Anticipador) ---
     lista_anticip = [x["ticker"] for x in (ctx.extra.get("anticipo_lista") or {}).get("lista") or []][:10]
+    lista_anticip += [x["ticker"] for l_ in (ctx.extra.get("anticipo_listas") or {}).values() for x in (l_.get("lista") or [])[:5]]
     tks_notis = list(dict.fromkeys(pedidos + ctx.tickers_lista() + preseleccion + lista_anticip))
     ya_mundo = {s.ticker for s in senales if s.agente == "mundo"}
     for s in _noticias_papeles(ctx, almacen, hoy, tks_notis, simular):
@@ -869,6 +871,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         libreta = [] if simular else (almacen.get("pronosticos/libreta") or [])
         minuto = ya.hour * 60 + ya.minute
         nuevos_p = pron.desde_anticipador(ctx.extra.get("anticipo_lista") or {}, hoy, ctx.hora)
+        for ag_, l_ in (ctx.extra.get("anticipo_listas") or {}).items():
+            nuevos_p += pron.desde_anticipador(l_, hoy, ctx.hora, origen=ag_)
         nuevos_p += pron.desde_anticipos(ctx.extra.get("anticipos") or [], hoy, ctx.hora)
         nuevos_p += pron.desde_ganadores([s for s in senales if s.agente in ("ganadores", "profesionales")], hoy, ctx.hora,
                                          lambda tk: (ctx.titulo(tk) or {}).get("ultimo") if minuto >= 11 * 60 else None)
@@ -1022,6 +1026,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "mae_dias": None if simular else [{"fecha": d["fecha"], "resumen": d["resumen"]}
                                           for d in ((almacen.get("mae/comparacion") or {}).get("dias") or [])[-20:]],
         "anticipo_lista": ctx.extra.get("anticipo_lista"),
+        "anticipo_listas": ctx.extra.get("anticipo_listas"),
         "anticipo_estadistica": None if simular else almacen.get("anticipo/estadistica"),
         "eventos": eventos_cal,
         "flujos_bonos": flujos_cartera or {k: v for k, v in eventos_mod.flujos_bonos().items()

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-ORIGENES = {"anticipador": "Anticipador (días antes)", "anticipo": "Anticipo Nueva York (horas antes)",
+ORIGENES = {"anticipador": "Anticipador (días antes)", "anticipador_arg": "Anticipador ARG", "anticipador_mundo": "Anticipador Mundo", "anticipo": "Anticipo Nueva York (horas antes)",
             "mundo": "Corresponsal (noticias)", "ganadores": "Cazador de ganadores", "profesionales": "Herramientas de Wall Street", "jefe": "Comité", "oportunidad": "Oportunidad confirmada"}
 MAX = 600
 
@@ -101,12 +101,12 @@ def resumen(libreta: list[dict]) -> dict:
 
 
 # ---------- de cada fuente de la mesa a la libreta ----------
-def desde_anticipador(lista: dict, hoy: date, hora: str) -> list[dict]:
+def desde_anticipador(lista: dict, hoy: date, hora: str, origen: str = "anticipador") -> list[dict]:
     if not lista.get("lista"):
         return []
     f = lista.get("fecha") or hoy.isoformat()
     base = date.fromisoformat(f)
-    return [{"origen": "anticipador", "ticker": x["ticker"], "dir": 1, "objetivo_pct": 5.0, "vence": _vence(base, 8),
+    return [{"origen": origen, "ticker": x["ticker"], "dir": 1, "objetivo_pct": 5.0, "vence": _vence(base, 8),
              "fecha": f, "hora": hora, "clave": f, "prob": x.get("prob"),
              "texto": f"Sube 5% o más en la semana ({x.get('prob', 0) * 100:.0f}% de probabilidad). " + ", ".join(x.get("razones") or [])}
             for x in lista["lista"][:10]]

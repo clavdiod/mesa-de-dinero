@@ -188,6 +188,21 @@ def diario(simular: bool = False) -> dict:
                     print(f"[cierre] profesionales: {len(pl['lista'])} papeles marcados; sectores líderes {pl['lideres']}")
                 except Exception as ex2:
                     print(f"[cierre] profesionales: {ex2}")
+                try:  # Anticipador Mundo: lista para los próximos días con lo que pasa en el mundo
+                    from .agentes import anticipadores as _A, profesionales as _pro2
+                    mm = a.get("anticipo_mundo/modelo") or {}
+                    if mm.get("w"):
+                        g6 = {k: {f: c for f, c in _g2.yahoo(sym, "6mo")} for k, sym in _A.GLOBALES.items()}
+                        e6 = {e: {f: c for f, c in _g2.yahoo(e, "6mo")} for e in _pro2.NOMBRE_SECTOR}
+                        sp6 = {f: c for f, c in _g2.yahoo("SPY", "6mo")}
+                        vx6 = {f: c for f, c in _g2.yahoo("^VIX", "6mo")}
+                        bt6 = {f: c for f, c in _g2.yahoo("BTC-USD", "6mo")}
+                        sect = {k: v for k, v in (a.get("profesionales/sectores") or {}).items() if v}
+                        lm = _A.lista_mundo(mm, {tk: f for tk, f in ser.items()}, sp6, vx6, bt6, g6, sect, e6, max(sp6) if sp6 else hoy.isoformat())
+                        a.put("anticipo_mundo/lista", {"fecha": hoy.isoformat(), "activo": mm.get("activo"), "umbral": mm.get("umbral"),
+                                                       "prueba": mm.get("prueba"), "lista": [x for x in lm if x["prob"] >= (mm.get("umbral") or 1)][:10]})
+                except Exception as ex2:
+                    print(f"[cierre] anticipador mundo: {ex2}")
                 for tk in cache.indice:
                     vs = cache.velas(tk)
                     if tk not in ser and len(vs) > 60 and tk in {t.get("simbolo") for t in paneles.get("acciones", [])}:
@@ -202,6 +217,29 @@ def diario(simular: bool = False) -> dict:
                                          "prueba": mod.get("prueba"), "lista": [x for x in lista if x["prob"] >= (mod.get("umbral") or 1)][:15]})
         except Exception as ex:
             print(f"[cierre] anticipador: {ex}")
+
+    # Anticipador ARG: acciones argentinas con el contexto de acá (Merval, riesgo país, CCL)
+    if not simular:
+        try:
+            from .agentes import anticipadores as _A
+            ma = a.get("anticipo_arg/modelo") or {}
+            if ma.get("w"):
+                from .datos import gratis as _g3
+                pan = (a.get("ui/panel") or {}).get("titulos") or {}
+                acc = {}
+                for tk in cache.indice:
+                    if (pan.get(tk) or [None] * 5)[4] == "acciones":
+                        vs = cache.velas(tk)
+                        if len(vs) > 120:
+                            acc[tk] = [{"fecha": v["fecha"], "c": v["cierre"], "h": v.get("maximo") or v["cierre"], "l": v.get("minimo") or v["cierre"],
+                                        "v": v.get("volumen") or 0} for v in vs[-200:] if v.get("cierre")]
+                mv = {f: c for f, c in _g3.yahoo("^MERV", "6mo")}
+                mac = (a.get("macro/series") or {}).get("series") or {}
+                la = _A.lista_arg(ma, acc, mv, mac.get("riesgo_pais") or {}, mac.get("ccl") or {}, hoy.isoformat())
+                a.put("anticipo_arg/lista", {"fecha": hoy.isoformat(), "activo": ma.get("activo"), "umbral": ma.get("umbral"),
+                                             "prueba": ma.get("prueba"), "lista": [x for x in la if x["prob"] >= (ma.get("umbral") or 1)][:10]})
+        except Exception as ex:
+            print(f"[cierre] anticipador arg: {ex}")
 
     # Anticipador: estadística propia (desde el primer precio operable hasta el cierre)
     if not simular:
@@ -415,6 +453,23 @@ def entrenar() -> dict:
     bt = {f: c for f, c in gratis.yahoo("BTC-USD", "5y")}
     mod_a = _ant.entrenar(ohlcv, sp, vx, bt)
     a.put("anticipo/modelo", mod_a)
+    try:  # los otros dos anticipadores, con el mismo examen
+        from .agentes import anticipadores as _A, profesionales as _pro3
+        acc_e = {tk: f for tk, f in ohlcv.items() if grupos.get(tk) == "acciones"}
+        mv5 = {f: c for f, c in gratis.yahoo("^MERV", "5y")}
+        m_arg = _A.entrenar_arg(acc_e, mv5, macro.get("riesgo_pais") or {}, macro.get("ccl") or {})
+        if m_arg.get("w"):
+            a.put("anticipo_arg/modelo", m_arg)
+        ced_e = {tk: f for tk, f in ohlcv.items() if grupos.get(tk) != "acciones"}
+        g5 = {k: {f: c for f, c in gratis.yahoo(sym, "5y")} for k, sym in _A.GLOBALES.items()}
+        e5 = {e: {f: c for f, c in gratis.yahoo(e, "5y")} for e in _pro3.NOMBRE_SECTOR}
+        m_mun = _A.entrenar_mundo(ced_e, sp, vx, bt, g5, {k: v for k, v in (a.get("profesionales/sectores") or {}).items() if v}, e5)
+        if m_mun.get("w"):
+            a.put("anticipo_mundo/modelo", m_mun)
+        ens["anticipador_arg"] = _A.resumen_prueba(m_arg)
+        ens["anticipador_mundo"] = _A.resumen_prueba(m_mun)
+    except Exception as ex:
+        print(f"[entrenar] anticipadores arg/mundo: {ex}")
     ens["anticipador"] = {"motivo": mod_a.get("motivo"), "prueba": mod_a.get("prueba"), "activo": mod_a.get("activo")}
 
     # Cripto: BTC 5 años y dólar cripto desde 2023

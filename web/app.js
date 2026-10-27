@@ -5,7 +5,7 @@ const num = (x, d = 2) => (x === null || x === undefined || isNaN(x) ? "—" : N
 const pct = (x, d = 2) => (x === null || x === undefined ? "—" : `${x > 0 ? "+" : ""}${num(x, d)}%`);
 const NOMBRES = { acciones: "Acciones", cedears: "CEDEARs", ons: "ONs", soberanos: "Soberanos", pesos_tasas: "Pesos y tasas",
   tecnico: "Técnico", fuerza_relativa: "Fuerza relativa", volumen_flujo: "Volumen y flujo", economista: "Economista", wallstreet: "Wall Street", cripto: "Cripto", adr: "Noche de Nueva York", panico: "Comprador de pánico", mundo: "Corresponsal (mundo)", ministro: "Ministro (política económica)", ganadores: "Cazador de ganadores", profesionales: "Herramientas de Wall Street", anticipo: "Anticipo (Nueva York)", anticipador: "Anticipador", macro_dolar: "Macro / dólar", noticias: "Noticias", historiador: "Historiador",
-  hechos_emisor: "Hechos del emisor", calificadoras: "Calificadoras", riesgo: "Riesgo", jefe: "Comité", combinaciones: "Combinaciones (historia)" };
+  hechos_emisor: "Hechos del emisor", calificadoras: "Calificadoras", riesgo: "Riesgo", jefe: "Comité", combinaciones: "Combinaciones (historia)", anticipador_arg: "Anticipador ARG", anticipador_mundo: "Anticipador Mundo" };
 
 function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("ver"); setTimeout(() => e.classList.remove("ver"), 2500); }
 async function api(ruta, opt = {}) {
@@ -138,7 +138,8 @@ const RESUMEN_PLEG = {
   "radar": () => { const r = radarDelDia(); const a = r.filter((x) => x.severidad === "alta");
     return `${r.length} movimiento${r.length === 1 ? "" : "s"} raro${r.length === 1 ? "" : "s"}${a.length ? ` · ${a.length} fuerte${a.length > 1 ? "s" : ""}: ${a.slice(0, 3).map((x) => x.ticker).join(", ")}` : ""}`; },
   "anticipos": () => { const e = ESTADO.estado || {}; const n = (e.anticipos || []).length, m = (e.anticipo_lista?.lista || []).length;
-    return [n ? `${n} hoy en NY` : "", m ? `${m} para los próximos días` : ""].filter(Boolean).join(" · "); },
+    const ex = Object.values(e.anticipo_listas || {}).filter((l) => l.activo).reduce((a, l) => a + (l.lista || []).length, 0);
+    return [n ? `${n} hoy en NY` : "", m ? `${m} para los próximos días` : "", ex ? `${ex} de ARG/Mundo` : ""].filter(Boolean).join(" · "); },
 };
 function plegar(box) {
   if (box.dataset.plegando) return;
@@ -386,7 +387,7 @@ function pintarReunion() {
 
 // ---------- libreta de pronósticos ----------
 const ESTADO_PRON = { se_dio: ["verde", "✅ Se dio"], fallo: ["rojo", "❌ Falló"], no_se_dio: ["", "➖ No se dio"], en_curso: ["amar", "⏳ En curso"], esperando: ["", "🕒 Espera apertura"] };
-const ORIGEN_PRON = { ganadores: "Cazador", profesionales: "Wall Street", anticipador: "Anticipador", anticipo: "Anticipo NY", mundo: "Corresponsal", jefe: "Comité", oportunidad: "Oportunidad" };
+const ORIGEN_PRON = { anticipador_arg: "Anticipador ARG", anticipador_mundo: "Anticipador Mundo", ganadores: "Cazador", profesionales: "Wall Street", anticipador: "Anticipador", anticipo: "Anticipo NY", mundo: "Corresponsal", jefe: "Comité", oportunidad: "Oportunidad" };
 let FILTRO_PRON = "fav";
 function ultimoPronostico(tk) { return (ESTADO.estado?.pronosticos || []).find((x) => x.ticker === tk); }
 function filaPron(x) {
@@ -720,7 +721,7 @@ function pintarAviso() {
 // ---------- anticipos ----------
 function pintarAnticipos() {
   const e = ESTADO.estado || {}, at = e.anticipos || [], li = e.anticipo_lista || {}, es = e.anticipo_estadistica;
-  if (!at.length && !(li.lista || []).length) { $("#anticipos").innerHTML = ""; return; }
+  if (!at.length && !(li.lista || []).length && !Object.values(e.anticipo_listas || {}).some((l) => l.activo && (l.lista || []).length)) { $("#anticipos").innerHTML = ""; return; }
   const col = (v) => (v > 0 ? "verde" : "rojo");
   const tablaAt = at.length ? `<p class="tenue">Lo que su acción ya hizo en Nueva York (incluye el pre-market) y el CEDEAR todavía no. ${at.some((a) => a.antes_de_abrir) ? "<b>BYMA todavía no abrió:</b> esto es lo que debería pasar a las 11." : ""}</p>
     <div class="tabla-scroll"><table><tr><th>CEDEAR</th><th class="n">En NY</th><th class="n">CEDEAR</th><th class="n">Le falta</th></tr>
@@ -749,7 +750,15 @@ function pintarAnticipos() {
     <p><button class="chico" data-ir-pron="anticipador">📋 Ver todos los pronósticos del Anticipador</button></p>` : "";
   const pl = es?.plazos?.al_cierre;
   const est = pl?.casos ? `<p class="tenue" style="margin-top:8px">Estadística propia de los anticipos (desde ${esc(fecha(es.desde))}): acertaron ${num(pl.aciertos / pl.casos * 100, 0)}% de ${pl.casos}, ${pct(pl.suma_ret / pl.casos, 2)} promedio hasta el cierre.</p>` : "";
-  $("#anticipos").innerHTML = `<h2>⏩ Anticipos <span class="hora">· ${esc(e.hora || "")}</span></h2><div class="card eco">${tablaAt}${tablaLi}${est}</div>`;
+  // Anticipador ARG y Mundo: solo si pasaron su examen con la historia
+  const NOM_EXTRA = { anticipador_arg: "🇦🇷 Anticipador ARG (acciones argentinas)", anticipador_mundo: "🌍 Anticipador Mundo (CEDEARs con lo que pasa en el mundo)" };
+  const extras = Object.entries(e.anticipo_listas || {}).filter(([, l]) => l.activo && (l.lista || []).length).map(([ag, l]) => {
+    const pr2 = (e.pronosticos || []).filter((x) => x.origen === ag);
+    const filas = l.lista.slice(0, 10).map((x) => filaAnt(x.ticker, pr2.find((y) => y.ticker === x.ticker && y.fecha === l.fecha), { prob: x.prob, txt: (x.razones || []).join(" · "), fr: x.fr_contra })).join("");
+    const pp = l.prueba || {};
+    return `<details class="dia-pron"><summary><b>${NOM_EXTRA[ag] || ag}</b> <span class="tenue">· ${l.lista.length} para los próximos días${pp.top10_pct ? ` · en el examen ${num(pp.top10_pct, 0)} de cada 100 subieron 5% (al azar ${num(pp.base_pct, 0)})` : ""}</span></summary>${filas}
+      <p><button class="chico" data-ir-pron="${ag}">📋 Ver sus pronósticos</button></p></details>`; }).join("");
+  $("#anticipos").innerHTML = `<h2>⏩ Anticipos <span class="hora">· ${esc(e.hora || "")}</span></h2><div class="card eco">${tablaAt}${tablaLi}${extras}${est}</div>`;
 }
 
 // ---------- radar del mercado ----------

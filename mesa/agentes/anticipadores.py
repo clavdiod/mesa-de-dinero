@@ -84,6 +84,16 @@ def entrenar_mundo(cedears: dict[str, list[dict]], spy: dict, vix: dict, btc: di
     m = anticipo.entrenar(cedears, spy_o, vix_o, btc_o, ctx_fn=_ctx_mundo(glob, spy_o, vix_o, btc_o),
                           rasgos_fn=_rasgos_mundo(sector_de, etfs, spy_o), nombres=NOMBRES_MUNDO)
     m["nombre"] = "Anticipador Mundo"
+    # tiene que agregar algo: si elige lo mismo que el Anticipador común, votaría dos veces la misma idea
+    base = anticipo.entrenar(cedears, spy_o, vix_o, btc_o)
+    pb, pm = base.get("prueba") or {}, m.get("prueba") or {}
+    mejora = (pm.get("top10_pct", 0) - pb.get("top10_pct", 0) >= 2) or (pm.get("ret5_top10", 0) - pb.get("ret5_top10", 0) >= 0.3)
+    m["base"] = pb
+    if m.get("activo") and not mejora:
+        m["activo"] = False
+        m["motivo"] = (m.get("motivo") or "") + (f" Pero no mejora al Anticipador común ({pm.get('top10_pct')} contra {pb.get('top10_pct')} de cada 100, "
+                                                 f"{pm.get('ret5_top10')}% contra {pb.get('ret5_top10')}% a 5 ruedas): lo que pasa en el mundo ya está en el "
+                                                 "gráfico de cada papel. Queda en observación.")
     return m
 
 
