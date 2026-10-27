@@ -80,14 +80,18 @@ class Simulador:
                     continue
                 pl, t = o["plan"], ctx.titulo(o["ticker"]) or {}
                 mon = _moneda(o["ticker"], t)
+                # se compra a la punta vendedora, no al último precio (costo real de entrar)
+                ent = pl["entrada"]
+                if t.get("venta") and t.get("compra") and t["venta"] >= t["compra"] and t["venta"] > ent:
+                    ent = t["venta"]
                 self.pos.insert(0, {
                     "moneda": mon, "tc": _tc(ctx, mon),
                     "id": f"{hoy}|{clave}", "clave": clave, "origen": plazo, "setup": o["setup"],
                     "semaforo": o["semaforo"], "ticker": o["ticker"], "grupo": t.get("grupo"),
                     "aprobada": bool((o.get("mesa") or {}).get("aprobada")),
-                    "fecha": hoy, "hora": hora, "nominales": cfg["nominales"], "entrada": pl["entrada"],
+                    "fecha": hoy, "hora": hora, "nominales": cfg["nominales"], "entrada": ent,
                     "objetivo": pl["objetivo"], "stop": pl["stop"], "vence": pl.get("vence"),
-                    "estado": "abierta", "fecha_entrada": hoy, "ultimo": pl["entrada"],
+                    "estado": "abierta", "fecha_entrada": hoy, "ultimo": ent,
                     "agentes": agentes(o["ticker"], f"oportunidades_{plazo}")})
                 n += 1
         for e in nuevas_jefe or []:

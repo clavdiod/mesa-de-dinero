@@ -71,14 +71,19 @@ def evaluar(ctx: Contexto, plan: Plan, estado: dict, vetos: set[str]) -> dict:
         motivos.append(f"Se alcanzó la pérdida máxima del día ({c['perdida_max_dia_r']}R).")
     if estado.get("perdida_semana_r", 0) <= -c["perdida_max_semana_r"]:
         motivos.append(f"Se alcanzó la pérdida máxima de la semana ({c['perdida_max_semana_r']}R).")
-    rn = plan.r_neto(com)
+    # costo real de entrar y salir: comisión + la diferencia entre compra y venta (se compra a la punta vendedora
+    # y se vende a la compradora). En papeles que operan poco, la diferencia puede comerse toda la ganancia.
+    from ..nucleo.calc import spread_pct
+    spread = spread_pct(t)
+    costo = com + (spread or 0)
+    rn = plan.r_neto(costo)
     if rn < c["r_minimo_neto"]:
-        motivos.append(f"Relación neta {rn:.2f}R, menor al mínimo {c['r_minimo_neto']}R.")
-    compra, venta = t.get("compra"), t.get("venta")
-    if compra and venta:
-        spread = (venta / compra - 1) * 100
-        if spread > c["spread_max_pct"]:
-            motivos.append(f"Spread {spread:.2f}% demasiado abierto.")
+        motivos.append(f"Relación neta {rn:.2f}R, menor al mínimo {c['r_minimo_neto']}R"
+                       + (f" (entrar y salir cuesta {costo:.1f}%: comisión {com:.1f}% + diferencia compra/venta {spread:.1f}%)." if spread else "."))
+    if spread is not None and spread > c["spread_max_pct"]:
+        motivos.append(f"Spread {spread:.2f}% demasiado abierto.")
+    elif spread:
+        avisos.append(f"Entrar y salir cuesta {costo:.1f}% (comisión {com:.1f}% + diferencia compra/venta {spread:.1f}%).")
     monto = t.get("monto")
     if monto is not None and monto < c["monto_min_operado_ars"] and t.get("moneda") in (None, "peso_Argentino", "ARS"):
         avisos.append(f"Poco volumen operado hoy (${monto:,.0f}".replace(",", ".") + "): usar orden límite y montos chicos.")
@@ -100,4 +105,5 @@ def evaluar(ctx: Contexto, plan: Plan, estado: dict, vetos: set[str]) -> dict:
     if ctx.clima <= -0.3:
         tam = c["clima_malo_tamano_r"]
         avisos.append(f"Clima de mercado malo: tamaño reducido a {tam}R.")
-    return {"ok": not motivos, "tamano_r": tam, "r_neto": round(rn, 2), "motivos": motivos, "avisos": avisos}
+    return {"ok": not motivos, "tamano_r": tam, "r_neto": round(rn, 2), "motivos": motivos, "avisos": avisos,
+            "costo_pct": round(costo, 2), "spread_pct": spread}

@@ -35,9 +35,13 @@ def atrasos(ctx, vivo: dict[str, dict], ccl_now: float | None, ccl_ayer: float |
         mov = (t.get("variacion") or 0.0) if byma_abierto else 0.0
         atraso = round(esperado - mov, 2)
         if abs(atraso) >= umbral and abs(us) >= 1.5:
+            from ..nucleo.calc import spread_pct
+            sp = spread_pct(t) if byma_abierto else None
+            neto = round(abs(atraso) - 1.2 - (sp or 0), 2)  # lo que queda después de comisión y diferencia compra/venta
             out.append({"ticker": tk, "us": round(us, 2), "esperado": round(esperado, 2), "cedear": round(mov, 2),
                         "atraso": atraso, "antes_de_abrir": not byma_abierto, "precio_cedear": t.get("ultimo"),
-                        "severidad": "alta" if abs(atraso) >= 4 else "media"})
+                        "spread": sp, "neto": neto, "no_cubre": neto < 0.5,
+                        "severidad": "alta" if abs(atraso) >= 4 and neto >= 1.5 else "media"})
     return sorted(out, key=lambda x: -abs(x["atraso"]))
 
 
@@ -46,9 +50,17 @@ def senales_atraso(lista: list[dict]) -> list[Senal]:
     for a in lista:
         d = 1 if a["atraso"] > 0 else -1
         cuando = "Antes de que abra BYMA" if a["antes_de_abrir"] else "Ahora"
-        out.append(Senal("anticipo", a["ticker"], d, round(min(0.8, 0.3 + abs(a["atraso"]) / 10), 2),
+        costo = ""
+        if a.get("spread"):
+            total = 1.2 + a["spread"]
+            resto = "no alcanza a cubrirlo" if a.get("no_cubre") else f"quedaría {a.get('neto', 0):+.1f}% neto"
+            costo = f" Pero entrar y salir cuesta {total:.1f}% (diferencia compra/venta {a['spread']:.1f}%): {resto}."
+        f = round(min(0.8, 0.3 + abs(a["atraso"]) / 10), 2)
+        if a.get("no_cubre"):
+            f = 0.15  # el atraso existe, pero el costo se lo come
+        out.append(Senal("anticipo", a["ticker"], d, f,
                          f"{cuando}: en Nueva York {a['ticker']} va {a['us']:+.1f}% (con el CCL, {a['esperado']:+.1f}%) y el CEDEAR "
-                         f"{a['cedear']:+.1f}%: le falta {a['atraso']:+.1f}% para acomodarse.", a))
+                         f"{a['cedear']:+.1f}%: le falta {a['atraso']:+.1f}% para acomodarse." + costo, a))
     return out
 
 

@@ -476,7 +476,8 @@ function pintarUsuario() {
         return `<div class="proy"><span class="chip ${col}"><b>${esc(p.consejo)}</b></span> <span>${esc(p.motivo || "")}</span>
           ${lin ? `<div class="item-det">${lin}${p.fuente_objetivo ? ` <span class="tenue">· objetivo: ${esc(p.fuente_objetivo)}</span>` : ""}</div>` : ""}
           ${p.rango_1m ? `<div class="item-det">📈 En 1 mes, lo normal (2 de cada 3 veces): entre <b>${num(p.rango_1m[0])}</b> y <b>${num(p.rango_1m[1])}</b></div>` : ""}
-          ${p.proyeccion ? `<div class="item-det">💵 ${esc(p.proyeccion)}</div>` : ""}</div>`; })()}
+          ${p.proyeccion ? `<div class="item-det">💵 ${esc(p.proyeccion)}</div>` : ""}
+          ${p.aviso_spread ? `<div class="item-det">⚠️ ${esc(p.aviso_spread)}</div>` : ""}</div>`; })()}
       ${(() => { const m = (ESTADO.estado?.ministro?.cartera || []).find((y) => y.ticker === x.ticker.toUpperCase());
         return m ? `<div class="item-det">🏛️ <b>Ministro:</b> ${esc(m.texto)}</div>` : ""; })()}
       ${(() => { const o = (ESTADO.estado?.opinion_cartera || {})[x.ticker.toUpperCase()]; if (!o) return "";
@@ -634,7 +635,8 @@ function pintarAnticipos() {
   const tablaAt = at.length ? `<p class="tenue">Lo que su acción ya hizo en Nueva York (incluye el pre-market) y el CEDEAR todavía no. ${at.some((a) => a.antes_de_abrir) ? "<b>BYMA todavía no abrió:</b> esto es lo que debería pasar a las 11." : ""}</p>
     <div class="tabla-scroll"><table><tr><th>CEDEAR</th><th class="n">En NY</th><th class="n">CEDEAR</th><th class="n">Le falta</th></tr>
     ${at.slice(0, 12).map((a) => `<tr><td>${estrella(a.ticker, "Anticipo NY")}<span class="link" data-abrir-debate="${esc(a.ticker)}">${esc(a.ticker)}</span></td><td class="n">${pct(a.us, 1)}</td>
-      <td class="n">${a.antes_de_abrir ? "<span class='tenue'>sin abrir</span>" : pct(a.cedear, 1)}</td><td class="n" style="color:var(--${col(a.atraso)})"><b>${pct(a.atraso, 1)}</b></td></tr>`).join("")}</table></div>` : "";
+      <td class="n">${a.antes_de_abrir ? "<span class='tenue'>sin abrir</span>" : pct(a.cedear, 1)}</td><td class="n" style="color:var(--${col(a.atraso)})"><b>${pct(a.atraso, 1)}</b>${a.spread ? `<br><span class="tenue" style="font-size:12px">${a.no_cubre ? "no cubre el costo" : `neto ${pct(a.neto, 1)}`}</span>` : ""}</td></tr>`).join("")}</table></div>
+    ${at.some((a) => a.spread) ? '<p class="tenue">Neto = lo que queda después de la comisión (1,2%) y la diferencia entre compra y venta de ese CEDEAR.</p>' : ""}` : "";
   const p = li.prueba || {}, prons = (e.pronosticos || []).filter((x) => x.origen === "anticipador");
   const resumenDia = (l) => { const ok = l.filter((x) => x.estado === "se_dio").length, mal = l.filter((x) => ["fallo", "no_se_dio"].includes(x.estado)).length,
     va = l.filter((x) => ["en_curso", "esperando"].includes(x.estado)).length; return `${l.length} sugerido${l.length > 1 ? "s" : ""}${ok ? ` · ✅ ${ok}` : ""}${mal ? ` · ❌ ${mal}` : ""}${va ? ` · ⏳ ${va}` : ""}`; };
@@ -996,6 +998,31 @@ function tablaStats(obj, nombres = {}) {
     ${filas.sort((a, b) => b[1].ganancia - a[1].ganancia).map(([k, v]) => `<tr><td>${esc(nombres[k] || k)}</td><td class="n">${v.cerradas}</td><td class="n">${num(v.ganadoras_pct, 0)}%</td>
     <td class="n">${pct(v.promedio_pct, 1)}</td><td class="n" style="color:var(--${v.ganancia >= 0 ? "verde" : "rojo"})">${plata(v.ganancia)}</td></tr>`).join("")}</table></div>`;
 }
+// informe como el de los fondos (quantstats): no solo cuánto ganó, sino con cuánto riesgo y si es suerte
+function informeSim(cs) {
+  if (cs.length < 3) return "";
+  const xs = cs.slice().sort((a, b) => String(a.fecha_cierre).localeCompare(String(b.fecha_cierre))).map((p) => p.ganancia_pct);
+  const gan = xs.filter((x) => x > 0), per = xs.filter((x) => x <= 0), sum = (a) => a.reduce((s, x) => s + x, 0);
+  let acum = 0, pico = 0, caida = 0, racha = 0, peorRacha = 0;
+  for (const x of xs) { acum += x; pico = Math.max(pico, acum); caida = Math.min(caida, acum - pico); racha = x <= 0 ? racha + 1 : 0; peorRacha = Math.max(peorRacha, racha); }
+  const media = sum(xs) / xs.length, sd = Math.sqrt(sum(xs.map((x) => (x - media) ** 2)) / xs.length) || 1e-9;
+  const tt = media / sd * Math.sqrt(xs.length);
+  const pf = per.length ? sum(gan) / Math.abs(sum(per)) : null, pay = gan.length && per.length ? (sum(gan) / gan.length) / Math.abs(sum(per) / per.length) : null;
+  const veredicto = xs.length < 20 ? ["", `Con ${xs.length} operaciones todavía no alcanza para saber si es habilidad o suerte (hacen falta unas 20).`]
+    : tt >= 2 ? ["verde", "La ganancia es consistente: es difícil que sea suerte."] : tt <= -2 ? ["rojo", "Pierde de forma consistente: hay que revisar qué se está proponiendo."]
+    : ["amar", "Todavía no se distingue de la suerte."];
+  const fila = (t, v, ayuda) => `<tr><td>${t}<br><span class="tenue" style="font-size:12px">${ayuda}</span></td><td class="n"><b>${v}</b></td></tr>`;
+  return `<details class="dia-pron"><summary><b>📊 Informe profesional</b> <span class="tenue">· ${xs.length} operaciones cerradas</span></summary>
+    <div class="tabla-scroll"><table>
+      ${fila("Peor caída acumulada", pct(caida, 1), "lo máximo que llegó a perder desde su mejor momento")}
+      ${fila("Ganancia promedio / pérdida promedio", pay ? num(pay, 2) + " a 1" : "—", "más de 1 = cuando gana, gana más de lo que pierde cuando pierde")}
+      ${fila("Factor de ganancia", pf ? num(pf, 2) : "—", "todo lo ganado dividido todo lo perdido; arriba de 1,5 es bueno")}
+      ${fila("Mejor y peor operación", `${pct(Math.max(...xs), 1)} / ${pct(Math.min(...xs), 1)}`, "")}
+      ${fila("Peor racha", `${peorRacha} perdedora${peorRacha === 1 ? "" : "s"} seguidas`, "para estar preparado: va a volver a pasar")}
+      ${fila("Promedio por operación", pct(media, 2), "con comisiones")}
+    </table></div><p><span class="chip ${veredicto[0]}">${esc(veredicto[1])}</span></p></details>`;
+}
+
 async function pintarSimulacion() {
   const box = $("#simulacion");
   let d; try { d = await api("simulacion"); } catch (_) { box.innerHTML = '<p class="tenue">Sin datos de simulación.</p>'; return; }
@@ -1022,6 +1049,7 @@ async function pintarSimulacion() {
       <div class="met"><span>Ganadoras</span><b>${t.cerradas ? num(t.ganadoras_pct, 0) + "%" : "—"}</b></div>
       <div class="met"><span>Promedio por operación</span><b>${t.cerradas ? pct(t.promedio_pct, 1) : "—"}</b></div>
       <div class="met"><span>Abiertas (${r.abiertas || 0})</span><b style="${col(r.latente)}">${plata(r.latente || 0)}</b></div></div>
+    ${informeSim(d.posiciones.filter((p) => ok(p) && !activa(p) && p.ganancia_pct != null && p.fecha_cierre))}
     <p class="tenue">Solo lo que la mesa te mostró: ${t.cerradas || 0} cerradas · ${r.pendientes || 0} esperando precio · ${r.no_se_dieron || 0} no se dieron.</p>
     <div class="tiras"><button class="chico ${SIM_VISTA === "abiertas" ? "prim" : ""}" data-simv="abiertas">Abiertas</button><button class="chico ${SIM_VISTA === "cerradas" ? "prim" : ""}" data-simv="cerradas">Cerradas</button><button class="chico ${SIM_VISTA === "observacion" ? "prim" : ""}" data-simv="observacion">En observación</button></div>
     ${SIM_VISTA === "observacion" ? `<p class="tenue">Las que la mesa NO te mostró (sin confirmación de otros analistas, o de antes del comité). Se siguen midiendo para saber si el filtro acierta${obs.cerradas ? `: ${obs.cerradas} cerradas, ${plata(obs.ganancia)} (${pct(obs.promedio_pct, 1)} prom.)` : ""}.</p>` : ""}
@@ -1044,10 +1072,13 @@ async function pintarRanking() {
     const c = f.calibracion || {};
     const niv = f.nivel === "sin_datos" ? "" : `<span class="chip ${f.nivel === "titular" ? "verde" : f.nivel === "banco" ? "rojo" : f.nivel === "a_prueba" ? "amar" : ""}">${esc(f.nivel.replace("_", " "))}</span>`;
     const voto = (f.peso ?? 1) * (c.factor ?? 1);
-    return `<div class="item"><div class="item-cab"><b>${esc(nombreAg(f.agente))}</b>${niv}
+    const hb = f.habilidad || {}, HB = { probada: ["verde", "✔ habilidad probada"], prometedora: ["amar", "prometedor"], ruido: ["", "todavía es ruido"], mala: ["rojo", "erra de más"] };
+    const hbChip = HB[hb.etiqueta] ? ` <span class="chip ${HB[hb.etiqueta][0]}" title="${esc(hb.texto || "")}">${HB[hb.etiqueta][1]}</span>` : "";
+    return `<div class="item"><div class="item-cab"><b>${esc(nombreAg(f.agente))}</b>${niv}${hbChip}
         <span class="item-precio"><span class="tenue">voto</span> <b style="color:var(--${voto >= 1 ? "verde" : voto >= 0.6 ? "amar" : "rojo"})">x${num(voto, 1)}</b></span></div>
       <div class="item-det">${c.casos ? `Acierta <b>${num(c.acierto_pct, 0)}%</b> a 10 ruedas · ${pct(c.esperanza_pct, 1)} promedio · ${num(c.casos, 0)} casos (${esc(c.fuente)})` : f.casos ? `Acierta ${num(f.aciertos_pct, 0)}% en ${f.casos} casos` : "Juntando casos todavía"}${f.sim_cerradas ? ` · simulación ${plata(f.sim_ganancia)}` : ""}</div>
       ${c.bandas && Object.keys(c.bandas).length ? `<div class="item-det">${Object.entries(c.bandas).map(([b, x]) => `${BANDA[b] || b}: ${num(x.acierto_pct, 0)}%${x.factor != null ? ` (voto x${num(x.factor, 1)})` : ""}`).join(" · ")}</div>` : ""}
+      ${hb.texto && hb.etiqueta !== "sin_datos" ? `<div class="item-det">🎲 ${esc(hb.texto)}</div>` : ""}
       ${f.motivo ? `<div class="item-det">${esc(f.motivo)}</div>` : ""}</div>`;
   }).join("") : '<p class="tenue">El ranking arranca cuando los agentes juntan casos (se arma cada viernes).</p>';
   const ens = r.ensenanza || {}, fila = (k, t) => { const x = ens[k]; return x?.casos ? `<tr><td>${t}</td><td class="n">${num(x.aciertos / x.casos * 100, 0)}%</td><td class="n">${pct(x.suma_ret / x.casos, 1)}</td><td class="n">${num(x.casos, 0)}</td></tr>` : ""; };

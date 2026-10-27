@@ -148,6 +148,11 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
         else:
             consejo, motivo = "Mantener", ("La mesa está a favor." if mesa == "a favor" else "Sin señales fuertes en ningún sentido.") + \
                 (f" Le queda {pot:.0f}% hasta el objetivo." if pot and pot > 0 else "")
+        from ..nucleo.calc import spread_pct
+        sp = spread_pct(t)
+        if sp and sp >= 2:
+            x["aviso_spread"] = (f"Diferencia entre compra y venta: {_m(sp, 1)}%. Si vendés, hacelo con orden límite cerca de la punta "
+                                 f"compradora ({_m(t['compra'])}), nunca a mercado: perderías esa diferencia de golpe.")
         x.update(consejo=consejo, motivo=motivo, objetivo=_f(objetivo), fuente_objetivo=fuente, potencial_pct=pot,
                  piso=_f(piso), a_piso_pct=a_piso, rango_1m=[_f(rg[0]), _f(rg[1])] if rg else None,
                  principal=op.get("principal"))

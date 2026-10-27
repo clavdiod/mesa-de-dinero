@@ -153,3 +153,13 @@ def simular_on(on: dict, precio_por_100: float, hoy: date, capital: float | None
     return {"nominales": nominales, "costo": round(costo, 2), "flujo": flujo, "total_cobrar": round(total, 2),
             "ganancia": round(total - costo, 2),
             "tir_pct": tir(precio_por_100, flujo_por_nominales(on, 100, hoy), hoy)}
+
+
+def spread_pct(t: dict | None) -> float | None:
+    """Diferencia entre la punta vendedora y la compradora, en % (lo que se pierde por entrar y salir enseguida).
+    None si no hay puntas o el libro está cruzado (pre-apertura)."""
+    t = t or {}
+    c, v = t.get("compra"), t.get("venta")
+    if not c or not v or v < c:
+        return None
+    return round((v / c - 1) * 100, 2)

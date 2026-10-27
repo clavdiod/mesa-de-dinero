@@ -168,7 +168,18 @@ def entrenar(precios: dict[str, list[list]], etfs: dict[str, list[list]], sector
             fechas = sorted({f for _, f, _ in casos})
             base = _base(precios, fechas, hz)
             d[hz] = _resumen([(r, base[f]) for _, f, r in casos if f in base])
-        validos = [hz for hz in d if d[hz].get("casos", 0) >= 30 and d[hz]["acierto"] >= 52 and d[hz]["le_gana"] >= 50]
+            # prueba por bloques de tiempo: ¿le gana al típico en la mayoría de los años, o solo en uno?
+            por_y: dict[str, list] = {}
+            for _, f, r in casos:
+                if f in base:
+                    por_y.setdefault(f[:4], []).append(r - base[f])
+            anios = {y: round(st.mean(v), 2) for y, v in por_y.items() if len(v) >= 5}
+            if d[hz].get("casos"):
+                d[hz]["por_anio"] = anios
+                d[hz]["anios_a_favor"] = f"{sum(1 for x in anios.values() if x > 0)} de {len(anios)}"
+                d[hz]["estable"] = len(anios) < 3 or sum(1 for x in anios.values() if x > 0) / len(anios) >= 0.6
+        validos = [hz for hz in d if d[hz].get("casos", 0) >= 30 and d[hz]["acierto"] >= 52 and d[hz]["le_gana"] >= 50
+                   and d[hz].get("estable", True)]
         plazo = max(validos or d, key=lambda hz: d[hz].get("exceso", -99)) if d else None
         out["herramientas"][k] = {"nombre": HERRAMIENTAS[k], "horizontes": d, "plazo": plazo,
                                   # además del promedio, la mediana tiene que ganar: que no dependa de 2 o 3 casos espectaculares

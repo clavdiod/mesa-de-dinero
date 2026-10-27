@@ -18,6 +18,35 @@ ESTADOS_ABIERTOS = ("pendiente", "abierta")
 A_PRUEBA = {"mundo": 0.5}
 
 
+def habilidad(d: dict) -> dict:
+    """¿Acierta de verdad o es suerte? (el "IC" y la prueba t de los fondos cuantitativos, en simple).
+    Se mira el resultado promedio de cada DÍA (las señales de un mismo día se mueven juntas, no cuentan como
+    casos separados) y cuántos "errores de medición" está por encima de cero."""
+    import math
+    import statistics as st
+    dias = [v[1] / v[0] for v in (d.get("dias10") or {}).values() if v and v[0]]
+    if len(dias) >= 10:
+        mu, sd = st.mean(dias), st.pstdev(dias) or 1e-9
+        t, base = mu / sd * math.sqrt(len(dias)), f"{len(dias)} días"
+    else:
+        h = d.get("10") or d.get("5") or {}
+        n = h.get("casos", 0)
+        if n < 20:
+            return {"etiqueta": "sin_datos", "texto": "Faltan casos para saber", "t": None}
+        # sin el detalle por día se castiga a la mitad: muchas señales del mismo día inflan la cuenta
+        t, base = (h["aciertos"] - n / 2) / math.sqrt(n / 4) / 2, f"{n} señales"
+    t = round(t, 2)
+    if t >= 2.5:
+        e, txt = "probada", "Habilidad probada: es muy difícil que sea suerte"
+    elif t >= 1.5:
+        e, txt = "prometedora", "Prometedora: va bien, pero todavía podría ser suerte"
+    elif t <= -2:
+        e, txt = "mala", "Erra más de lo que la suerte explica"
+    else:
+        e, txt = "ruido", "Todavía es ruido: no se distingue de tirar una moneda"
+    return {"etiqueta": e, "texto": f"{txt} ({base})", "t": t}
+
+
 class Registro:
     def __init__(self, almacen):
         self.a = almacen
@@ -133,11 +162,18 @@ class Registro:
                     st_ag["aciertos"] += int(ret > 0)
                     st_ag["suma_ret"] = round(st_ag["suma_ret"] + ret, 4)
                     st_ag["suma_fuerza"] = round(st_ag.get("suma_fuerza", 0.0) + float(s.get("fuerza") or 0.6), 4)
+                    if str(h) == "10":  # por día: las señales del mismo día no son independientes (las mueve el mismo mercado)
+                        dd = stats[s["agente"]].setdefault("dias10", {}).setdefault(f, [0, 0.0])
+                        dd[0] += 1
+                        dd[1] = round(dd[1] + ret, 4)
                     # por banda de fuerza (débil / media / fuerte) para calibrar
                     from .calibracion import _sumar, banda
                     _sumar(stats[s["agente"]].setdefault("bandas", {}).setdefault(str(h), {}).setdefault(
                         banda(float(s.get("fuerza") or 0.6)), {}), ret, float(s.get("fuerza") or 0.6))
                 evaluado.add(f"{f}|{h}")
+        for d in stats.values():
+            if isinstance(d, dict) and "dias10" in d:
+                d["dias10"] = dict(sorted(d["dias10"].items())[-150:])
         self.a.put("ranking/stats", stats)
         self.a.put("ranking/evaluado", sorted(evaluado)[-2000:])
         return stats
@@ -154,7 +190,8 @@ class Registro:
             casos = h["casos"]
             ac = h["aciertos"] / casos * 100 if casos else 0
             esp = h["suma_ret"] / casos if casos else 0
-            filas.append({"agente": ag, "casos": casos, "aciertos_pct": round(ac, 1), "esperanza_pct": round(esp, 2)})
+            filas.append({"agente": ag, "casos": casos, "aciertos_pct": round(ac, 1), "esperanza_pct": round(esp, 2),
+                          "habilidad": habilidad(d)})
         vistos = {f["agente"] for f in filas}
         filas += [{"agente": ag, "casos": 0, "aciertos_pct": 0.0, "esperanza_pct": 0.0} for ag in self.calibracion if ag not in vistos]
         evaluables = [f for f in filas if f["casos"] >= cfg["minimo_casos"]]

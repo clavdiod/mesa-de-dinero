@@ -259,6 +259,10 @@ def diario(simular: bool = False) -> dict:
     cierres = {tk: {v["fecha"]: v["cierre"] for v in cache.velas(tk)} for tk in cache.indice}
     reg.evaluar_senales(fechas, cierres)
     reg.guardar()
+    try:  # el ranking con la etiqueta de habilidad se refresca todos los días (los niveles se cierran los viernes)
+        a.put("ranking/tabla", reg.ranking())
+    except Exception as ex:
+        print(f"[cierre] ranking: {ex}")
     rp = gratis.riesgo_pais() if not simular else {"valor": None}
     if rp.get("valor"):
         a.put("ref/riesgo_pais_cierre", {"valor": rp["valor"], "fecha": hoy.isoformat()})

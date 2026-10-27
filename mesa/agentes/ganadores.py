@@ -81,6 +81,8 @@ def entrenar(series: dict[str, list[dict]], paso: int = 3, realista: bool = True
     fechas = sorted({x["fecha"] for f in series.values() for x in f})
     base = {20: [], 60: []}
     res: dict[str, dict[int, list]] = {e: {20: [], 60: []} for e in ESTRATEGIAS}
+    base_y: dict[int, dict[str, list]] = {20: {}, 60: {}}  # por año: ¿le ganó al promedio en cada año, o solo en uno bueno?
+    res_y: dict[str, dict[int, dict[str, list]]] = {e: {20: {}, 60: {}} for e in ESTRATEGIAS}
     ultimo: dict[tuple, int] = {}
     for n, fe in enumerate(fechas[260::paso]):
         rs = _rs(series, idx, fe)
@@ -92,13 +94,17 @@ def entrenar(series: dict[str, list[dict]], paso: int = 3, realista: bool = True
             if not p0:
                 continue
             for h in (20, 60):
-                base[h].append((f[i + h]["c"] / p0 - 1) * 100)
+                r_ = (f[i + h]["c"] / p0 - 1) * 100
+                base[h].append(r_)
+                base_y[h].setdefault(fe[:4], []).append(r_)
             for e in evaluar_dia(f, i, rs.get(tk)):
                 if n - ultimo.get((tk, e), -99) < 7:  # no contar 7 veces la misma subida
                     continue
                 ultimo[(tk, e)] = n
                 for h in (20, 60):
-                    res[e][h].append((f[i + h]["c"] / p0 - 1) * 100)
+                    r_ = (f[i + h]["c"] / p0 - 1) * 100
+                    res[e][h].append(r_)
+                    res_y[e][h].setdefault(fe[:4], []).append(r_)
     out = {"realista": realista, "base": {h: {"casos": len(v), "promedio": round(st.mean(v), 2), "acierto": round(sum(1 for x in v if x > 0) / len(v) * 100, 1)}
                     for h, v in base.items() if v}, "estrategias": {}}
     for e, hs in res.items():
@@ -109,7 +115,12 @@ def entrenar(series: dict[str, list[dict]], paso: int = 3, realista: bool = True
                         "acierto": round(sum(1 for x in v if x > 0) / len(v) * 100, 1),
                         "exceso": round(st.mean(v) - out["base"][h]["promedio"], 2)}
         # el plazo es el que más le gana al promedio entre los que además aciertan más de la mitad
-        validos = [h for h in d if d[h]["acierto"] >= 52 and d[h]["casos"] >= 40]
+        for h in d:  # prueba por bloques de tiempo (año por año), como la validación de qlib
+            anios = {y: round(st.mean(v) - st.mean(base_y[h][y]), 2) for y, v in res_y[e][h].items() if len(v) >= 5 and base_y[h].get(y)}
+            d[h]["por_anio"] = anios
+            d[h]["anios_a_favor"] = f"{sum(1 for x in anios.values() if x > 0)} de {len(anios)}"
+            d[h]["estable"] = len(anios) < 3 or sum(1 for x in anios.values() if x > 0) / len(anios) >= 0.6
+        validos = [h for h in d if d[h]["acierto"] >= 52 and d[h]["casos"] >= 40 and d[h]["estable"]]
         h_mejor = max(validos or d, key=lambda h: d[h]["exceso"]) if d else None
         activa = bool(h_mejor in validos and d[h_mejor]["exceso"] >= 1.0)
         out["estrategias"][e] = {"nombre": ESTRATEGIAS[e], "horizontes": d, "plazo": h_mejor, "activa": activa}
