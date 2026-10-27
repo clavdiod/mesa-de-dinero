@@ -17,7 +17,7 @@ if not pl.get("precios_usd"):
     print("::notice::USD " + json.dumps(pu))
 est = a.get("ui/estado") or {}
 import os
-solo = os.environ.get("TK", "LRCX,IBB,IREN").split(",")
+solo = os.environ.get("TK", "BAK,LRCX,IREN").split(",")
 for k, x in (est.get("proyeccion_cartera") or {}).items():
     if k not in solo:
         continue

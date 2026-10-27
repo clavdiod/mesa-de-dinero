@@ -177,7 +177,7 @@ def entrenar(precios: dict[str, list[list]], etfs: dict[str, list[list]], sector
             if d[hz].get("casos"):
                 d[hz]["por_anio"] = anios
                 d[hz]["anios_a_favor"] = f"{sum(1 for x in anios.values() if x > 0)} de {len(anios)}"
-                d[hz]["estable"] = len(anios) < 3 or sum(1 for x in anios.values() if x > 0) / len(anios) >= 0.6
+                d[hz]["estable"] = len(anios) >= 3 and sum(1 for x in anios.values() if x > 0) / len(anios) >= 0.6  # con menos de 3 años no está probada
         validos = [hz for hz in d if d[hz].get("casos", 0) >= 30 and d[hz]["acierto"] >= 52 and d[hz]["le_gana"] >= 50
                    and d[hz].get("estable", True)]
         plazo = max(validos or d, key=lambda hz: d[hz].get("exceso", -99)) if d else None

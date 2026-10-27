@@ -119,7 +119,7 @@ def entrenar(series: dict[str, list[dict]], paso: int = 3, realista: bool = True
             anios = {y: round(st.mean(v) - st.mean(base_y[h][y]), 2) for y, v in res_y[e][h].items() if len(v) >= 5 and base_y[h].get(y)}
             d[h]["por_anio"] = anios
             d[h]["anios_a_favor"] = f"{sum(1 for x in anios.values() if x > 0)} de {len(anios)}"
-            d[h]["estable"] = len(anios) < 3 or sum(1 for x in anios.values() if x > 0) / len(anios) >= 0.6
+            d[h]["estable"] = len(anios) >= 3 and sum(1 for x in anios.values() if x > 0) / len(anios) >= 0.6  # con menos de 3 años no está probada
         validos = [h for h in d if d[h]["acierto"] >= 52 and d[h]["casos"] >= 40 and d[h]["estable"]]
         h_mejor = max(validos or d, key=lambda h: d[h]["exceso"]) if d else None
         activa = bool(h_mejor in validos and d[h_mejor]["exceso"] >= 1.0)
