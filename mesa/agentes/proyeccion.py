@@ -145,13 +145,14 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
                 else:
                     fuente = "techo normal a 1 mes (no hay un máximo reciente arriba)"
                 objetivo = rg[1]
-            # tu propio stop (una alerta de baja que dice "stop") manda sobre el técnico
-            mio = [al for al in (alertas or {}).get(tk, []) if al.get("tipo") == "baja" and "stop" in str(al.get("nota", "")).lower() and "cerca" not in str(al.get("nota", "")).lower()
-                   and al.get("moneda", "ARS") == "ARS" and al.get("nivel")]
-            if mio:
-                piso = max(float(al["nivel"]) for al in mio)
             if piso is None and rg:
                 piso = rg[0]
+        # tu propio stop (una alerta de baja que dice "stop", en tus alertas o en la posición) manda sobre el técnico
+        mio = [al for al in list((alertas or {}).get(tk, [])) + list(pos.get("alertas") or [])
+               if al.get("tipo") == "baja" and "stop" in str(al.get("nota", "")).lower() and "cerca" not in str(al.get("nota", "")).lower()
+               and al.get("moneda", "ARS") == "ARS" and al.get("nivel")]
+        if mio and not p:
+            piso = max(float(al["nivel"]) for al in mio)
         # la idea ya llegó a su objetivo: no se vende por eso. Se busca el SIGUIENTE objetivo (lo que todavía puede subir)
         # y se deja correr con un stop que sube solo. Así no se vende a 3.600 algo que puede ir a 5.000.
         corre = False
