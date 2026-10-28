@@ -93,6 +93,11 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
             continue
         velas = velas_de(tk) or []
         rg = _rango(velas, precio)
+        # el máximo desde que lo compraste (para no devolver la ganancia)
+        if pos.get("fecha"):
+            mx = [v.get("maximo") or v["cierre"] for v in velas if v.get("fecha", "") >= pos["fecha"] and v.get("cierre")]
+            mx.append(float(t.get("maximo") or precio))
+            x["max_desde_compra"] = max(mx)
         p = abiertas.get(tk)
         objetivo = piso = None
         fuente = None

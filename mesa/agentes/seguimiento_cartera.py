@@ -10,6 +10,7 @@ import math
 from datetime import date, timedelta
 
 RF = ("ons", "soberanos", "letras", "bonos", "cauciones", "provinciales", "renta fija")
+NOM_URG = {"vender_todo": "vendé todo", "vender_mitad": "vendé la mitad"}
 NOMBRE_ACCION = {"mantener": "Mantener", "subir_stop": "Subir el stop", "vender_mitad": "Vender la mitad", "vender_todo": "Vender todo"}
 
 
@@ -159,7 +160,15 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         # --- la sugerida ---
         cons = x.get("consejo") or ""
         plazo_cumplido = bool(dias is not None and total and dias >= total)
-        if cons.startswith("Vender"):
+        # alarma de "estás devolviendo la ganancia": llegó a ganar 5% o más y ya devolvió la mitad
+        mx = x.get("max_desde_compra")
+        gan_max = (mx / compra_p - 1) * 100 if mx and compra_p else None
+        devolviendo = bool(gan_max is not None and gan_max >= 5 and res is not None and res <= gan_max / 2)
+        if devolviendo:
+            sug = "vender_todo" if (res or 0) <= 1.5 else "vender_mitad"
+            por_que = (f"Llegó a ganar {_m(gan_max, 1)}% (máximo {_p(mx)}) y ya devolvió más de la mitad: hoy vas {_m(res, 1)}%. "
+                       + ("Salí antes de perder." if sug == "vender_todo" else "Asegurá al menos la mitad."))
+        elif cons.startswith("Vender"):
             sug, por_que = "vender_todo", x.get("motivo")
         elif cons.startswith("Tomar"):
             sug, por_que = "vender_mitad", x.get("motivo")
@@ -196,17 +205,19 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         if not cambios:
             cambios = ["Sin cambios importantes en la mesa."] if ay else ["Primer día de seguimiento."]
         if sug != "mantener" and avisados.get(tk) != f"{hoy_s}|{sug}":
-            avisos.append({"fecha": hoy_s, "hora": hora, "ticker": f"{tk} (decidir)",
-                           "texto": f"{tk}: la mesa sugiere «{NOMBRE_ACCION[sug]}». {por_que or ''} Entrá a Mi cartera y decidí."})
+            urgente = sug in ("vender_todo", "vender_mitad")
+            avisos.append({"fecha": hoy_s, "hora": hora, "ticker": f"{tk} ({'VENDER' if urgente else 'decidir'})",
+                           "texto": (f"🚨 {tk}: {NOM_URG.get(sug, NOMBRE_ACCION[sug]).upper()} AHORA. " if urgente else f"{tk}: la mesa sugiere «{NOMBRE_ACCION[sug]}». ")
+                                    + f"{por_que or ''} Precio {_p(precio)}" + (f", compraste a {_p(compra_p)}" if compra_p else "") + "."})
             avisados[tk] = f"{hoy_s}|{sug}"
         # el cartel: lo que hay que hacer, en una línea
         fv = (lambda f: f"{f[8:10]}/{f[5:7]}") if vence else None
         resto = (total - dias) if (total is not None and dias is not None) else None
         stop_txt = next((o for o in ops if o["accion"] == "subir_stop"), None)
         if sug == "vender_todo":
-            titular, color = "SALIR HOY", "rojo"
+            titular, color = ("VENDER HOY · estás devolviendo la ganancia" if devolviendo else "SALIR HOY"), "rojo"
         elif sug == "vender_mitad":
-            titular, color = "VENDER LA MITAD HOY", "amar"
+            titular, color = ("VENDER LA MITAD HOY · " + ("estás devolviendo la ganancia" if devolviendo else "llegó al objetivo" if cons.startswith("Tomar") else "")).rstrip(" ·"), "amar"
         elif resto == 1:
             titular, color = "SALIR MAÑANA · vence el plazo", "amar"
         elif piso and precio <= piso * 1.03:
