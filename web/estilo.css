@@ -206,3 +206,6 @@ details.dia-pron[open] { padding-bottom: 8px; }
 .cartel-fila { display: flex; width: 100%; gap: 8px; align-items: center; background: none; border: 0; border-top: 1px solid var(--borde); padding: 8px 0; color: var(--txt); text-align: left; }
 .cartel-fila:first-of-type { border-top: 0; }
 .cartel-fila .tk { font-weight: 700; min-width: 48px; }
+
+.prio { display: inline-block; background: var(--azul-bg); color: var(--azul); border-radius: 8px; padding: 0 6px; font-size: 12px; }
+.plan-ant { font-size: 13px; margin-bottom: 4px; }

@@ -658,6 +658,24 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         senales += _antic.senales(ag_, listas_ant[ag_], lambda tk: ctx.titulo(tk) is not None, fr_debil)
         for x in listas_ant[ag_].get("lista") or []:
             x["fr_contra"] = x["ticker"] in fr_debil
+    # cada idea de los anticipadores con su plan: entrada, stop, objetivo (+5%, lo que se probó), plazo y prioridad
+    from .agentes.seguimiento_cartera import sumar_ruedas as _sr
+    for ag_, l_ in listas_ant.items():
+        items = l_.get("lista") or []
+        for x in items:
+            try:
+                pl_ = riesgo.armar_plan(ctx, x["ticker"], 5)
+                if pl_:
+                    ent = round(pl_.entrada, 2)
+                    x["plan"] = {"entrada": ent, "stop": round(pl_.stop, 2), "objetivo": round(ent * 1.05, 2),
+                                 "stop_pct": round((pl_.stop / ent - 1) * 100, 1), "precio": (ctx.titulo(x["ticker"]) or {}).get("ultimo")}
+                base_f = date.fromisoformat(l_.get("fecha") or hoy.isoformat())
+                x["vence"] = _sr(base_f, 5).isoformat()  # 5 ruedas desde la lista (lo que se probó)
+            except Exception as ex:
+                print(f"[plan anticipador] {x.get('ticker')}: {ex}")
+        orden = sorted(items, key=lambda y: -(y.get("prob") or 0) * (0.5 if y.get("fr_contra") else 1))
+        for k_, x in enumerate(orden, 1):
+            x["prioridad"] = k_
     lista_ant = listas_ant["anticipador"]
     ctx.extra["anticipo_lista"] = lista_ant
     ctx.extra["anticipo_listas"] = {k: v for k, v in listas_ant.items() if k != "anticipador" and v.get("activo")}
