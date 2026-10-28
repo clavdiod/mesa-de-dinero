@@ -960,7 +960,9 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
             return {"ultimo": x[0], "grupo": x[4]} if x and x[0] else None
         proy_cartera = proyeccion.para_cartera(cartera, _tit, cache.velas, opinion_cartera, reg.propuestas, cons_d, precio_usa,
                                                (ctx.extra.get("ministro") or {}).get("cartera"), mis_cobros, (prot or {}).get("penitencia"),
-                                               {str(x.get("ticker", "")).upper(): x.get("alertas") or [] for x in (ctx.lista or [])})
+                                               {str(x.get("ticker", "")).upper(): (x.get("alertas") or []) + next((c.get("alertas") or [] for c in cartera
+                                                if str(c.get("ticker", "")).upper() == str(x.get("ticker", "")).upper()), [])
+                                                for x in list(ctx.lista or []) + list(cartera)})
     except Exception as ex:
         print(f"[proyeccion] {ex}")
 
@@ -1043,7 +1045,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     previas = almacen.get("ui/alertas") or []
     ya_avisadas = {(a["fecha"], a["ticker"]) for a in previas}
     try:
-        alertas_niv = _alertas_niveles(ctx, lista, almacen, simular)
+        alertas_niv = _alertas_niveles(ctx, lista + [c for c in cartera if c.get("alertas")], almacen, simular)
     except Exception as ex:
         print(f"[alertas de nivel] {ex}")
         alertas_niv = []

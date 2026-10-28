@@ -218,6 +218,7 @@ function pintarEstado() {
   pintarOportunidades();
   pintarResumenHoy();
   pintarRadarGanadores();
+  pintarCarteraHoy();
   pintarComite();
   $("#evaluados").innerHTML = (est.evaluados || []).map((e) => `<div class="card"><div class="fila"><b>${esc(e.ticker)}</b>
     <span class="chip ${e.riesgo.ok ? "verde" : "rojo"}">${e.riesgo.ok ? "Pasa" : "Rechazada"}</span></div>
@@ -454,6 +455,18 @@ function alertasItem(x, i) {
 }
 
 
+
+// ---------- 📌 tu cartera hoy: qué hacer con cada papel, en una línea ----------
+function pintarCarteraHoy() {
+  const box = $("#cartera-hoy"); if (!box) return;
+  const sc = ESTADO.estado?.seguimiento_cartera || {};
+  const xs = USUARIO.cartera.map((c) => sc[String(c.ticker).toUpperCase()]).filter(Boolean);
+  if (!xs.length) { box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="card"><b>📌 Tu cartera hoy</b>${xs.map((g) => `<button class="cartel-fila ir" data-ir="lista|#cartera">
+      <span class="tk">${esc(g.ticker)}</span><span class="cartel-dec mini ${g.color}">${esc(g.titular)}</span>
+      <span class="tenue">${g.resultado_pct != null ? pct(g.resultado_pct, 1) : ""}</span></button>`).join("")}</div>`;
+}
+
 // ---------- seguimiento diario de lo que tenés: plazo, qué cambió hoy y decidir (la decisión es tuya) ----------
 const NOM_ACC = { mantener: "Mantener", subir_stop: "Subir el stop", vender_mitad: "Vender la mitad", vender_todo: "Vender todo" };
 const decidioHoy = (tk, acc) => { const d = USUARIO.decisiones?.[tk]; return d && d.fecha === HOY() && (!acc || d.sugerida === acc); };
@@ -461,13 +474,17 @@ function segCartera(tk) {
   const g = (ESTADO.estado?.seguimiento_cartera || {})[tk]; if (!g) return "";
   const pr = g.total ? Math.min(100, Math.round((g.dias || 0) / g.total * 100)) : 0;
   const d = USUARIO.decisiones?.[tk], hoyDec = d && d.fecha === HOY();
-  return `<div class="seg">
+  const alts = ((USUARIO.cartera.find((y) => String(y.ticker).toUpperCase() === tk) || {}).alertas || []);
+  const disp = ESTADO.estado?.alertas_disparadas || {};
+  return `<div class="cartel-dec ${g.color || "verde"}">${esc(g.titular || NOM_ACC[g.sugerida])}</div>
+    <div class="seg">
     ${g.total ? `<div class="fila"><b>Día ${g.dias} de ${g.total}</b><span class="tenue">hasta el ${esc(fecha(g.vence))}${g.plazo_cumplido ? " · <b>plazo cumplido</b>" : ""}</span></div>
       <div class="barra-plazo"><i style="width:${pr}%;${g.plazo_cumplido ? "background:var(--amar)" : ""}"></i></div><div class="tenue" style="font-size:12px">${esc(g.plazo_motivo || "")}</div>`
       : '<div class="tenue">Sin fecha de compra: cargala de nuevo con fecha para seguir el plazo.</div>'}
     <div class="item-det"><b>Hoy:</b> ${g.cambios.map(esc).join(" ")}</div>
     <div class="item-det">Sugerido: <span class="chip ${g.sugerida === "vender_todo" ? "rojo" : g.sugerida === "mantener" ? "verde" : "amar"}"><b>${NOM_ACC[g.sugerida]}</b></span> ${esc(g.por_que || "")}</div>
     ${hoyDec ? `<div class="item-det">✔ Hoy decidiste: <b>${esc(NOM_ACC[d.accion] || d.accion)}</b>${d.detalle ? ` (${esc(d.detalle)})` : ""}</div>` : ""}
+    ${alts.length ? `<div class="item-det">${alts.map((a) => `🔔 ${a.tipo === "baja" ? "baja de" : "sube de"} <b>$${num(a.nivel)}</b> <span class="tenue">${esc(a.nota || "")}${disp[a.id] ? " · ya avisó" : ""}</span>`).join("<br>")}</div>` : ""}
     <button class="chico ${hoyDec ? "" : "prim"}" data-decidir="${esc(tk)}" style="margin-top:6px">${hoyDec ? "Cambiar decisión" : "Decidir"}</button></div>`;
 }
 function abrirDecidir(tk) {
@@ -504,10 +521,10 @@ function formDecidir(tk, g, o) {
       let detalle = "";
       if (o.accion === "subir_stop") {
         const nivel = aNum($("#dec-nivel").value); if (!nivel) return toast("Poné el precio");
-        let it = USUARIO.lista.find((y) => y.ticker === tk); if (!it) { it = { ticker: tk, precio: g.compra, nota: "" }; USUARIO.lista.push(it); }
+        const it = USUARIO.cartera.find((y) => String(y.ticker).toUpperCase() === tk); if (!it) return toast("No está en tu cartera");
         it.alertas = (it.alertas || []).filter((a) => !(a.tipo === "baja" && /stop/i.test(a.nota || "")));
         it.alertas.push({ id: `stop-${Date.now().toString(36)}`, tipo: "baja", nivel, moneda: "ARS", creada: HOY(), nota: `Stop (lo subiste el ${fecha(HOY())}): salir.` });
-        await put("usuario/lista", USUARIO.lista); detalle = `stop en ${num(nivel)}`;
+        await put("usuario/cartera", USUARIO.cartera); detalle = `stop en ${num(nivel)}`;
       } else if (o.accion !== "mantener") {
         const n = Math.round(aNum($("#dec-cant").value)), pv = aNum($("#dec-precio").value);
         const i = USUARIO.cartera.findIndex((y) => String(y.ticker).toUpperCase() === tk); if (i < 0 || !n || !pv) return toast("Revisá cantidad y precio");

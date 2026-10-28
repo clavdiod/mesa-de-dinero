@@ -197,3 +197,12 @@ details.dia-pron[open] { padding-bottom: 8px; }
 .seg { margin: 6px 0 2px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--borde); font-size: 14px; }
 .barra-plazo { height: 6px; border-radius: 3px; background: var(--borde); margin: 6px 0; overflow: hidden; }
 .barra-plazo i { display: block; height: 100%; background: var(--verde); }
+
+.cartel-dec { font-weight: 800; letter-spacing: .02em; padding: 10px 12px; border-radius: 10px; margin: 8px 0 4px; font-size: 15px; }
+.cartel-dec.verde { background: var(--verde-bg); color: var(--verde); }
+.cartel-dec.amar { background: var(--amar-bg); color: var(--amar); }
+.cartel-dec.rojo { background: var(--rojo-bg); color: var(--rojo); }
+.cartel-dec.mini { margin: 0; padding: 4px 8px; font-size: 12px; flex: 1; }
+.cartel-fila { display: flex; width: 100%; gap: 8px; align-items: center; background: none; border: 0; border-top: 1px solid var(--borde); padding: 8px 0; color: var(--txt); text-align: left; }
+.cartel-fila:first-of-type { border-top: 0; }
+.cartel-fila .tk { font-weight: 700; min-width: 48px; }

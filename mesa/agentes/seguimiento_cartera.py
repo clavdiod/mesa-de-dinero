@@ -149,7 +149,23 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
             avisos.append({"fecha": hoy_s, "hora": hora, "ticker": f"{tk} (decidir)",
                            "texto": f"{tk}: la mesa sugiere «{NOMBRE_ACCION[sug]}». {por_que or ''} Entrá a Mi cartera y decidí."})
             avisados[tk] = f"{hoy_s}|{sug}"
-        out[tk] = {"ticker": tk, "fecha_compra": f_compra, "vence": vence, "plazo_motivo": plazo_motivo, "dias": dias, "total": total,
+        # el cartel: lo que hay que hacer, en una línea
+        fv = (lambda f: f"{f[8:10]}/{f[5:7]}") if vence else None
+        resto = (total - dias) if (total is not None and dias is not None) else None
+        stop_txt = next((o for o in ops if o["accion"] == "subir_stop"), None)
+        if sug == "vender_todo":
+            titular, color = "SALIR HOY", "rojo"
+        elif sug == "vender_mitad":
+            titular, color = "VENDER LA MITAD HOY", "amar"
+        elif resto == 1:
+            titular, color = "SALIR MAÑANA · vence el plazo", "amar"
+        elif piso and precio <= piso * 1.03:
+            titular, color = f"ATENTO · a menos de 3% del stop ({_p(piso)})", "amar"
+        elif sug == "subir_stop" and stop_txt:
+            titular, color = f"MANTENER{' hasta el ' + fv(vence) if vence else ''} · subí el stop a {_p(stop_txt['nivel'])}", "verde"
+        else:
+            titular, color = f"MANTENER{' hasta el ' + fv(vence) if vence else ''}", "verde"
+        out[tk] = {"ticker": tk, "titular": titular, "color": color, "fecha_compra": f_compra, "vence": vence, "plazo_motivo": plazo_motivo, "dias": dias, "total": total,
                    "plazo_cumplido": plazo_cumplido, "cantidad": cant, "precio": precio, "compra": compra_p, "resultado_pct": res,
                    "sugerida": sug, "por_que": por_que, "opciones": ops, "cambios": cambios, "techo5": techo5, "piso": piso, "objetivo": obj,
                    "compra_punta": x.get("aviso_spread"), "ahora": ahora}
