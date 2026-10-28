@@ -47,14 +47,14 @@ def _vence(pos: dict, tk: str, propuestas: list[dict], libreta: list[dict], comp
     p = next((x for x in reversed(propuestas) if x["ticker"] == tk and x.get("decision") == "aprobada"
               and (x.get("seguimiento") or {}).get("estado") in ("abierta", "pendiente")), None)
     if p and (p.get("plan") or {}).get("vence"):
-        return p["plan"]["vence"], "plazo del plan del Jefe"
+        return p["plan"]["vence"], "plazo del plan del Comité"
     if compra:
         ideas = [x for x in libreta if x["ticker"] == tk and x.get("origen") not in ("anticipo",) and x.get("vence")
                  and x["fecha"] <= compra.isoformat() and (compra - date.fromisoformat(x["fecha"])).days <= 7]
         if ideas:
             x = max(ideas, key=lambda y: y["fecha"])
             nom = {"anticipador": "Anticipador", "ganadores": "Cazador de ganadores", "profesionales": "Herramientas de Wall Street",
-                   "mundo": "Corresponsal", "jefe": "Jefe", "oportunidad": "Oportunidad"}.get(x["origen"], x["origen"])
+                   "mundo": "Corresponsal", "jefe": "Comité", "oportunidad": "Oportunidad"}.get(x["origen"], x["origen"])
             return x["vence"], f"plazo de la idea del {nom}"
         return sumar_ruedas(compra, 20).isoformat(), "plazo general (20 ruedas)"
     return None, ""
