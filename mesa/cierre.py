@@ -459,9 +459,13 @@ def entrenar() -> dict:
     try:  # los otros dos anticipadores, con el mismo examen
         from .agentes import anticipadores as _A, profesionales as _pro3
         # 10 años gratis de Yahoo (.BA), en dólares CCL: con el efecto inflación sacado aprende mucho mejor (28/10)
-        acc_u, mv_u, rp10, ccl10 = _A.datos_arg([tk for tk, g in grupos.items() if g == "acciones"], 10)
+        # cuántos años: los que ganaron la última comparación (10, 15 o 20; ver scripts/probar_arg20.py)
+        import re as _re
+        _v = _re.search(r"usd_(\d+)a", str((a.get("anticipo_arg/modelo") or {}).get("version", "")))
+        anios_arg = int(_v.group(1)) if _v else 10
+        acc_u, mv_u, rp10, ccl10 = _A.datos_arg([tk for tk, g in grupos.items() if g == "acciones"], anios_arg)
         m_arg = _A.entrenar_arg(acc_u, mv_u, rp10, ccl10)
-        m_arg["version"] = "usd_10a"
+        m_arg["version"] = f"usd_{anios_arg}a"
         if m_arg.get("w"):
             a.put("anticipo_arg/modelo", m_arg)
         ced_e = {tk: f for tk, f in ohlcv.items() if grupos.get(tk) != "acciones"}

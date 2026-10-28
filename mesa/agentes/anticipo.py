@@ -114,8 +114,9 @@ def contexto_mkt(fecha: str, spy: dict[str, float], vix: dict[str, float], btc: 
 
 
 def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, paso: int = 2, realista: bool = True,
-             ctx_fn=None, rasgos_fn=None, nombres: list[str] | None = None) -> dict:
-    """Aprende con el 70% inicial del tiempo y se prueba con el 30% final.
+             ctx_fn=None, rasgos_fn=None, nombres: list[str] | None = None, desde_prueba: str | None = None) -> dict:
+    """desde_prueba: examen fijo desde esa fecha (para comparar historias de distinto largo con el mismo examen).
+    Aprende con el 70% inicial del tiempo y se prueba con el 30% final.
     Objetivo: ¿sube 5% o más (en algún cierre) en las 5 ruedas siguientes?
     ctx_fn(fecha) y rasgos_fn(f, i, ctx, ticker) permiten otros anticipadores (Argentina, Mundo) con el mismo método."""
     filas = []
@@ -144,6 +145,9 @@ def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, pas
         return {"activo": False, "motivo": f"Pocos casos ({len(filas)})."}
     filas.sort(key=lambda r: r[0])
     corte = int(len(filas) * 0.7)
+    if desde_prueba:
+        import bisect as _b
+        corte = _b.bisect_left([r[0] for r in filas], desde_prueba)
     tr, te = filas[:corte], filas[corte:]
     X = np.array([r[2] for r in tr]); y = np.array([r[3] for r in tr])
     mu, sd = X.mean(0), X.std(0) + 1e-9

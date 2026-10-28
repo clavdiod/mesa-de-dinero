@@ -41,8 +41,8 @@ def _r(serie: dict, fecha: str, n: int) -> float:
 
 
 # ---------- Argentina ----------
-def entrenar_arg(acciones: dict[str, list[dict]], merval: dict, riesgo_pais: dict, ccl: dict) -> dict:
-    m = anticipo.entrenar(acciones, merval, riesgo_pais, ccl, nombres=NOMBRES_ARG)
+def entrenar_arg(acciones: dict[str, list[dict]], merval: dict, riesgo_pais: dict, ccl: dict, desde_prueba: str | None = None) -> dict:
+    m = anticipo.entrenar(acciones, merval, riesgo_pais, ccl, nombres=NOMBRES_ARG, desde_prueba=desde_prueba)
     m["nombre"] = "Anticipador ARG"
     return m
 
