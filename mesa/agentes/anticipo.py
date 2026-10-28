@@ -54,7 +54,8 @@ def senales_atraso(lista: list[dict]) -> list[Senal]:
         costo = ""
         if a.get("spread"):
             total = 1.2 + a["spread"]
-            resto = "no alcanza a cubrirlo" if a.get("no_cubre") else f"quedaría {a.get('neto', 0):+.1f}% neto"
+            resto = (("poco volumen: comprás caro y vendés barato, y eso se come la ganancia" if a["spread"] >= 2 else "no alcanza a cubrir la comisión")
+                     if a.get("no_cubre") else f"quedaría {a.get('neto', 0):+.1f}% neto")
             costo = f" Pero entrar y salir cuesta {total:.1f}% (diferencia compra/venta {a['spread']:.1f}%): {resto}."
         f = round(min(0.8, 0.3 + abs(a["atraso"]) / 10), 2)
         if a.get("no_cubre"):
