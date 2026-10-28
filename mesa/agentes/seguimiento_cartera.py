@@ -163,7 +163,9 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         # alarma de "estás devolviendo la ganancia": llegó a ganar 5% o más y ya devolvió la mitad
         mx = x.get("max_desde_compra")
         gan_max = (mx / compra_p - 1) * 100 if mx and compra_p else None
-        devolviendo = bool(gan_max is not None and gan_max >= 5 and res is not None and res <= gan_max / 2)
+        # solo con al menos una rueda completa desde la compra: el mismo día no hay ganancia "devuelta"
+        devolviendo = bool(gan_max is not None and gan_max >= 5 and res is not None and res <= gan_max / 2
+                           and (dias or 0) >= 1)
         if devolviendo:
             sug = "vender_todo" if (res or 0) <= 1.5 else "vender_mitad"
             por_que = (f"Llegó a ganar {_m(gan_max, 1)}% (máximo {_p(mx)}) y ya devolvió más de la mitad: hoy vas {_m(res, 1)}%. "

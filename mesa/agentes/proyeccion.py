@@ -95,8 +95,11 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
         rg = _rango(velas, precio)
         # el máximo desde que lo compraste (para no devolver la ganancia)
         if pos.get("fecha"):
-            mx = [v.get("maximo") or v["cierre"] for v in velas if v.get("fecha", "") >= pos["fecha"] and v.get("cierre")]
-            mx.append(float(t.get("maximo") or precio))
+            # el día de la compra no cuenta su máximo (pudo ser ANTES de que compraras): se toma desde el día siguiente
+            from datetime import date as _hoy
+            mx = [v.get("maximo") or v["cierre"] for v in velas if v.get("fecha", "") > pos["fecha"] and v.get("cierre")]
+            mx.append(float(t.get("maximo") or precio) if _hoy.today().isoformat() > pos["fecha"] else precio)
+            mx.append(compra or precio)
             x["max_desde_compra"] = max(mx)
         p = abiertas.get(tk)
         objetivo = piso = None
