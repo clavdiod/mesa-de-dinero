@@ -1,11 +1,14 @@
-"""BAK pasó $1.050 (máximo 1.210 el 27/10): el stop sube a $988, el precio de compra."""
+"""Alertas de BAK en la cartera (stop en el precio de compra, aviso antes, y toma de ganancia)."""
 import json
 from mesa.nucleo.almacen import almacen_por_defecto
 a = almacen_por_defecto()
-lista = a.get("usuario/lista") or []
-it = next((x for x in lista if x.get("ticker") == "BAK"), None)
-it["alertas"] = [x for x in it.get("alertas") or [] if x.get("id") not in ("bak-baja-905", "bak-baja-930", "bak-sube-1050")]
-it["alertas"] += [{"id": "bak-baja-1020", "tipo": "baja", "nivel": 1020, "moneda": "ARS", "creada": "2026-10-27", "nota": "Ojo: se acerca a tu precio de compra."},
-                  {"id": "bak-baja-988", "tipo": "baja", "nivel": 988, "moneda": "ARS", "creada": "2026-10-27", "nota": "Stop en tu precio de compra (ya pasó $1.050): salir sin perder."}]
-a.put("usuario/lista", lista)
-print("::notice::" + json.dumps(it, ensure_ascii=False)[:1500])
+cart = a.get("usuario/cartera") or []
+c = next(x for x in cart if str(x.get("ticker", "")).upper() == "BAK")
+ids = {x.get("id") for x in c.get("alertas") or []}
+for al in [{"id": "bak-c-sube-1100", "tipo": "sube", "nivel": 1100, "moneda": "ARS", "creada": "2026-10-28", "nota": "Tomar ganancia: vender la mitad (95)."},
+           {"id": "bak-c-baja-1020", "tipo": "baja", "nivel": 1020, "moneda": "ARS", "creada": "2026-10-28", "nota": "Ojo: se acerca a tu precio de compra."},
+           {"id": "bak-c-baja-988", "tipo": "baja", "nivel": 988, "moneda": "ARS", "creada": "2026-10-28", "nota": "Stop en tu precio de compra: salir sin perder."}]:
+    if al["id"] not in ids:
+        c.setdefault("alertas", []).append(al)
+a.put("usuario/cartera", cart)
+print("::notice::" + json.dumps(c, ensure_ascii=False))
