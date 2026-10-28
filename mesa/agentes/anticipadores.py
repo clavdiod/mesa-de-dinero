@@ -157,12 +157,15 @@ def senales(agente: str, lista: dict, existe, fr_debil: set[str]) -> list[Senal]
     if not lista.get("activo"):
         return out
     nom = AGENTES[agente][1]
+    vol = lista.get("volatil") or {}
+    pv = float(vol.get("peso") or 1.0) if vol.get("hoy") else 1.0  # en días volátiles pesa según cómo anduvo en días así
     for x in lista.get("lista") or []:
         x["fr_contra"] = x["ticker"] in fr_debil
         if existe(x["ticker"]):
-            out.append(Senal(agente, x["ticker"], 1, round(min(0.8, 0.3 + x["prob"]) * (0.5 if x["fr_contra"] else 1), 2),
+            out.append(Senal(agente, x["ticker"], 1, round(min(0.8, 0.3 + x["prob"]) * (0.5 if x["fr_contra"] else 1) * pv, 2),
                              f"{nom}: precursores de suba para esta semana ({x['prob'] * 100:.0f}% de probabilidad de subir 5% o más): "
-                             + (", ".join(x["razones"]) or "combinación de señales previas") + ".", x))
+                             + (", ".join(x["razones"]) or "combinación de señales previas") + "."
+                             + (f" Día volátil: {'lo eligió el especialista en días así' if vol.get('especialista') else 'el modelo de siempre anda bien en días así'}." if vol.get("hoy") else ""), x))
     return out
 
 

@@ -133,3 +133,11 @@
     Se probó con toda la historia diaria de Yahoo (desde 2000) y el CCL implícito de Galicia antes de 2013, todos con el
     mismo examen (últimos 3 años). 10 años: 55,3 de cada 100 / +5,16% a 5 ruedas; 15: 54,2 / +4,65%; 20: 55,1 / +5,40%;
     26: 53,0 / +4,85%. Más historia no mejora de forma clara (la Argentina de 2001-2012 se movía distinto): queda 10 años.
+- fecha: "2026-10-28"
+  tema: Capacitación para tiempos volátiles
+  texto: >-
+    Día volátil = índice (Merval USD o S&P 500) con volatilidad de 20 ruedas en el 25% más alto, riesgo país +10% en 5 ruedas
+    o VIX 25+. Con el mismo examen (el 30% más reciente de los días volátiles): Anticipador: de siempre 53/100 +3,0%,
+    especialista 54/100 +3,3% → se usa el especialista. ARG: de siempre 61/100 +6,0%, especialista 59/100 +6,2% → queda el de
+    siempre. Mundo: de siempre 63/100 +5,7%, especialista 60/100 +5,3% → queda el de siempre. Los tres anticipan bien en días
+    volátiles (mejor que al azar: 30-42). Se rehace cada viernes con el reentrenamiento.

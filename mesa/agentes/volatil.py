@@ -107,3 +107,14 @@ def modelo_del_dia(modelo: dict, volatil_hoy: bool) -> dict:
     if volatil_hoy and v.get("usar_especialista") and v.get("w"):
         return {**modelo, "mu": v["mu"], "sd": v["sd"], "w": v["w"], "umbral": v["umbral"]}
     return modelo
+
+
+def estado_lista(modelo: dict, volatil_hoy: bool, por: str) -> dict:
+    """Lo que se muestra junto a la lista: si hoy es volátil, qué modelo se usó y cuánto pesa su voto."""
+    v = modelo.get("volatil") or {}
+    if not volatil_hoy:
+        return {"hoy": False}
+    return {"hoy": True, "por": por, "especialista": bool(v.get("usar_especialista")), "peso": v.get("peso", 1.0),
+            "texto": ("Día volátil (" + por + "): " + ("se usa el especialista en días volátiles." if v.get("usar_especialista")
+                      else "el modelo de siempre es el que mejor anda en días así.")
+                      + ("" if v.get("bueno", True) else " En días así anticipa peor: su voto pesa menos."))}

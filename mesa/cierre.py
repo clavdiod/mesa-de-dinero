@@ -198,9 +198,13 @@ def diario(simular: bool = False) -> dict:
                         vx6 = {f: c for f, c in _g2.yahoo("^VIX", "6mo")}
                         bt6 = {f: c for f, c in _g2.yahoo("BTC-USD", "6mo")}
                         sect = {k: v for k, v in (a.get("profesionales/sectores") or {}).items() if v}
-                        lm = _A.lista_mundo(mm, {tk: f for tk, f in ser.items()}, sp6, vx6, bt6, g6, sect, e6, max(sp6) if sp6 else hoy.isoformat())
-                        a.put("anticipo_mundo/lista", {"fecha": hoy.isoformat(), "activo": mm.get("activo"), "umbral": mm.get("umbral"),
-                                                       "prueba": mm.get("prueba"), "lista": [x for x in lm if x["prob"] >= (mm.get("umbral") or 1)][:10]})
+                        from .agentes import volatil as _V
+                        vh, vpor = _V.hoy_volatil("mundo", sp6, vx6, (mm.get("volatil") or {}).get("umbral_vol"))
+                        mm_d = _V.modelo_del_dia(mm, vh)
+                        lm = _A.lista_mundo(mm_d, {tk: f for tk, f in ser.items()}, sp6, vx6, bt6, g6, sect, e6, max(sp6) if sp6 else hoy.isoformat())
+                        a.put("anticipo_mundo/lista", {"fecha": hoy.isoformat(), "activo": mm.get("activo"), "umbral": mm_d.get("umbral"),
+                                                       "prueba": mm.get("prueba"), "volatil": _V.estado_lista(mm, vh, vpor),
+                                                       "lista": [x for x in lm if x["prob"] >= (mm_d.get("umbral") or 1)][:10]})
                 except Exception as ex2:
                     print(f"[cierre] anticipador mundo: {ex2}")
                 for tk in cache.indice:
@@ -212,9 +216,13 @@ def diario(simular: bool = False) -> dict:
                 vix = {f: c for f, c in _g2.yahoo("^VIX", "3mo")}
                 btc = {f: c for f, c in _g2.yahoo("BTC-USD", "3mo")}
                 cm = _ant2.contexto_mkt(max(spy) if spy else hoy.isoformat(), spy, vix, btc)
-                lista = _ant2.puntuar(mod, ser, cm)
-                a.put("anticipo/lista", {"fecha": hoy.isoformat(), "activo": mod.get("activo"), "umbral": mod.get("umbral"),
-                                         "prueba": mod.get("prueba"), "lista": [x for x in lista if x["prob"] >= (mod.get("umbral") or 1)][:15]})
+                from .agentes import volatil as _V
+                vh, vpor = _V.hoy_volatil("mundo", spy, vix, (mod.get("volatil") or {}).get("umbral_vol"))
+                mod_d = _V.modelo_del_dia(mod, vh)
+                lista = _ant2.puntuar(mod_d, ser, cm)
+                a.put("anticipo/lista", {"fecha": hoy.isoformat(), "activo": mod.get("activo"), "umbral": mod_d.get("umbral"),
+                                         "prueba": mod.get("prueba"), "volatil": _V.estado_lista(mod, vh, vpor),
+                                         "lista": [x for x in lista if x["prob"] >= (mod_d.get("umbral") or 1)][:15]})
         except Exception as ex:
             print(f"[cierre] anticipador: {ex}")
 
@@ -238,9 +246,14 @@ def diario(simular: bool = False) -> dict:
                 ccl_m = mac.get("ccl") or {}
                 if str(ma.get("version", "")).startswith("usd"):  # el modelo aprendió en dólares CCL: la lista también
                     acc, mv = _A.a_dolares(acc, ccl_m), _A.merval_dolares(mv, ccl_m)
-                la = _A.lista_arg(ma, acc, mv, mac.get("riesgo_pais") or {}, ccl_m, hoy.isoformat())
-                a.put("anticipo_arg/lista", {"fecha": hoy.isoformat(), "activo": ma.get("activo"), "umbral": ma.get("umbral"),
-                                             "prueba": ma.get("prueba"), "lista": [x for x in la if x["prob"] >= (ma.get("umbral") or 1)][:10]})
+                from .agentes import volatil as _V
+                mv_u = mv if str(ma.get("version", "")).startswith("usd") else _A.merval_dolares(mv, ccl_m)
+                vh, vpor = _V.hoy_volatil("arg", mv_u, mac.get("riesgo_pais") or {}, (ma.get("volatil") or {}).get("umbral_vol"))
+                ma_d = _V.modelo_del_dia(ma, vh)
+                la = _A.lista_arg(ma_d, acc, mv, mac.get("riesgo_pais") or {}, ccl_m, hoy.isoformat())
+                a.put("anticipo_arg/lista", {"fecha": hoy.isoformat(), "activo": ma.get("activo"), "umbral": ma_d.get("umbral"),
+                                             "prueba": ma.get("prueba"), "volatil": _V.estado_lista(ma, vh, vpor),
+                                             "lista": [x for x in la if x["prob"] >= (ma_d.get("umbral") or 1)][:10]})
         except Exception as ex:
             print(f"[cierre] anticipador arg: {ex}")
 
@@ -455,6 +468,12 @@ def entrenar() -> dict:
     vx = {f: c for f, c in datos5["indices"].get("^VIX", [])}
     bt = {f: c for f, c in gratis.yahoo("BTC-USD", "5y")}
     mod_a = _ant.entrenar(ohlcv, sp, vx, bt)
+    from .agentes import volatil as _V
+    try:  # capacitación para tiempos volátiles (especialista + examen solo en días volátiles)
+        dm_, um_ = _V.dias_mundo(sp, vx)
+        mod_a["volatil"] = _V.capacitar(lambda **kw: _ant.entrenar(ohlcv, sp, vx, bt, **kw), dm_, um_, "Anticipador")
+    except Exception as ex:
+        print(f"[entrenar] volátil anticipador: {ex}")
     a.put("anticipo/modelo", mod_a)
     try:  # los otros dos anticipadores, con el mismo examen
         from .agentes import anticipadores as _A, profesionales as _pro3
@@ -466,12 +485,22 @@ def entrenar() -> dict:
         acc_u, mv_u, rp10, ccl10 = _A.datos_arg([tk for tk, g in grupos.items() if g == "acciones"], anios_arg)
         m_arg = _A.entrenar_arg(acc_u, mv_u, rp10, ccl10)
         m_arg["version"] = f"usd_{anios_arg}a"
+        try:
+            da_, ua_ = _V.dias_arg(mv_u, rp10)
+            m_arg["volatil"] = _V.capacitar(lambda **kw: _A.entrenar_arg(acc_u, mv_u, rp10, ccl10, **kw), da_, ua_, "Anticipador ARG")
+        except Exception as ex:
+            print(f"[entrenar] volátil ARG: {ex}")
         if m_arg.get("w"):
             a.put("anticipo_arg/modelo", m_arg)
         ced_e = {tk: f for tk, f in ohlcv.items() if grupos.get(tk) != "acciones"}
         g5 = {k: {f: c for f, c in gratis.yahoo(sym, "5y")} for k, sym in _A.GLOBALES.items()}
         e5 = {e: {f: c for f, c in gratis.yahoo(e, "5y")} for e in _pro3.NOMBRE_SECTOR}
-        m_mun = _A.entrenar_mundo(ced_e, sp, vx, bt, g5, {k: v for k, v in (a.get("profesionales/sectores") or {}).items() if v}, e5)
+        sect_e = {k: v for k, v in (a.get("profesionales/sectores") or {}).items() if v}
+        m_mun = _A.entrenar_mundo(ced_e, sp, vx, bt, g5, sect_e, e5)
+        try:
+            m_mun["volatil"] = _V.capacitar(lambda **kw: _A.entrenar_mundo(ced_e, sp, vx, bt, g5, sect_e, e5, **kw), dm_, um_, "Anticipador Mundo")
+        except Exception as ex:
+            print(f"[entrenar] volátil mundo: {ex}")
         if m_mun.get("w"):
             a.put("anticipo_mundo/modelo", m_mun)
         ens["anticipador_arg"] = _A.resumen_prueba(m_arg)

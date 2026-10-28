@@ -209,3 +209,4 @@ details.dia-pron[open] { padding-bottom: 8px; }
 
 .prio { display: inline-block; background: var(--azul-bg); color: var(--azul); border-radius: 8px; padding: 0 6px; font-size: 12px; }
 .plan-ant { font-size: 13px; margin-bottom: 4px; }
+.aviso-vol { background: rgba(245, 180, 40, .12); border-left: 3px solid var(--amar, #f5b428); padding: 8px 10px; border-radius: 8px; margin: 0 0 10px; }

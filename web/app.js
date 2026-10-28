@@ -792,7 +792,10 @@ function pintarAnticipos() {
     const pp = l.prueba || {};
     return `<details class="dia-pron" open><summary><b>${NOM_EXTRA[ag] || ag}</b> <span class="tenue">· ${l.lista.length} para los próximos días${pp.top10_pct ? ` · en el examen ${num(pp.top10_pct, 0)} de cada 100 subieron 5% (al azar ${num(pp.base_pct, 0)})` : ""}</span></summary>${filas}
       <p><button class="chico" data-ir-pron="${ag}">📋 Ver sus pronósticos</button></p></details>`; }).join("");
-  $("#anticipos").innerHTML = `<h2>⏩ Anticipos <span class="hora">· ${esc(e.hora || "")}</span></h2><div class="card eco">${tablaAt}${tablaLi}${extras}${est}</div>`;
+  // día volátil: qué modelo se usó (capacitación para tiempos volátiles)
+  const vols = [li, ...Object.values(e.anticipo_listas || {})].map((l) => l && l.volatil).filter((v) => v && v.hoy);
+  const volTxt = vols.length ? `<p class="aviso-vol">⚡ <b>Día volátil</b> (${esc(vols[0].por || "")}). ${vols.some((v) => v.especialista) ? "Donde ganó el examen se usa el especialista entrenado solo con días así." : "Los modelos de siempre son los que mejor andan en días así."}</p>` : "";
+  $("#anticipos").innerHTML = `<h2>⏩ Anticipos <span class="hora">· ${esc(e.hora || "")}</span></h2><div class="card eco">${volTxt}${tablaAt}${tablaLi}${extras}${est}</div>`;
 }
 
 // ---------- radar del mercado ----------
