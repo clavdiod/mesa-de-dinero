@@ -25,6 +25,7 @@ def atrasos(ctx, vivo: dict[str, dict], ccl_now: float | None, ccl_ayer: float |
     if not ccl_now or not ccl_ayer:
         return []
     byma_abierto = minuto >= 11 * 60
+    en_horario = 11 * 60 <= minuto < 17 * 60
     out = []
     for tk, v in vivo.items():
         t = ctx.titulo(tk)
@@ -36,7 +37,7 @@ def atrasos(ctx, vivo: dict[str, dict], ccl_now: float | None, ccl_ayer: float |
         atraso = round(esperado - mov, 2)
         if abs(atraso) >= umbral and abs(us) >= 1.5:
             from ..nucleo.calc import spread_pct
-            sp = spread_pct(t) if byma_abierto else None
+            sp = spread_pct(t) if en_horario else None
             neto = round(abs(atraso) - 1.2 - (sp or 0), 2)  # lo que queda después de comisión y diferencia compra/venta
             out.append({"ticker": tk, "us": round(us, 2), "esperado": round(esperado, 2), "cedear": round(mov, 2),
                         "atraso": atraso, "antes_de_abrir": not byma_abierto, "precio_cedear": t.get("ultimo"),

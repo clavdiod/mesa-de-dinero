@@ -60,7 +60,7 @@ def _tecnico_cercano(velas: list[dict], precio: float) -> float | None:
 
 def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuestas: list[dict], consensos: dict,
                  precio_usa: dict, ministro: list[dict] | None, cobros: list[dict], penitencia: dict | None = None,
-                 alertas: dict | None = None) -> dict:
+                 alertas: dict | None = None, hora: str | None = None) -> dict:
     """Devuelve {ticker: {...}} para cada posición de la cartera."""
     out = {}
     min_por = {m.get("ticker"): m for m in ministro or []}
@@ -149,7 +149,7 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
             consejo, motivo = "Mantener", ("La mesa está a favor." if mesa == "a favor" else "Sin señales fuertes en ningún sentido.") + \
                 (f" Le queda {pot:.0f}% hasta el objetivo." if pot and pot > 0 else "")
         from ..nucleo.calc import spread_pct
-        sp = spread_pct(t)
+        sp = spread_pct(t, hora)
         if sp and sp >= 2:
             x["aviso_spread"] = (f"Diferencia entre compra y venta: {_m(sp, 1)}%. Si vendés, hacelo con orden límite cerca de la punta "
                                  f"compradora ({_m(t['compra'])}), nunca a mercado: perderías esa diferencia de golpe.")

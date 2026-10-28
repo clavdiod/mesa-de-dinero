@@ -74,7 +74,7 @@ def evaluar(ctx: Contexto, plan: Plan, estado: dict, vetos: set[str]) -> dict:
     # costo real de entrar y salir: comisión + la diferencia entre compra y venta (se compra a la punta vendedora
     # y se vende a la compradora). En papeles que operan poco, la diferencia puede comerse toda la ganancia.
     from ..nucleo.calc import spread_pct
-    spread = spread_pct(t)
+    spread = spread_pct(t, getattr(ctx, "hora", None))
     costo = com + (spread or 0)
     rn = plan.r_neto(costo)
     if rn < c["r_minimo_neto"]:

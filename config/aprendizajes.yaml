@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: "2026-10-28"
+  caso: "'No cubre el costo' en todos los anticipos: estaba mal calculado fuera de horario"
+  que_paso: "La ronda de las 19:40 midió la diferencia entre compra y venta con las puntas que quedan después del cierre de BYMA: ofertas sueltas como BAK compra $948 / venta $1.490 (57%) o RKLB 43%. Con eso, todos los anticipos parecían no cubrir el costo."
+  leccion: "Después de las 17 las puntas no son precios reales. Y una diferencia de más de 8% casi siempre es un libro vacío, no un costo."
+  cambio: "La diferencia entre compra y venta solo se usa de 11 a 17 y si es creíble (8% o menos); si no, solo se descuenta la comisión. La comisión de 1,2% ida y vuelta se verificó contra el tarifario de Cocos (0,45% + IVA por operación más derechos de mercado)."
+- fecha: "2026-10-28"
   caso: "El plazo de cada papel no puede ser fijo"
   que_paso: "El plazo salía de la idea que había marcado el papel el día de la compra (por ejemplo, 5 ruedas para el Anticipador o 60 para una oportunidad de mediano plazo) y no se movía, aunque cambiaran la mesa, la estadística o las noticias."
   leccion: "Un evento puede cambiar si conviene tener un papel: el plazo se revisa todos los días."

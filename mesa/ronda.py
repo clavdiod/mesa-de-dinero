@@ -962,7 +962,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                                                (ctx.extra.get("ministro") or {}).get("cartera"), mis_cobros, (prot or {}).get("penitencia"),
                                                {str(x.get("ticker", "")).upper(): (x.get("alertas") or []) + next((c.get("alertas") or [] for c in cartera
                                                 if str(c.get("ticker", "")).upper() == str(x.get("ticker", "")).upper()), [])
-                                                for x in list(ctx.lista or []) + list(cartera)})
+                                                for x in list(ctx.lista or []) + list(cartera)}, ctx.hora)
     except Exception as ex:
         print(f"[proyeccion] {ex}")
 

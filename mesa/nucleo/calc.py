@@ -155,11 +155,18 @@ def simular_on(on: dict, precio_por_100: float, hoy: date, capital: float | None
             "tir_pct": tir(precio_por_100, flujo_por_nominales(on, 100, hoy), hoy)}
 
 
-def spread_pct(t: dict | None) -> float | None:
+SPREAD_MAX_CREIBLE = 8.0  # más que esto casi siempre es un libro vacío (fuera de horario o sin operadores), no un costo real
+
+
+def spread_pct(t: dict | None, hora: str | None = None) -> float | None:
     """Diferencia entre la punta vendedora y la compradora, en % (lo que se pierde por entrar y salir enseguida).
-    None si no hay puntas o el libro está cruzado (pre-apertura)."""
+    None si no hay puntas, el libro está cruzado (pre-apertura), es fuera del horario de BYMA (11 a 17: después del
+    cierre las puntas que quedan son ofertas sueltas, no precios reales) o la diferencia es absurda."""
     t = t or {}
+    if hora and not ("11:00" <= hora < "17:00"):
+        return None
     c, v = t.get("compra"), t.get("venta")
     if not c or not v or v < c:
         return None
-    return round((v / c - 1) * 100, 2)
+    sp = round((v / c - 1) * 100, 2)
+    return sp if sp <= SPREAD_MAX_CREIBLE else None
