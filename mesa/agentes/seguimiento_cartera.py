@@ -54,8 +54,8 @@ def _vence(pos: dict, tk: str, propuestas: list[dict], libreta: list[dict], comp
         if ideas:
             x = max(ideas, key=lambda y: y["fecha"])
             nom = {"anticipador": "Anticipador", "ganadores": "Cazador de ganadores", "profesionales": "Herramientas de Wall Street",
-                   "mundo": "Corresponsal", "jefe": "Comité", "oportunidad": "Oportunidad"}.get(x["origen"], x["origen"])
-            return x["vence"], f"plazo de la idea del {nom}"
+                   "mundo": "Corresponsal", "jefe": "Comité", "oportunidad": "Oportunidad de la mesa"}.get(x["origen"], x["origen"])
+            return x["vence"], f"plazo de la idea que lo marcó ({nom})"
         return sumar_ruedas(compra, 20).isoformat(), "plazo general (20 ruedas)"
     return None, ""
 
