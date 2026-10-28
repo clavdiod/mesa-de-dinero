@@ -52,6 +52,41 @@ def lista_arg(modelo: dict, acciones: dict[str, list[dict]], merval: dict, riesg
     return anticipo.puntuar(modelo, acciones, cx)
 
 
+def a_dolares(series: dict[str, list[dict]], ccl: dict) -> dict[str, list[dict]]:
+    """Pasa las velas en pesos a dólares CCL del mismo día (le saca el efecto de la inflación y la devaluación)."""
+    import bisect
+    fs = sorted(ccl)
+    out = {}
+    for tk, f in series.items():
+        v = []
+        for x in f:
+            j = bisect.bisect_right(fs, x["fecha"]) - 1
+            if j < 0 or not ccl[fs[j]]:
+                continue
+            c = ccl[fs[j]]
+            v.append({**x, "c": x["c"] / c, "h": x["h"] / c, "l": x["l"] / c, "o": ((x.get("o") or x["c"]) / c)})
+        out[tk] = v
+    return out
+
+
+def merval_dolares(merval: dict, ccl: dict) -> dict:
+    import bisect
+    fs = sorted(ccl)
+    return {f: v / ccl[fs[bisect.bisect_right(fs, f) - 1]] for f, v in merval.items() if fs and f >= fs[0]}
+
+
+def datos_arg(tickers: list[str], anios: int = 10) -> tuple[dict, dict, dict, dict]:
+    """5-10 años gratis de Yahoo (.BA), Merval, riesgo país y CCL. Devuelve (acciones en USD, merval USD, riesgo país, ccl)."""
+    from concurrent.futures import ThreadPoolExecutor
+    from ..datos import gratis
+    with ThreadPoolExecutor(8) as ex:
+        ser = {tk: f for tk, f in zip(tickers, ex.map(lambda t: gratis.yahoo_ohlcv(t + ".BA", f"{anios}y"), tickers)) if len(f) > 300}
+    macro = gratis.series_macro(anios)
+    rp, ccl = macro.get("riesgo_pais") or {}, macro.get("ccl") or {}
+    merval = {f: c for f, c in gratis.yahoo("^MERV", f"{anios}y")}
+    return {k: v for k, v in a_dolares(ser, ccl).items() if len(v) > 300}, merval_dolares(merval, ccl), rp, ccl
+
+
 # ---------- Mundo ----------
 def _ctx_mundo(glob: dict[str, dict], spy: dict, vix: dict, btc: dict):
     def fn(fe: str) -> dict:

@@ -235,7 +235,10 @@ def diario(simular: bool = False) -> dict:
                                         "v": v.get("volumen") or 0} for v in vs[-200:] if v.get("cierre")]
                 mv = {f: c for f, c in _g3.yahoo("^MERV", "6mo")}
                 mac = (a.get("macro/series") or {}).get("series") or {}
-                la = _A.lista_arg(ma, acc, mv, mac.get("riesgo_pais") or {}, mac.get("ccl") or {}, hoy.isoformat())
+                ccl_m = mac.get("ccl") or {}
+                if str(ma.get("version", "")).startswith("usd"):  # el modelo aprendió en dólares CCL: la lista también
+                    acc, mv = _A.a_dolares(acc, ccl_m), _A.merval_dolares(mv, ccl_m)
+                la = _A.lista_arg(ma, acc, mv, mac.get("riesgo_pais") or {}, ccl_m, hoy.isoformat())
                 a.put("anticipo_arg/lista", {"fecha": hoy.isoformat(), "activo": ma.get("activo"), "umbral": ma.get("umbral"),
                                              "prueba": ma.get("prueba"), "lista": [x for x in la if x["prob"] >= (ma.get("umbral") or 1)][:10]})
         except Exception as ex:
@@ -455,9 +458,10 @@ def entrenar() -> dict:
     a.put("anticipo/modelo", mod_a)
     try:  # los otros dos anticipadores, con el mismo examen
         from .agentes import anticipadores as _A, profesionales as _pro3
-        acc_e = {tk: f for tk, f in ohlcv.items() if grupos.get(tk) == "acciones"}
-        mv5 = {f: c for f, c in gratis.yahoo("^MERV", "5y")}
-        m_arg = _A.entrenar_arg(acc_e, mv5, macro.get("riesgo_pais") or {}, macro.get("ccl") or {})
+        # 10 años gratis de Yahoo (.BA), en dólares CCL: con el efecto inflación sacado aprende mucho mejor (28/10)
+        acc_u, mv_u, rp10, ccl10 = _A.datos_arg([tk for tk, g in grupos.items() if g == "acciones"], 10)
+        m_arg = _A.entrenar_arg(acc_u, mv_u, rp10, ccl10)
+        m_arg["version"] = "usd_10a"
         if m_arg.get("w"):
             a.put("anticipo_arg/modelo", m_arg)
         ced_e = {tk: f for tk, f in ohlcv.items() if grupos.get(tk) != "acciones"}
