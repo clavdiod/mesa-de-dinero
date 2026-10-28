@@ -398,7 +398,11 @@ function filaPron(x) {
       <span class="tenue">${esc(ORIGEN_PRON[x.origen] || x.origen)} · ${esc(fecha(x.fecha))}</span><span class="chip ${col}">${eti}</span></div>
     <div class="item-det">Dijo: <b>${dir} ${num(x.objetivo_pct, 1)}%</b>${x.stop_pct ? ` (stop -${num(x.stop_pct, 1)}%)` : ""} hasta el ${esc(fecha(x.vence))}
       ${x.ref ? ` · desde ${num(x.ref)} → ahora ${num(x.ultimo ?? x.ref)} (<b style="color:var(--${x.ahora_pct > 0 ? "verde" : x.ahora_pct < 0 ? "rojo" : "texto"})">${pct(x.ahora_pct, 1)}</b> a favor) · mejor ${pct(x.mejor, 1)} · peor ${pct(x.peor, 1)}` : " · toma el precio en la primera ronda con BYMA abierto"}</div>
-    ${x.texto ? `<div class="item-det tenue">${esc(x.texto)}</div>` : ""}</div>`;
+    ${x.texto ? `<div class="item-det tenue">${esc(x.texto)}</div>` : ""}
+    ${(() => { const ops = (USUARIO.operaciones || []).filter((o) => o.ticker === x.ticker && o.fecha >= x.fecha && (!x.vence || (o.fecha_compra || o.fecha) <= x.vence));
+      if (!ops.length) return ""; const g = ops.reduce((t, o) => t + (o.ganancia || 0), 0);
+      return `<div class="item-det">👤 <b>Tu operación:</b> <span style="color:var(--${g >= 0 ? "verde" : "rojo"})"><b>${plata(g)}</b></span>
+        ${x.estado === "se_dio" && g < 0 ? '<span class="tenue"> · el pronóstico se cumplió, pero se vendió después de que bajara: la lección es tomar ganancia cuando llega al objetivo</span>' : ""}</div>`; })()}</div>`;
 }
 let FILTRO_ORIG = null;
 const DIAS_SEM = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];

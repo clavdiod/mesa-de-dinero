@@ -60,7 +60,7 @@ def _tecnico_cercano(velas: list[dict], precio: float) -> float | None:
 
 def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuestas: list[dict], consensos: dict,
                  precio_usa: dict, ministro: list[dict] | None, cobros: list[dict], penitencia: dict | None = None,
-                 alertas: dict | None = None, hora: str | None = None) -> dict:
+                 alertas: dict | None = None, hora: str | None = None, libreta: list[dict] | None = None) -> dict:
     """Devuelve {ticker: {...}} para cada posición de la cartera."""
     out = {}
     min_por = {m.get("ticker"): m for m in ministro or []}
@@ -96,8 +96,24 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
         p = abiertas.get(tk)
         objetivo = piso = None
         fuente = None
+        # la idea que te hizo comprar (Anticipador, Cazador, Corresponsal...): su objetivo es el que se probó, y manda
+        idea = None
+        if not p and pos.get("fecha") and libreta:
+            from datetime import date as _d
+            fc = _d.fromisoformat(pos["fecha"])
+            cand = [x for x in libreta if x.get("ticker") == tk and x.get("origen") not in ("anticipo",) and x.get("ref") and x.get("objetivo_pct")
+                    and x["fecha"] <= pos["fecha"] and (fc - _d.fromisoformat(x["fecha"])).days <= 7]
+            idea = max(cand, key=lambda y: y["fecha"]) if cand else None
+        NOM_IDEA = {"anticipador": "Anticipador", "anticipador_arg": "Anticipador ARG", "anticipador_mundo": "Anticipador Mundo",
+                    "ganadores": "Cazador de ganadores", "profesionales": "Herramientas de Wall Street", "mundo": "Corresponsal", "oportunidad": "Oportunidad"}
         if p:
-            objetivo, piso, fuente = p["plan"].get("objetivo"), p["plan"].get("stop"), "plan del Jefe"
+            objetivo, piso, fuente = p["plan"].get("objetivo"), p["plan"].get("stop"), "plan del Comité"
+        elif idea:
+            objetivo = float(idea["ref"]) * (1 + float(idea["objetivo_pct"]) / 100)
+            fuente = f"objetivo de la idea del {NOM_IDEA.get(idea['origen'], idea['origen'])} (+{idea['objetivo_pct']:.0f}% desde {_m(float(idea['ref']))}): es lo que se probó"
+            _, piso = _tecnico(velas, precio)
+            if piso is None and rg:
+                piso = rg[0]
         else:
             co = consensos.get(tk) or {}
             us = precio_usa.get(tk)
@@ -137,6 +153,8 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
             consejo, motivo = "Vender", "Perforó el piso" + (" (stop del plan)" if p else "") + ": la idea no se está dando."
         elif a_piso is not None and a_piso > -3:
             consejo, motivo = "Vigilar", f"Está a {_m(abs(a_piso), 1)}% del piso: si lo perfora, salir."
+        elif idea and objetivo and (precio >= objetivo or (idea.get("estado") == "se_dio" and pot is not None and pot <= 6)):
+            consejo, motivo = "Tomar ganancia", "Llegó (o está llegando) al objetivo de la idea que te hizo comprar: vendé al menos la mitad. Si esperás más, lo podés devolver."
         elif pot is not None and pot <= 3:
             consejo, motivo = "Tomar ganancia", "Está a menos de 3% del objetivo: la mayor parte de la suba ya se dio."
         elif mesa == "en contra" and (res or 0) > 0:

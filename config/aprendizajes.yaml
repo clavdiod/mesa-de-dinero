@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: "2026-10-28"
+  caso: "BAK: el pronóstico se cumplió, pero la operación perdió"
+  que_paso: "El Anticipador marcó BAK el 26/10 a $950,50 para subir 5% en la semana: llegó a $1.210 el 27/10 (+27%). Clau compró a $988 el 27/10 y vendió el 28/10 a ~$990 cuando en Nueva York cayó 7%: −$940 neto. En Mi cartera el objetivo de BAK salía del consenso de analistas ($1.472) en vez del +5% de la idea (~$998), así que el cartel siguió diciendo 'mantener' cuando ya había llegado."
+  leccion: "Si la idea que te hizo comprar tiene un objetivo probado, ese objetivo manda: cuando llega, se vende al menos la mitad. Esperar más es devolverlo."
+  cambio: "En Mi cartera, el objetivo de una compra sale de la idea que la marcó (Anticipador, Cazador, Corresponsal...) si la hubo; cuando el precio lo toca (o el pronóstico ya se dio y está cerca), el cartel dice 'VENDER LA MITAD HOY' y llega el aviso. El acierto del pronóstico no se cambia (sigue siendo un acierto de la herramienta), pero en Resultados cada pronóstico muestra también 'Tu operación' con tu resultado real."
+- fecha: "2026-10-28"
   caso: "Anticipador ARG: aprobó con 10 años de historia medida en dólares"
   que_paso: "Con los 270 días guardados no aprobaba (+0,5% a 5 ruedas). Con 5 años de Yahoo en pesos: +1,1%, todavía no cubría la comisión. Con 10 años en pesos: +2,3%. Con 10 años en dólares CCL: 51 de cada 100 marcadas subieron 5% o más en la semana (al azar 29), +4,3% promedio a 5 ruedas contra +0,6% al azar (21.494 casos que no vio). Además había un error de cuenta con datos extremos (riesgo país de 2019) que hacía fallar el entrenamiento."
   leccion: "En Argentina la inflación y las devaluaciones esconden las señales: medido en dólares, el método funciona igual de bien que en los CEDEARs. Y hace falta mucha historia para ver varios ciclos."
