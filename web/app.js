@@ -649,11 +649,20 @@ function pintarCalendario() {
   for (const pos of USUARIO.cartera) { const tk = pos.ticker.toUpperCase(), on = USUARIO.ons[tk] || ESTADO.estado?.flujos_bonos?.[tk]; if (!on) continue;
     for (const f of flujo(on, pos.cantidad, HOY())) filas.push({ ...f, ticker: pos.ticker, moneda: on.moneda }); }
   filas.sort((a, b) => a.fecha.localeCompare(b.fecha));
-  const porMes = {}; for (const f of filas) { const m = f.fecha.slice(0, 7); porMes[m] = (porMes[m] || 0) + f.total; }
+  // por mes, plegado: tocás el mes y ves cada cobro (pesos y dólares por separado, no se suman)
+  const MESES_LARGO = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+  const esUsd = (f) => /USD|US\$|D[OÓ]LAR/i.test(f.moneda || "");
+  const mon = (f, v) => (esUsd(f) ? "US$ " : "$") + num(v);
+  const porMes = {}; for (const f of filas) (porMes[f.fecha.slice(0, 7)] ||= []).push(f);
+  const tot = (xs) => { const a = xs.filter((f) => !esUsd(f)).reduce((t, f) => t + f.total, 0), u = xs.filter(esUsd).reduce((t, f) => t + f.total, 0);
+    return [a ? "$" + num(a) : "", u ? "US$ " + num(u) : ""].filter(Boolean).join(" + "); };
   const dias = (f) => Math.round((new Date(f) - new Date(HOY())) / 864e5);
-  $("#calendario").innerHTML = filas.length ? `<div class="tiras">${Object.entries(porMes).slice(0, 6).map(([m, v]) => `<span class="chip">${MESES_TXT[+m.slice(5, 7) - 1]} ${m.slice(2, 4)}: ${num(v)}</span>`).join("")}</div>
-    <div class="tabla-scroll"><table><tr><th>Fecha</th><th>Papel</th><th class="n">Renta</th><th class="n">Amort.</th><th class="n">Total</th><th class="n">Faltan</th></tr>
-    ${filas.slice(0, 40).map((f) => `<tr><td>${fechaLarga(f.fecha)}</td><td>${esc(f.ticker)} <span class="tenue">${esc(f.moneda || "")}</span></td><td class="n">${num(f.interes)}</td><td class="n">${num(f.amortizacion)}</td><td class="n"><b>${num(f.total)}</b></td><td class="n">${dias(f.fecha)} d</td></tr>`).join("")}</table></div>`
+  const prox = filas[0];
+  $("#calendario").innerHTML = filas.length ? `${prox ? `<p style="margin:6px 0">Próximo: <b>${esc(fecha(prox.fecha))}</b> · ${esc(prox.ticker)} <b>${mon(prox, prox.total)}</b> <span class="tenue">(faltan ${dias(prox.fecha)} días)</span></p>` : ""}
+    ${Object.entries(porMes).slice(0, 12).map(([m, xs], k) => `<details class="dia-pron" ${k === 0 ? "open" : ""}><summary><b>${MESES_LARGO[+m.slice(5, 7) - 1]} ${m.slice(0, 4)}</b>
+      <span class="tenue">· ${tot(xs)} · ${xs.length} cobro${xs.length > 1 ? "s" : ""}</span></summary>
+      ${xs.map((f) => `<div class="evento"><span class="ev-ic">💵</span><span><b>${esc(fecha(f.fecha))}</b> · <b class="link" data-abrir-debate="${esc(f.ticker)}">${esc(f.ticker)}</b> <b>${mon(f, f.total)}</b>
+        <span class="tenue">${f.amortizacion ? `(renta ${num(f.interes)} + amortización ${num(f.amortizacion)})` : "(renta)"} · ${dias(f.fecha) >= 0 ? `faltan ${dias(f.fecha)} d` : "cobrado"}</span></span></div>`).join("")}</details>`).join("")}`
     : '<p class="tenue">Cargá en "Lo que tengo" tus bonos, ONs y letras con sus nominales: la mesa baja sola sus flujos de pago (MAE) y calcula cuánto cobrás.</p>';
   pintarEventos();
   pintarMAE();
