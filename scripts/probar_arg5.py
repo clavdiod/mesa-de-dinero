@@ -14,7 +14,12 @@ merval = {f: c for f, c in gratis.yahoo("^MERV", "5y")}
 macro = gratis.series_macro(5)
 rp, ccl = macro.get("riesgo_pais") or {}, macro.get("ccl") or {}
 print(f"::notice::{len(ser)} de {len(tks)} acciones con 5 años; {sum(len(v) for v in ser.values())} velas; riesgo país {len(rp)}, ccl {len(ccl)}, merval {len(merval)}")
-m = A.entrenar_arg(ser, merval, rp, ccl)
+import traceback
+try:
+    m = A.entrenar_arg(ser, merval, rp, ccl)
+except Exception:
+    print("::notice::ERROR " + traceback.format_exc().replace("\n", " | ")[-1500:])
+    raise
 print("::notice::ARG5 " + json.dumps(A.resumen_prueba(m), ensure_ascii=False)[:1500])
 if m.get("w"):
     a.put("anticipo_arg/modelo", m)
