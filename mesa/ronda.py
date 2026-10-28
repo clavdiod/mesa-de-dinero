@@ -1009,7 +1009,9 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                                                  [] if simular else (almacen.get("pronosticos/libreta") or []),
                                                  ayer_f.get("tks") or {}, avis, hoy, ctx.hora, ctx.eventos,
                                                  {tk: [{"dir": s_.direccion, "fuerza": s_.fuerza, "texto": s_.texto} for s_ in ss if s_.agente in ("mundo", "hechos_emisor", "noticias")]
-                                                  for tk, ss in por_ticker.items()})
+                                                  for tk, ss in por_ticker.items()},
+                                                 {x_["ticker"] for l_ in [ctx.extra.get("anticipo_lista") or {}] + list((ctx.extra.get("anticipo_listas") or {}).values())
+                                                  for x_ in (l_.get("lista") or [])})
         if avis != antes_av and not simular:
             almacen.put("cartera/avisados", avis)
     except Exception as ex:

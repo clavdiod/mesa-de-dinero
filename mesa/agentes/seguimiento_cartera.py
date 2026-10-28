@@ -109,7 +109,7 @@ def replantear_plazo(tk: str, vence: str | None, compra: date | None, hoy: date,
 
 def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict], libreta: list[dict],
           ayer: dict, avisados: dict, hoy: date, hora: str, eventos: list[dict] | None = None,
-          noticias: dict[str, list[dict]] | None = None) -> tuple[dict, list[dict]]:
+          noticias: dict[str, list[dict]] | None = None, marcados: set | None = None) -> tuple[dict, list[dict]]:
     """ayer: la foto que guardó el cierre de ayer ({tk: {...}}). avisados: {tk: "fecha|sugerida"} (se modifica).
     Devuelve (seguimiento por ticker, avisos para el celular)."""
     out, avisos = {}, []
@@ -179,6 +179,49 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
             sug, por_que = "subir_stop", "Ya va bien a favor: proteger lo ganado."
         else:
             sug, por_que = "mantener", x.get("motivo")
+        # --- antes de decir "vendé", se revisa TODO (no una sola regla) ---
+        revision = []
+        if sug in ("vender_mitad", "vender_todo"):
+            op_tk = opinion.get(tk) or {}
+            fav, con = op_tk.get("a_favor") or [], op_tk.get("en_contra") or []
+            nots = (noticias or {}).get(tk) or []
+            n_pos = [n for n in nots if n.get("dir", 0) > 0]
+            n_neg = [n for n in nots if n.get("dir", 0) < 0]
+            base_tk = tk[:-1] if tk[-1:] in ("D", "C") else tk
+            bal = next((e for e in eventos or [] if e.get("tipo") == "balance" and e.get("ticker") in (tk, base_tk)
+                        and hoy_s <= e.get("fecha", "") <= sumar_ruedas(hoy, 5).isoformat()), None)
+            sigue = tk in (marcados or set())
+            r1_ = x.get("rango_1m")
+            arriba = round((r1_[1] / precio - 1) * 100, 1) if r1_ else None
+            var_d = x.get("variacion")
+            puntos = [  # (a favor de VENDER, texto)
+                (len(con) > len(fav), f"Analistas: {len(fav)} a favor, {len(con)} en contra" + (f" ({', '.join(con[:3])})" if con else "")),
+                (bool(n_neg) and not n_pos, "Noticias: " + ("en contra: «" + (n_neg[0].get("texto") or "")[:80] + "»" if n_neg else
+                                                              "a favor: «" + (n_pos[0].get("texto") or "")[:80] + "»" if n_pos else "nada relevante hoy")),
+                (bool(bal), f"Balance el {bal['fecha'][8:10]}/{bal['fecha'][5:7]}: puede saltar para cualquier lado" if bal else "Sin balance en los próximos días"),
+                (not sigue, "Los anticipadores " + ("lo siguen marcando hoy (todavía ven suba)" if sigue else "ya no lo marcan")),
+                (arriba is not None and arriba < 8, f"Recorrido normal que le queda en un mes: +{_m(arriba, 1)}%" if arriba is not None else "Sin datos de recorrido"),
+                (devolviendo, f"Ya devolvió más de la mitad de lo que llegó a ganar ({_m(gan_max, 1)}%)" if devolviendo else
+                 (f"Está cerca de su máximo desde la compra ({_p(mx)})" if mx else "Precio sin máximo de referencia")),
+            ]
+            a_vender = sum(1 for v, _ in puntos if v)
+            revision = [("✔ " if v else "✖ ") + t for v, t in puntos]
+            if a_vender * 2 <= len(puntos) and not devolviendo and sug == "vender_mitad":
+                # la mayoría de lo que mira la mesa sigue a favor: no hace falta vender; se protege lo ganado
+                lvl = round(max(compra_p or 0, (x.get("objetivo") or 0) * 0.97), 2) if compra_p else None
+                if lvl and lvl < precio:
+                    nuevo_stop = lvl
+                    if not any(o["accion"] == "subir_stop" for o in ops):
+                        ops.insert(1, {"accion": "subir_stop", "nivel": lvl, "texto": f"Subir el stop a {_p(lvl)} (asegurás lo ganado y le das aire)."})
+                    else:
+                        for o in ops:
+                            if o["accion"] == "subir_stop":
+                                o.update(nivel=lvl, texto=f"Subir el stop a {_p(lvl)} (asegurás lo ganado y le das aire).")
+                    sug = "subir_stop"
+                    por_que = (f"Llegó al objetivo, pero revisé todo y solo {a_vender} de {len(puntos)} cosas dicen vender: mantené y subí el stop "
+                               f"a {_p(lvl)} para no devolver la ganancia.")
+            else:
+                por_que = (por_que or "") + f" Revisé todo: {a_vender} de {len(puntos)} cosas dicen vender."
         for o in ops:
             o["sugerida"] = o["accion"] == sug
         # --- qué cambió hoy (contra la última ronda de ayer) ---
@@ -208,7 +251,8 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
             urgente = sug in ("vender_todo", "vender_mitad")
             avisos.append({"fecha": hoy_s, "hora": hora, "ticker": f"{tk} ({'VENDER' if urgente else 'decidir'})",
                            "texto": (f"🚨 {tk}: {NOM_URG.get(sug, NOMBRE_ACCION[sug]).upper()} AHORA. " if urgente else f"{tk}: la mesa sugiere «{NOMBRE_ACCION[sug]}». ")
-                                    + f"{por_que or ''} Precio {_p(precio)}" + (f", compraste a {_p(compra_p)}" if compra_p else "") + "."})
+                                    + f"{por_que or ''} Precio {_p(precio)}" + (f", compraste a {_p(compra_p)}" if compra_p else "") + "."
+                                    + (" Lo que miré: " + " · ".join(revision) if revision else "")})
             avisados[tk] = f"{hoy_s}|{sug}"
         # el cartel: lo que hay que hacer, en una línea
         fv = (lambda f: f"{f[8:10]}/{f[5:7]}") if vence else None
@@ -229,5 +273,5 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         out[tk] = {"ticker": tk, "titular": titular, "color": color, "fecha_compra": f_compra, "vence": vence, "plazo_motivo": plazo_motivo, "dias": dias, "total": total,
                    "plazo_cumplido": plazo_cumplido, "cantidad": cant, "precio": precio, "compra": compra_p, "resultado_pct": res,
                    "sugerida": sug, "por_que": por_que, "opciones": ops, "cambios": cambios, "techo5": techo5, "piso": piso, "objetivo": obj,
-                   "compra_punta": x.get("aviso_spread"), "ahora": ahora, "vence_base": vence_base, "cambios_plazo": cambios_plazo}
+                   "compra_punta": x.get("aviso_spread"), "ahora": ahora, "revision": revision, "vence_base": vence_base, "cambios_plazo": cambios_plazo}
     return out, avisos

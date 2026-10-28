@@ -488,6 +488,7 @@ function segCartera(tk) {
     ${(g.cambios_plazo || []).length ? `<div class="item-det">⏱️ <b>Plazo recalculado hoy:</b> ${g.cambios_plazo.map(esc).join(" ")}${g.vence_base && g.vence_base !== g.vence ? ` <span class="tenue">(el plazo original era hasta el ${esc(fecha(g.vence_base))})</span>` : ""}</div>` : ""}
     <div class="item-det"><b>Hoy:</b> ${g.cambios.map(esc).join(" ")}</div>
     <div class="item-det">Sugerido: <span class="chip ${g.sugerida === "vender_todo" ? "rojo" : g.sugerida === "mantener" ? "verde" : "amar"}"><b>${NOM_ACC[g.sugerida]}</b></span> ${esc(g.por_que || "")}</div>
+    ${(g.revision || []).length ? `<details class="item-det"><summary>🔎 Lo que miré antes de sugerir</summary>${g.revision.map(r => `<div>${esc(r)}</div>`).join("")}<div class="tenue">✔ = dice vender · ✖ = dice mantener</div></details>` : ""}
     ${hoyDec ? `<div class="item-det">✔ Hoy decidiste: <b>${esc(NOM_ACC[d.accion] || d.accion)}</b>${d.detalle ? ` (${esc(d.detalle)})` : ""}</div>` : ""}
     ${alts.length ? `<div class="item-det">${alts.map((a) => `🔔 ${a.tipo === "baja" ? "baja de" : "sube de"} <b>$${num(a.nivel)}</b> <span class="tenue">${esc(a.nota || "")}${disp[a.id] ? " · ya avisó" : ""}</span>`).join("<br>")}</div>` : ""}
     <button class="chico ${hoyDec ? "" : "prim"}" data-decidir="${esc(tk)}" style="margin-top:6px">${hoyDec ? "Cambiar decisión" : "Decidir"}</button></div>`;

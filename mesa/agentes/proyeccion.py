@@ -81,7 +81,7 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
         compra = float(pos.get("precio") or 0) or None
         res = round((precio / compra - 1) * 100, 1) if compra else None
         op = opinion.get(tk) or {}
-        x = {"ticker": tk, "grupo": grupo, "precio": precio, "compra": compra, "resultado_pct": res,
+        x = {"ticker": tk, "grupo": grupo, "precio": precio, "variacion": t.get("variacion"), "compra": compra, "resultado_pct": res,
              "mesa": op.get("veredicto"), "favor": op.get("favor"), "contra": op.get("contra")}
         if grupo in RF:
             m = min_por.get(tk) or {}
