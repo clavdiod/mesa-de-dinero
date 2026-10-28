@@ -222,12 +222,20 @@ def series_macro(anios: int = 3) -> dict:
     return out
 
 
+def _rango_q(rango: str) -> str:
+    """'max' en Yahoo devuelve velas mensuales: para toda la historia DIARIA hay que pedir period1/period2."""
+    if rango == "max":
+        import time
+        return f"period1=946684800&period2={int(time.time())}"
+    return f"range={rango}"
+
+
 def yahoo(simbolo: str, rango: str = "2y") -> list[list]:
     """[[fecha, cierre], ...] diario de Yahoo (gratis). Índices con ^ (ej. ^VIX)."""
     from datetime import datetime, timezone
     from urllib.parse import quote
     try:
-        r = _S.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{quote(simbolo)}?range={rango}&interval=1d", headers=_UA_JSON, timeout=30)
+        r = _S.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{quote(simbolo)}?{_rango_q(rango)}&interval=1d", headers=_UA_JSON, timeout=30)
         res = r.json()["chart"]["result"][0]
         cierres = res["indicators"]["quote"][0]["close"]
         return [[datetime.fromtimestamp(ts, timezone.utc).date().isoformat(), round(c, 4)]
@@ -291,7 +299,7 @@ def yahoo_ohlcv(simbolo: str, rango: str = "5y") -> list[dict]:
     from datetime import datetime, timezone
     from urllib.parse import quote
     try:
-        r = _S.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{quote(simbolo)}?range={rango}&interval=1d", headers=_UA_JSON, timeout=30)
+        r = _S.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{quote(simbolo)}?{_rango_q(rango)}&interval=1d", headers=_UA_JSON, timeout=30)
         res = r.json()["chart"]["result"][0]
         q = res["indicators"]["quote"][0]
         out = []
