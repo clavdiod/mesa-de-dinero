@@ -41,8 +41,8 @@ def _r(serie: dict, fecha: str, n: int) -> float:
 
 
 # ---------- Argentina ----------
-def entrenar_arg(acciones: dict[str, list[dict]], merval: dict, riesgo_pais: dict, ccl: dict, desde_prueba: str | None = None) -> dict:
-    m = anticipo.entrenar(acciones, merval, riesgo_pais, ccl, nombres=NOMBRES_ARG, desde_prueba=desde_prueba)
+def entrenar_arg(acciones: dict[str, list[dict]], merval: dict, riesgo_pais: dict, ccl: dict, desde_prueba: str | None = None, **kw) -> dict:
+    m = anticipo.entrenar(acciones, merval, riesgo_pais, ccl, nombres=NOMBRES_ARG, desde_prueba=desde_prueba, **kw)
     m["nombre"] = "Anticipador ARG"
     return m
 
@@ -112,15 +112,15 @@ def _rasgos_mundo(sector_de: dict[str, str], etfs: dict[str, dict], spy: dict):
 
 
 def entrenar_mundo(cedears: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, glob: dict[str, dict],
-                   sector_de: dict[str, str], etfs: dict[str, dict]) -> dict:
+                   sector_de: dict[str, str], etfs: dict[str, dict], **kw) -> dict:
     spy_o, vix_o, btc_o = dict(sorted(spy.items())), dict(sorted(vix.items())), dict(sorted(btc.items()))
     glob = {k: dict(sorted(v.items())) for k, v in glob.items()}
     etfs = {k: dict(sorted(v.items())) for k, v in etfs.items()}
     m = anticipo.entrenar(cedears, spy_o, vix_o, btc_o, ctx_fn=_ctx_mundo(glob, spy_o, vix_o, btc_o),
-                          rasgos_fn=_rasgos_mundo(sector_de, etfs, spy_o), nombres=NOMBRES_MUNDO)
+                          rasgos_fn=_rasgos_mundo(sector_de, etfs, spy_o), nombres=NOMBRES_MUNDO, **kw)
     m["nombre"] = "Anticipador Mundo"
     # tiene que agregar algo: si elige lo mismo que el Anticipador común, votaría dos veces la misma idea
-    base = anticipo.entrenar(cedears, spy_o, vix_o, btc_o)
+    base = anticipo.entrenar(cedears, spy_o, vix_o, btc_o, **kw)
     pb, pm = base.get("prueba") or {}, m.get("prueba") or {}
     mejora = (pm.get("top10_pct", 0) - pb.get("top10_pct", 0) >= 2) or (pm.get("ret5_top10", 0) - pb.get("ret5_top10", 0) >= 0.3)
     m["base"] = pb

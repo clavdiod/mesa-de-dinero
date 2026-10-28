@@ -114,7 +114,8 @@ def contexto_mkt(fecha: str, spy: dict[str, float], vix: dict[str, float], btc: 
 
 
 def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, paso: int = 2, realista: bool = True,
-             ctx_fn=None, rasgos_fn=None, nombres: list[str] | None = None, desde_prueba: str | None = None) -> dict:
+             ctx_fn=None, rasgos_fn=None, nombres: list[str] | None = None, desde_prueba: str | None = None,
+             solo_fechas: set | None = None, regimen: set | None = None) -> dict:
     """desde_prueba: examen fijo desde esa fecha (para comparar historias de distinto largo con el mismo examen).
     Aprende con el 70% inicial del tiempo y se prueba con el 30% final.
     Objetivo: ¿sube 5% o más (en algún cierre) en las 5 ruedas siguientes?
@@ -141,6 +142,8 @@ def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, pas
             peor = min(y["c"] for y in f[i + 1: i + 1 + HORIZONTE]) / p0 - 1
             r5 = f[i + HORIZONTE]["c"] / p0 - 1
             filas.append((fe, tk, x, 1.0 if futuro * 100 >= META else 0.0, r5 * 100, 1.0 if peor * 100 <= -META else 0.0))
+    if solo_fechas is not None:  # especialista: aprende y se examina solo en esos días (ej. días volátiles)
+        filas = [r for r in filas if r[0] in solo_fechas]
     if len(filas) < 2000:
         return {"activo": False, "motivo": f"Pocos casos ({len(filas)})."}
     filas.sort(key=lambda r: r[0])
@@ -174,13 +177,25 @@ def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, pas
     ret10 = sum(r[2] for r in top10) / len(top10)
     ret_base = sum(r[4] for r in te) / len(te)
     activo = prec10 >= base * 1.5 and prec10 >= base + 0.05 and ret10 - ret_base >= 0.5 and ret10 > 1.2
+    if regimen is not None:  # cómo le va al modelo general SOLO en esos días del examen
+        te_r = [r for r in te if r[0] in regimen]
+        if len(te_r) >= 200:
+            pr = sorted(((prob(r[2]), r[3], r[4], r[5]) for r in te_r), reverse=True)
+            t10 = pr[: max(20, len(pr) // 10)]
+            pv = {"casos": len(te_r), "base_pct": round(sum(r[3] for r in te_r) / len(te_r) * 100, 1),
+                  "top10_pct": round(sum(r[1] for r in t10) / len(t10) * 100, 1),
+                  "caen5_top10_pct": round(sum(r[3] for r in t10) / len(t10) * 100, 1),
+                  "ret5_top10": round(sum(r[2] for r in t10) / len(t10), 2), "ret5_base": round(sum(r[4] for r in te_r) / len(te_r), 2),
+                  "umbral": round(t10[-1][0], 4)}
+        else:
+            pv = None
     importancia = sorted(((nombres[k], round(float(w[1 + k]), 3)) for k in range(len(nombres))), key=lambda t: -abs(t[1]))[:5]
     return {"activo": activo, "mu": mu.tolist(), "sd": sd.tolist(), "w": w.tolist(), "umbral": round(umbral, 4),
             "prueba": {"casos": len(te), "base_pct": round(base * 100, 1), "top5_pct": round(prec5 * 100, 1),
                        "top10_pct": round(prec10 * 100, 1), "lift10": round(prec10 / base, 2) if base else None,
                        "caen5_top10_pct": round(caen10 * 100, 1), "caen5_base_pct": round(caen_base * 100, 1),
                        "ret5_top10": round(ret10, 2), "ret5_base": round(ret_base, 2)},
-            "importancia": importancia,
+            "importancia": importancia, **({"prueba_regimen": pv} if regimen is not None else {}),
             "motivo": (f"Con datos que no vio: de cada 100 papeles marcados, {prec10 * 100:.0f} subieron 5% o más en la semana (al azar: {base * 100:.0f}), "
                        f"{caen10 * 100:.0f} cayeron 5% o más (al azar: {caen_base * 100:.0f}); rendimiento promedio a 5 ruedas {ret10:+.1f}% "
                        f"contra {ret_base:+.1f}% al azar. " + ("Se activa." if activo else "No alcanza: queda solo como información.") if base else "")}
