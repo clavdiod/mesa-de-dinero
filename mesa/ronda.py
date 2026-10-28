@@ -661,6 +661,9 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     lista_ant = listas_ant["anticipador"]
     ctx.extra["anticipo_lista"] = lista_ant
     ctx.extra["anticipo_listas"] = {k: v for k, v in listas_ant.items() if k != "anticipador" and v.get("activo")}
+    # los que todavía no aprobaron el examen: sus ideas se anotan igual en la libreta (en observación, sin votar ni mostrarse
+    # en Hoy) para medir si en la vida real funcionan
+    ctx.extra["anticipo_listas_obs"] = {k: v for k, v in listas_ant.items() if k != "anticipador" and not v.get("activo") and v.get("lista")}
     senales += _senales_ws(ctx, ws_datos, candidatos + [t for t in ctx.tickers_lista()])
     senales += _senales_cripto(ctx, almacen, reg, senales, candidatos + ctx.tickers_lista() + cripto.CEDEARS_CRIPTO, simular)
     senales += _senales_adr(ctx, almacen, hoy, ya, simular)
@@ -873,6 +876,9 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         nuevos_p = pron.desde_anticipador(ctx.extra.get("anticipo_lista") or {}, hoy, ctx.hora)
         for ag_, l_ in (ctx.extra.get("anticipo_listas") or {}).items():
             nuevos_p += pron.desde_anticipador(l_, hoy, ctx.hora, origen=ag_)
+        for ag_, l_ in (ctx.extra.get("anticipo_listas_obs") or {}).items():
+            nuevos_p += [{**x, "observacion": True, "texto": "En observación (todavía no aprobó el examen): " + x["texto"]}
+                         for x in pron.desde_anticipador(l_, hoy, ctx.hora, origen=ag_)]
         nuevos_p += pron.desde_anticipos(ctx.extra.get("anticipos") or [], hoy, ctx.hora)
         nuevos_p += pron.desde_ganadores([s for s in senales if s.agente in ("ganadores", "profesionales")], hoy, ctx.hora,
                                          lambda tk: (ctx.titulo(tk) or {}).get("ultimo") if minuto >= 11 * 60 else None)
