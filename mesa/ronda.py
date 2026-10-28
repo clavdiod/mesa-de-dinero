@@ -975,7 +975,9 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         antes_av = dict(avis)
         seg_cartera, avisos_cartera = segc.armar(cartera, proy_cartera, opinion_cartera, reg.propuestas,
                                                  [] if simular else (almacen.get("pronosticos/libreta") or []),
-                                                 ayer_f.get("tks") or {}, avis, hoy, ctx.hora)
+                                                 ayer_f.get("tks") or {}, avis, hoy, ctx.hora, ctx.eventos,
+                                                 {tk: [{"dir": s_.direccion, "fuerza": s_.fuerza, "texto": s_.texto} for s_ in ss if s_.agente in ("mundo", "hechos_emisor", "noticias")]
+                                                  for tk, ss in por_ticker.items()})
         if avis != antes_av and not simular:
             almacen.put("cartera/avisados", avis)
     except Exception as ex:

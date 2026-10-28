@@ -1,5 +1,10 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
+- fecha: "2026-10-28"
+  caso: "El plazo de cada papel no puede ser fijo"
+  que_paso: "El plazo salía de la idea que había marcado el papel el día de la compra (por ejemplo, 5 ruedas para el Anticipador o 60 para una oportunidad de mediano plazo) y no se movía, aunque cambiaran la mesa, la estadística o las noticias."
+  leccion: "Un evento puede cambiar si conviene tener un papel: el plazo se revisa todos los días."
+  cambio: "En cada ronda se recalcula el plazo de lo que tenés: termina el día antes de un balance; se acorta a 1 rueda con una noticia fuerte en contra; a 2 ruedas si la mesa se da vuelta o si le queda 5% o menos al objetivo; y se estira 5 ruedas (hasta 60 desde la compra) si la mesa sigue a favor con recorrido o hay una noticia fuerte a favor. El motivo se muestra en Mi cartera, y el cartel ('MANTENER hasta tal fecha', 'SALIR MAÑANA') usa el plazo recalculado."
 - fecha: "2026-10-27"
   caso: "Anticipador ARG y Anticipador Mundo: examinados con la historia"
   que_paso: "Anticipador ARG (50 acciones argentinas, con Merval, riesgo país y CCL): de cada 100 marcados, 30 subieron 5% o más en la semana (al azar 12) y cayeron menos, pero en promedio ganaron +0,5% a 5 ruedas, que no cubre la comisión de 1,2%. Anticipador Mundo (CEDEARs con petróleo, oro, cobre, dólar global, tasas, Japón, Alemania y el sector de cada empresa): 47 de cada 100 subieron 5%, igual que el Anticipador común (47,5): elige casi los mismos papeles."

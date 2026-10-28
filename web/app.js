@@ -481,6 +481,7 @@ function segCartera(tk) {
     ${g.total ? `<div class="fila"><b>Día ${g.dias} de ${g.total}</b><span class="tenue">hasta el ${esc(fecha(g.vence))}${g.plazo_cumplido ? " · <b>plazo cumplido</b>" : ""}</span></div>
       <div class="barra-plazo"><i style="width:${pr}%;${g.plazo_cumplido ? "background:var(--amar)" : ""}"></i></div><div class="tenue" style="font-size:12px">${esc(g.plazo_motivo || "")}</div>`
       : '<div class="tenue">Sin fecha de compra: cargala de nuevo con fecha para seguir el plazo.</div>'}
+    ${(g.cambios_plazo || []).length ? `<div class="item-det">⏱️ <b>Plazo recalculado hoy:</b> ${g.cambios_plazo.map(esc).join(" ")}${g.vence_base && g.vence_base !== g.vence ? ` <span class="tenue">(el plazo original era hasta el ${esc(fecha(g.vence_base))})</span>` : ""}</div>` : ""}
     <div class="item-det"><b>Hoy:</b> ${g.cambios.map(esc).join(" ")}</div>
     <div class="item-det">Sugerido: <span class="chip ${g.sugerida === "vender_todo" ? "rojo" : g.sugerida === "mantener" ? "verde" : "amar"}"><b>${NOM_ACC[g.sugerida]}</b></span> ${esc(g.por_que || "")}</div>
     ${hoyDec ? `<div class="item-det">✔ Hoy decidiste: <b>${esc(NOM_ACC[d.accion] || d.accion)}</b>${d.detalle ? ` (${esc(d.detalle)})` : ""}</div>` : ""}
