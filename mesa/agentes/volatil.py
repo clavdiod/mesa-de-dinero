@@ -79,14 +79,17 @@ def hoy_volatil(tipo: str, indice: dict, extra: dict, u: float | None) -> tuple[
 
 def capacitar(entrenar_fn, dias: set, u: float | None, nombre: str) -> dict:
     """entrenar_fn(**kw) entrena el anticipador. Devuelve el bloque 'volatil' para guardar dentro del modelo."""
-    gen = entrenar_fn(regimen=dias)
+    # mismo examen para los dos: los días volátiles desde esta fecha (el 30% más reciente de ellos)
+    fs = sorted(dias)
+    desde = fs[int(len(fs) * 0.7)] if fs else None
+    gen = entrenar_fn(regimen=dias, desde_prueba=desde)
     pv = gen.get("prueba_regimen")
-    esp = entrenar_fn(solo_fechas=dias)
+    esp = entrenar_fn(solo_fechas=dias, desde_prueba=desde)
     pe = esp.get("prueba") if esp.get("w") else None
     usar = bool(pv and pe and pe["top10_pct"] >= pv["top10_pct"] and pe["ret5_top10"] >= pv["ret5_top10"] + 0.3)
     mejor = pe if usar else pv
     bueno = bool(mejor and mejor["top10_pct"] >= mejor["base_pct"] * 1.3 and mejor["ret5_top10"] - mejor["ret5_base"] >= 0.5)
-    out = {"dias": len(dias), "umbral_vol": u, "general": pv, "especialista": pe, "usar_especialista": usar, "bueno": bueno,
+    out = {"examen_desde": desde, "dias": len(dias), "umbral_vol": u, "general": pv, "especialista": pe, "usar_especialista": usar, "bueno": bueno,
            "peso": 1.0 if bueno else 0.6}
     if usar:
         out.update(mu=esp["mu"], sd=esp["sd"], w=esp["w"], umbral=esp["umbral"])
