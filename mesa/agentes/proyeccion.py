@@ -149,6 +149,24 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
                 piso = max(float(al["nivel"]) for al in mio)
             if piso is None and rg:
                 piso = rg[0]
+        # la idea ya llegó a su objetivo: no se vende por eso. Se busca el SIGUIENTE objetivo (lo que todavía puede subir)
+        # y se deja correr con un stop que sube solo. Así no se vende a 3.600 algo que puede ir a 5.000.
+        corre = False
+        if idea and objetivo and precio >= objetivo * 0.99:
+            x["objetivo_idea"] = _f(objetivo)
+            co = consensos.get(tk) or {}
+            us = precio_usa.get(tk)
+            sig, f_sig = None, None
+            if grupo == "cedears" and co.get("objetivo") and us:
+                oa = float(co["objetivo"]) / us * precio
+                if precio * 1.03 < oa <= precio * 1.6:
+                    n_an = (co.get("buy") or 0) + (co.get("hold") or 0) + (co.get("sell") or 0)
+                    sig, f_sig = oa, f"promedio de {n_an} analistas de Wall Street"
+            if sig is None and rg and rg[1] > precio * 1.03:
+                sig, f_sig = rg[1], "techo normal a 1 mes según cómo se viene moviendo"
+            if sig:
+                fuente = (f"ya cumplió el objetivo de la idea ({_m(objetivo, 0)}); siguiente: {f_sig}")
+                objetivo, corre = sig, True
         pot = round((objetivo / precio - 1) * 100, 1) if objetivo else None
         a_piso = round((piso / precio - 1) * 100, 1) if piso else None
         mesa = op.get("veredicto")
@@ -158,6 +176,11 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
             consejo, motivo = "Vender", "Perforó el piso" + (" (stop del plan)" if p else "") + ": la idea no se está dando."
         elif a_piso is not None and a_piso > -3:
             consejo, motivo = "Vigilar", f"Está a {_m(abs(a_piso), 1)}% del piso: si lo perfora, salir."
+        elif corre and mesa != "en contra":
+            consejo, motivo = "Dejar correr", (f"Llegó al objetivo de la idea ({_m(x['objetivo_idea'], 0)}) y todavía puede subir: próximo objetivo "
+                                               f"{_m(objetivo, 0)} (+{pot:.0f}%). No vender: subir el stop para no devolver lo ganado.")
+        elif corre:
+            consejo, motivo = "Tomar parte", "Llegó al objetivo de la idea y la mesa hoy está en contra: asegurar una parte."
         elif idea and objetivo and (precio >= objetivo or (idea.get("estado") == "se_dio" and pot is not None and pot <= 6)):
             consejo, motivo = "Tomar ganancia", "Llegó (o está llegando) al objetivo de la idea que te hizo comprar: vendé al menos la mitad. Si esperás más, lo podés devolver."
         elif pot is not None and pot <= 3:

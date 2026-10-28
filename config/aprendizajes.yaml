@@ -120,3 +120,10 @@
   que_paso: "Toda operación simulada arranca 1,2% abajo por la comisión de compra y venta."
   leccion: "Una oportunidad tiene que apuntar a bastante más que 1,2% para que valga la pena."
   cambio: "La simulación muestra el movimiento del precio y el resultado con comisión por separado."
+- fecha: 2026-10-28
+  tema: Dejar correr a los ganadores
+  texto: >-
+    Llegar al objetivo de la idea ya no alcanza para decir "vendé". Si todavía puede subir (analistas o techo normal a 1 mes),
+    el objetivo pasa al siguiente y el stop sube solo (nunca debajo de la compra ni del objetivo cumplido, 6% debajo del máximo).
+    Antes de cualquier "vender" la mesa revisa analistas, noticias, balance, anticipadores, recorrido y si está devolviendo:
+    solo dice vender si la mayoría lo pide, si devolvió la mitad de lo ganado o si tocó el stop.

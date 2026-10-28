@@ -168,6 +168,16 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
             sug = "vender_todo" if (res or 0) <= 1.5 else "vender_mitad"
             por_que = (f"Llegó a ganar {_m(gan_max, 1)}% (máximo {_p(mx)}) y ya devolvió más de la mitad: hoy vas {_m(res, 1)}%. "
                        + ("Salí antes de perder." if sug == "vender_todo" else "Asegurá al menos la mitad."))
+        elif cons.startswith("Dejar correr") and compra_p:
+            # stop que sube solo: nunca debajo de tu compra ni del objetivo cumplido, y a ~6% del máximo alcanzado
+            oi = x.get("objetivo_idea") or 0
+            lvl = round(max(compra_p, oi * 0.97, (mx or precio) * 0.94), 2)
+            if lvl < precio and not (piso and lvl <= piso):
+                nuevo_stop = lvl
+                ops = [o for o in ops if o["accion"] != "subir_stop"]
+                ops.insert(1, {"accion": "subir_stop", "nivel": lvl, "texto": f"Subir el stop a {_p(lvl)} y dejar correr hacia {_p(obj)}. "
+                               "Si sigue subiendo, el stop sube con el máximo (6% debajo): ganás más y nunca devolvés lo ganado."})
+            sug, por_que = ("subir_stop" if nuevo_stop else "mantener"), x.get("motivo")
         elif cons.startswith("Vender"):
             sug, por_que = "vender_todo", x.get("motivo")
         elif cons.startswith("Tomar"):
@@ -208,7 +218,7 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
             revision = [("✔ " if v else "✖ ") + t for v, t in puntos]
             if a_vender * 2 <= len(puntos) and not devolviendo and sug == "vender_mitad":
                 # la mayoría de lo que mira la mesa sigue a favor: no hace falta vender; se protege lo ganado
-                lvl = round(max(compra_p or 0, (x.get("objetivo") or 0) * 0.97), 2) if compra_p else None
+                lvl = round(max(compra_p or 0, (x.get("objetivo_idea") or 0) * 0.97, (mx or precio) * 0.94), 2) if compra_p else None
                 if lvl and lvl < precio:
                     nuevo_stop = lvl
                     if not any(o["accion"] == "subir_stop" for o in ops):
