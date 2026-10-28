@@ -1,6 +1,6 @@
 """Cómo vienen ahora (pre-market de EE.UU.) los papeles de la cartera."""
 from mesa.datos.gratis import _S
-for sym in ["BAK", "IREN", "IBB", "LRCX", "NU", "SPY", "QQQ", "EWZ"]:
+for sym in ["BAK", "PBR", "EWZ", "SPY"]:
     try:
         j = _S.get(f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}", params={"interval": "5m", "range": "1d", "includePrePost": "true"},
                    headers={"User-Agent": "Mozilla/5.0"}, timeout=20).json()["chart"]["result"][0]
