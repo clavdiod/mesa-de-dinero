@@ -147,17 +147,17 @@ def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, pas
     tr, te = filas[:corte], filas[corte:]
     X = np.array([r[2] for r in tr]); y = np.array([r[3] for r in tr])
     mu, sd = X.mean(0), X.std(0) + 1e-9
-    Z = (X - mu) / sd
+    Z = np.clip((X - mu) / sd, -6, 6)
     Z2 = np.hstack([Z, Z ** 2])  # curvas simples (ej. RSI muy alto o muy bajo)
     w = np.zeros(Z2.shape[1] + 1)
     Xb = np.hstack([np.ones((len(Z2), 1)), Z2])
     for _ in range(500):
-        p = 1 / (1 + np.exp(-Xb @ w))
+        p = 1 / (1 + np.exp(np.clip(-Xb @ w, -50, 50)))
         w -= 0.5 * (Xb.T @ (p - y) / len(y) + np.r_[0, w[1:]] / len(y))
     def prob(x):
-        z = (np.array(x) - mu) / sd
+        z = np.clip((np.array(x) - mu) / sd, -6, 6)  # datos extremos (riesgo país de 2019, un split mal cargado) no rompen la cuenta
         zz = np.r_[1.0, z, z ** 2]
-        return float(1 / (1 + math.exp(-zz @ w)))
+        return float(1 / (1 + math.exp(max(-50.0, min(50.0, -float(zz @ w))))))
     pt = sorted(((prob(r[2]), r[3], r[4], r[5]) for r in te), reverse=True)
     base = sum(r[3] for r in te) / len(te)
     top5 = pt[: max(20, len(pt) // 20)]
@@ -194,8 +194,8 @@ def puntuar(modelo: dict, series: dict[str, list[dict]], ctx_mkt: dict, tickers:
         x = rasgos_fn(f, len(f) - 1, ctx_mkt, tk)
         if x is None:
             continue
-        z = (np.array(x) - mu) / sd
-        p = float(1 / (1 + math.exp(-(np.r_[1.0, z, z ** 2] @ w))))
+        z = np.clip((np.array(x) - mu) / sd, -6, 6)
+        p = float(1 / (1 + math.exp(max(-50.0, min(50.0, -float(np.r_[1.0, z, z ** 2] @ w))))))
         razones = []
         if x[3] > 0.4:
             razones.append(f"volumen de 3 días {math.exp(x[3]):.1f} veces su promedio")
