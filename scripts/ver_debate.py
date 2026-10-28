@@ -2,7 +2,7 @@
 import json, os
 from mesa.nucleo.almacen import almacen_por_defecto
 a = almacen_por_defecto()
-tk = os.environ.get("TK", "IREN")
+tk = os.environ.get("TK", "ETSY")
 est = a.get("ui/estado") or {}
 d = (a.get("ui/debates") or {}).get(tk) or {}
 sup = d.get("supervisor") or {}
