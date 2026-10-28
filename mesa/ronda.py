@@ -28,6 +28,7 @@ from .nucleo.modelos import Senal
 from .nucleo.registro import Registro
 from .nucleo.simulacion import Simulador
 from .nucleo import combinador
+from .nucleo import calc
 from .nucleo.reloj import ahora, en_horario, es_dia_habil, toca_correr
 
 
@@ -664,11 +665,17 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         items = l_.get("lista") or []
         for x in items:
             try:
-                pl_ = riesgo.armar_plan(ctx, x["ticker"], 5)
-                if pl_:
-                    ent = round(pl_.entrada, 2)
-                    x["plan"] = {"entrada": ent, "stop": round(pl_.stop, 2), "objetivo": round(ent * 1.05, 2),
-                                 "stop_pct": round((pl_.stop / ent - 1) * 100, 1), "precio": (ctx.titulo(x["ticker"]) or {}).get("ultimo")}
+                t_ = ctx.titulo(x["ticker"]) or {}
+                precio_ = t_.get("ultimo")
+                if precio_:
+                    vs_ = ctx.cache.velas(x["ticker"]) if ctx.cache else []
+                    atr_ = (calc.atr(vs_) or precio_ * 0.03) if len(vs_) >= 15 else precio_ * 0.03
+                    # comprar hasta: el precio de ahora con 1% de margen; si hoy ya subió fuerte, un poco abajo (no perseguir)
+                    hasta_ = precio_ * (0.995 if (t_.get("variacion") or 0) >= 2.5 else 1.01)
+                    # stop: 1,5 veces lo que se mueve normalmente en un día, entre 4% y 10% (para una idea de 5 ruedas)
+                    dist_ = min(0.10, max(0.04, 1.5 * atr_ / precio_))
+                    x["plan"] = {"entrada": round(hasta_, 2), "precio": precio_, "objetivo": round(precio_ * 1.05, 2),
+                                 "stop": round(precio_ * (1 - dist_), 2), "stop_pct": round(-dist_ * 100, 1)}
                 base_f = date.fromisoformat(l_.get("fecha") or hoy.isoformat())
                 x["vence"] = _sr(base_f, 5).isoformat()  # 5 ruedas desde la lista (lo que se probó)
             except Exception as ex:
