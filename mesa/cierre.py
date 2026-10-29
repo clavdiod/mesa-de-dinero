@@ -252,6 +252,7 @@ def diario(simular: bool = False) -> dict:
                 ma_d = _V.modelo_del_dia(ma, vh)
                 la = _A.lista_arg(ma_d, acc, mv, mac.get("riesgo_pais") or {}, ccl_m, hoy.isoformat())
                 a.put("anticipo_arg/lista", {"fecha": hoy.isoformat(), "activo": ma.get("activo"), "umbral": ma_d.get("umbral"),
+                                             "horizonte": ma.get("horizonte") or 5, "meta": ma.get("meta") or 5.0,
                                              "prueba": ma.get("prueba"), "volatil": _V.estado_lista(ma, vh, vpor),
                                              "lista": [x for x in la if x["prob"] >= (ma_d.get("umbral") or 1)][:10]})
         except Exception as ex:
@@ -483,11 +484,13 @@ def entrenar() -> dict:
         _v = _re.search(r"usd_(\d+)a", str((a.get("anticipo_arg/modelo") or {}).get("version", "")))
         anios_arg = int(_v.group(1)) if _v else 10
         acc_u, mv_u, rp10, ccl10 = _A.datos_arg([tk for tk, g in grupos.items() if g == "acciones"], anios_arg)
-        m_arg = _A.entrenar_arg(acc_u, mv_u, rp10, ccl10)
+        ant_arg = a.get("anticipo_arg/modelo") or {}
+        hm_arg = {"horizonte": ant_arg.get("horizonte") or 5, "meta": ant_arg.get("meta") or 5.0}
+        m_arg = _A.entrenar_arg(acc_u, mv_u, rp10, ccl10, **hm_arg)
         m_arg["version"] = f"usd_{anios_arg}a"
         try:
             da_, ua_ = _V.dias_arg(mv_u, rp10)
-            m_arg["volatil"] = _V.capacitar(lambda **kw: _A.entrenar_arg(acc_u, mv_u, rp10, ccl10, **kw), da_, ua_, "Anticipador ARG")
+            m_arg["volatil"] = _V.capacitar(lambda **kw: _A.entrenar_arg(acc_u, mv_u, rp10, ccl10, **hm_arg, **kw), da_, ua_, "Anticipador ARG")
         except Exception as ex:
             print(f"[entrenar] volátil ARG: {ex}")
         if m_arg.get("w"):

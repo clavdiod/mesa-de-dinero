@@ -673,11 +673,15 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                     # comprar hasta: el precio de ahora con 1% de margen; si hoy ya subió fuerte, un poco abajo (no perseguir)
                     hasta_ = precio_ * (0.995 if (t_.get("variacion") or 0) >= 2.5 else 1.01)
                     # stop: 1,5 veces lo que se mueve normalmente en un día, entre 4% y 10% (para una idea de 5 ruedas)
-                    dist_ = min(0.10, max(0.04, 1.5 * atr_ / precio_))
-                    x["plan"] = {"entrada": round(hasta_, 2), "precio": precio_, "objetivo": round(precio_ * 1.05, 2),
+                    h_, m_ = int(l_.get("horizonte") or 5), float(l_.get("meta") or 5.0)
+                    # más plazo, más aire: 1,5 ATR (4-10%) a una semana; 2,5 ATR (6-12%) a 20 ruedas
+                    k_, lo_, hi_ = (1.5, 0.04, 0.10) if h_ <= 5 else (2.5, 0.06, 0.12)
+                    dist_ = min(hi_, max(lo_, k_ * atr_ / precio_))
+                    x["plan"] = {"entrada": round(hasta_, 2), "precio": precio_, "objetivo": round(precio_ * (1 + m_ / 100), 2), "objetivo_pct": m_,
                                  "stop": round(precio_ * (1 - dist_), 2), "stop_pct": round(-dist_ * 100, 1)}
                 base_f = date.fromisoformat(l_.get("fecha") or hoy.isoformat())
-                x["vence"] = _sr(base_f, 5).isoformat()  # 5 ruedas desde la lista (lo que se probó)
+                x["vence"] = _sr(base_f, int(l_.get("horizonte") or 5)).isoformat()  # el plazo que se probó
+                x["corto"] = int(l_.get("horizonte") or 5) < riesgo.MIN_RUEDAS_PROPUESTA
             except Exception as ex:
                 print(f"[plan anticipador] {x.get('ticker')}: {ex}")
         orden = sorted(items, key=lambda y: -(y.get("prob") or 0) * (0.5 if y.get("fr_contra") else 1))

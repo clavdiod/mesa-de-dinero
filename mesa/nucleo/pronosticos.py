@@ -106,9 +106,11 @@ def desde_anticipador(lista: dict, hoy: date, hora: str, origen: str = "anticipa
         return []
     f = lista.get("fecha") or hoy.isoformat()
     base = date.fromisoformat(f)
-    return [{"origen": origen, "ticker": x["ticker"], "dir": 1, "objetivo_pct": 5.0, "vence": _vence(base, 8),
+    h, m = int(lista.get("horizonte") or 5), float(lista.get("meta") or 5.0)
+    plazo_txt = "en la semana" if h <= 5 else f"en {h} ruedas"
+    return [{"origen": origen, "ticker": x["ticker"], "dir": 1, "objetivo_pct": m, "vence": _vence(base, h * 7 // 5 + 1),
              "fecha": f, "hora": hora, "clave": f, "prob": x.get("prob"),
-             "texto": f"Sube 5% o más en la semana ({x.get('prob', 0) * 100:.0f}% de probabilidad). " + ", ".join(x.get("razones") or [])}
+             "texto": f"Sube {m:.0f}% o más {plazo_txt} ({x.get('prob', 0) * 100:.0f}% de probabilidad). " + ", ".join(x.get("razones") or [])}
             for x in lista["lista"][:10]]
 
 

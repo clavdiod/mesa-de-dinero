@@ -765,15 +765,16 @@ function pintarAnticipos() {
     va = l.filter((x) => ["en_curso", "esperando"].includes(x.estado)).length; return `${l.length} sugerido${l.length > 1 ? "s" : ""}${ok ? ` · ✅ ${ok}` : ""}${mal ? ` · ❌ ${mal}` : ""}${va ? ` · ⏳ ${va}` : ""}`; };
   const filaAnt = (tk, pr, extra) => { const [c, eq] = pr ? ESTADO_PRON[pr.estado] || ["", ""] : ["", ""];
     const pl = extra.plan;
-    const planTxt = pl ? `<div class="plan-ant">🛒 Comprar hasta <b>$${num(pl.entrada)}</b> · 🎯 <b>$${num(pl.objetivo)}</b> (+5%) · 🛟 stop <b>$${num(pl.stop)}</b> (${pct(pl.stop_pct, 1)})${extra.vence ? ` · ⏱️ mantener hasta el <b>${esc(fecha(extra.vence))}</b>` : ""}</div>` : "";
+    const planTxt = pl ? `<div class="plan-ant">🛒 Comprar hasta <b>$${num(pl.entrada)}</b> · 🎯 <b>$${num(pl.objetivo)}</b> (+${num(pl.objetivo_pct || 5, 0)}%) · 🛟 stop <b>$${num(pl.stop)}</b> (${pct(pl.stop_pct, 1)})${extra.vence ? ` · ⏱️ mantener hasta el <b>${esc(fecha(extra.vence))}</b>` : ""}</div>` : "";
+    const cortoTxt = extra.corto ? '<div class="tenue">⚡ Corto plazo (1 semana): no es una propuesta para comprar sola, solo confirma otras ideas.</div>' : "";
     return `<div class="agente"><b>${extra.prioridad ? `<span class="prio">#${extra.prioridad}</span> ` : ""}${estrella(tk, "Anticipador")}<span class="link" data-abrir-debate="${esc(tk)}">${esc(tk)}</span>${extra.prob ? `<br><span class="tenue">${num(extra.prob * 100, 0)}%</span>` : ""}</b>
-      <span>${planTxt}${extra.txt ? esc(extra.txt) : ""}${extra.fr ? ' <span class="chip rojo">entre los más débiles: pesa la mitad</span>' : ""}${pr ? `${extra.txt ? "<br>" : ""}<span class="chip ${c}">${eq}</span> ${pr.ref ? `desde ${num(pr.ref)}: va ${pct(pr.ahora_pct, 1)}, mejor ${pct(pr.mejor, 1)}` : ""}` : ""}</span></div>`; };
+      <span>${extra.corto ? cortoTxt : planTxt}${extra.txt ? esc(extra.txt) : ""}${extra.fr ? ' <span class="chip rojo">entre los más débiles: pesa la mitad</span>' : ""}${pr ? `${extra.txt ? "<br>" : ""}<span class="chip ${c}">${eq}</span> ${pr.ref ? `desde ${num(pr.ref)}: va ${pct(pr.ahora_pct, 1)}, mejor ${pct(pr.mejor, 1)}` : ""}` : ""}</span></div>`; };
   // la lista vigente (la del último cierre, para hoy y los próximos días) + las de días anteriores con su resultado
   const dias = [];
   if ((li.lista || []).length) {
     const l = li.lista.slice(0, 10), prs = l.map((x) => prons.find((y) => y.ticker === x.ticker && y.fecha === li.fecha)).filter(Boolean);
     dias.push([li.fecha, (li.fecha === HOY() ? "📌 Para mañana · lista de hoy al cierre" : `📌 Para hoy · lista del ${esc(tituloDia(li.fecha).toLowerCase())}`), resumenDia(prs.length ? prs : l),
-      l.slice().sort((a, b) => (a.prioridad || 99) - (b.prioridad || 99)).map((x) => filaAnt(x.ticker, prons.find((y) => y.ticker === x.ticker && y.fecha === li.fecha), { prob: x.prob, txt: (x.razones || []).join(" · ") || "combinación de precursores", fr: x.fr_contra, plan: x.plan, vence: x.vence, prioridad: x.prioridad })).join("")]);
+      l.slice().sort((a, b) => (a.prioridad || 99) - (b.prioridad || 99)).map((x) => filaAnt(x.ticker, prons.find((y) => y.ticker === x.ticker && y.fecha === li.fecha), { prob: x.prob, txt: (x.razones || []).join(" · ") || "combinación de precursores", fr: x.fr_contra, plan: x.plan, vence: x.vence, prioridad: x.prioridad, corto: x.corto })).join("")]);
   }
   const otras = {}; prons.filter((x) => x.fecha !== li.fecha).forEach((x) => (otras[x.fecha] ||= []).push(x));
   Object.keys(otras).sort().reverse().slice(0, 6).forEach((f) => { const l = otras[f].sort((a, b) => (b.mejor || 0) - (a.mejor || 0));
@@ -788,9 +789,9 @@ function pintarAnticipos() {
   const NOM_EXTRA = { anticipador_arg: "🇦🇷 Anticipador ARG (acciones argentinas)", anticipador_mundo: "🌍 Anticipador Mundo (CEDEARs con lo que pasa en el mundo)" };
   const extras = Object.entries(e.anticipo_listas || {}).filter(([, l]) => l.activo && (l.lista || []).length).map(([ag, l]) => {
     const pr2 = (e.pronosticos || []).filter((x) => x.origen === ag);
-    const filas = l.lista.slice(0, 10).sort((a, b) => (a.prioridad || 99) - (b.prioridad || 99)).map((x) => filaAnt(x.ticker, pr2.find((y) => y.ticker === x.ticker && y.fecha === l.fecha), { prob: x.prob, txt: (x.razones || []).join(" · "), fr: x.fr_contra, plan: x.plan, vence: x.vence, prioridad: x.prioridad })).join("");
+    const filas = l.lista.slice(0, 10).sort((a, b) => (a.prioridad || 99) - (b.prioridad || 99)).map((x) => filaAnt(x.ticker, pr2.find((y) => y.ticker === x.ticker && y.fecha === l.fecha), { prob: x.prob, txt: (x.razones || []).join(" · "), fr: x.fr_contra, plan: x.plan, vence: x.vence, prioridad: x.prioridad, corto: x.corto })).join("");
     const pp = l.prueba || {};
-    return `<details class="dia-pron" open><summary><b>${NOM_EXTRA[ag] || ag}</b> <span class="tenue">· ${l.lista.length} para los próximos días${pp.top10_pct ? ` · en el examen ${num(pp.top10_pct, 0)} de cada 100 subieron 5% (al azar ${num(pp.base_pct, 0)})` : ""}</span></summary>${filas}
+    return `<details class="dia-pron" open><summary><b>${NOM_EXTRA[ag] || ag}</b> <span class="tenue">· ${l.lista.length} ${(l.horizonte || 5) > 5 ? `a ${l.horizonte} ruedas` : "para los próximos días"}${pp.top10_pct ? ` · en el examen ${num(pp.top10_pct, 0)} de cada 100 subieron ${num(l.meta || 5, 0)}% (al azar ${num(pp.base_pct, 0)})` : ""}</span></summary>${filas}
       <p><button class="chico" data-ir-pron="${ag}">📋 Ver sus pronósticos</button></p></details>`; }).join("");
   // día volátil: qué modelo se usó (capacitación para tiempos volátiles)
   const vols = [li, ...Object.values(e.anticipo_listas || {})].map((l) => l && l.volatil).filter((v) => v && v.hoy);
