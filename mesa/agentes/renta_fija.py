@@ -217,3 +217,34 @@ def proponer(panel: dict, flujos: dict, soberanos: dict, hoy: date, malas: set[s
     return {"fecha": hoy.isoformat(), "liquida": liq.isoformat(), "analizados": len(cand), "aptos": len(ok),
             "ons": mejores("ons", n_ons), "soberanos": mejores("soberanos", n_sob), "pesos": mejores("pesos", 5),
             "pesos_vistos": [{k: x.get(k) for k in ("ticker", "descripcion", "precio", "tir", "frecuencia", "tasa", "vence", "motivos_fuera")} for x in cand if x["grupo"] == "pesos"]}
+
+
+# ---------- LECAP y BONCAP: tasa fija en pesos, pago único al vencimiento ----------
+def lecaps(panel: dict, tabla: dict, hoy: date, inflacion_12m: float | None = None) -> list[dict]:
+    """tabla: {ticker: {vence, valor_final}} (config/lecaps.yaml). Con el precio de venta de hoy: TEM (por mes) y TIR (por año).
+    inflacion_12m: inflación esperada para los próximos 12 meses (REM del BCRA, %), para comparar."""
+    liq = liquidacion(hoy)
+    inf_m = ((1 + inflacion_12m / 100) ** (1 / 12) - 1) * 100 if inflacion_12m else None
+    out = []
+    for tk, d in (tabla or {}).items():
+        p = panel.get(tk)
+        if not p or not p[3] or not p[2]:
+            continue
+        venta, vf = float(p[3]), float(d["valor_final"])
+        vence = date.fromisoformat(str(d["vence"]))
+        dias = (vence - liq).days
+        if dias < 7 or venta <= 0 or vf <= venta:
+            continue
+        tem = ((vf / venta) ** (30 / dias) - 1) * 100
+        tirv = ((vf / venta) ** (365 / dias) - 1) * 100
+        x = {"ticker": tk, "tipo": d.get("tipo") or "LECAP", "precio": venta, "valor_final": vf, "vence": vence.isoformat(), "dias": dias,
+             "tem": round(tem, 2), "tir": round(tirv, 1), "frecuencia": "pago único al vencimiento", "grupo": "lecap",
+             "spread_pct": round((venta - p[2]) / venta * 100, 2)}
+        if inf_m is not None:
+            x["inflacion_mensual_esperada"] = round(inf_m, 2)
+            x["le_gana"] = round(tem - inf_m, 2)
+        vn = int(1_000_000 / (venta / 100))
+        x["ejemplo"] = {"monto": 1_000_000, "nominales": vn, "costo": round(vn * venta / 100), "cobras": round(vn * vf / 100),
+                        "ganas": round(vn * (vf - venta) / 100)}
+        out.append(x)
+    return sorted(out, key=lambda y: y["vence"])

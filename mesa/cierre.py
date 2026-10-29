@@ -270,7 +270,16 @@ def diario(simular: bool = False) -> dict:
             cal_rf = a.get("calificadoras/ultimo") or {}
             malas_rf = {str(c.get("ticker") or "").upper() for c in cal_rf.get("cambios", []) if int(c.get("dir", 0)) < 0}
             tengo_rf = {str(x.get("ticker", "")).upper() for x in (a.get("usuario/cartera") or [])}
-            a.put("renta_fija/propuestas", _rf.proponer(pan_rf, fl_rf, _ev.flujos_bonos(), hoy, malas_rf, tengo_rf))
+            prop_rf = _rf.proponer(pan_rf, fl_rf, _ev.flujos_bonos(), hoy, malas_rf, tengo_rf)
+            try:  # LECAP y BONCAP (pago único) contra la inflación esperada del REM
+                import yaml as _y
+                from .nucleo.config import RAIZ as _R
+                exp = ((a.get("ministro/series") or {}).get("series") or {}).get("expectativa") or {}
+                prop_rf["lecaps"] = _rf.lecaps(pan_rf, _y.safe_load((_R / "config" / "lecaps.yaml").read_text(encoding="utf-8")) or {}, hoy,
+                                               exp[max(exp)] if exp else None)
+            except Exception as ex2:
+                print(f"[cierre] lecaps: {ex2}")
+            a.put("renta_fija/propuestas", prop_rf)
         except Exception as ex:
             print(f"[cierre] renta fija: {ex}")
 

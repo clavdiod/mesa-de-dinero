@@ -820,6 +820,12 @@ function pintarRentaFija() {
     El cronograma es el oficial (MAE), cada 100 nominales; abajo, lo que cobrás con US$ 1.000 (o $ 1.000.000 en pesos). ${r.aptos ? `Pasaron ${r.aptos} de ${r.analizados} con cronograma.` : ""}</p>
     ${(r.ons || []).length ? "<h3>Obligaciones negociables (empresas)</h3>" + r.ons.map(card).join("") : ""}
     ${(r.soberanos || []).length ? "<h3>Bonos del Tesoro</h3>" + r.soberanos.map(card).join("") : ""}
+    ${(r.lecaps || []).length ? `<h3>En pesos, pago único (LECAP y BONCAP)</h3><p class="tenue">Tasa fija: pagan todo junto al vencimiento. TEM = lo que rinde por mes.
+      ${r.lecaps[0].inflacion_mensual_esperada != null ? `Inflación esperada (REM del BCRA): <b>${num(r.lecaps[0].inflacion_mensual_esperada, 2)}% por mes</b>. Si la TEM le gana, ganás contra la inflación.` : ""}</p>
+      <div class="tabla-scroll"><table><tr><th>Letra</th><th>Vence</th><th class="n">Precio</th><th class="n">TEM</th><th class="n">TIR</th><th class="n">Con $ 1.000.000 cobrás</th></tr>
+      ${r.lecaps.map((x) => `<tr><td><b>${esc(x.ticker)}</b><br><span class="tenue">${esc(x.tipo)}</span></td><td>${esc(fecha(x.vence))}/${esc(x.vence.slice(2, 4))}<br><span class="tenue">${x.dias} días</span></td>
+        <td class="n">${num(x.precio, 2)}</td><td class="n"><b>${num(x.tem, 2)}%</b>${x.le_gana != null ? `<br><span class="chip ${x.le_gana >= 0 ? "verde" : "rojo"}">${x.le_gana >= 0 ? "le gana" : "pierde"} ${num(Math.abs(x.le_gana), 2)}</span>` : ""}</td>
+        <td class="n">${num(x.tir, 1)}%</td><td class="n">$ ${num(x.ejemplo.cobras, 0)}<br><span class="tenue">ganás $ ${num(x.ejemplo.ganas, 0)}</span></td></tr>`).join("")}</table></div>` : ""}
     ${(r.pesos || []).length ? `<h3>En pesos</h3><p class="tenue">Rinden en pesos: para que te convenga, la TIR tiene que ganarle a la inflación esperada. Ejemplo con $ 1.000.000.</p>` + r.pesos.map(card).join("") : ""}
     <p class="tenue">TIR = lo que rinde por año si lo tenés hasta el final y cobrás todo. Más TIR = más riesgo: el mercado pide más porque duda más de que pague.</p></div>`;
 }

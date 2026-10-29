@@ -22,6 +22,12 @@ try:
     malas = {str(c.get("ticker") or "").upper() for c in cal.get("cambios", []) if int(c.get("dir", 0)) < 0}
     tengo = {str(x.get("ticker", "")).upper() for x in (a.get("usuario/cartera") or [])}
     res = R.proponer(pan, fl, eventos.flujos_bonos(), hoy, malas, tengo)
+    import yaml
+    from mesa.nucleo.config import RAIZ
+    exp = ((a.get("ministro/series") or {}).get("series") or {}).get("expectativa") or {}
+    res["lecaps"] = R.lecaps(pan, yaml.safe_load((RAIZ / "config" / "lecaps.yaml").read_text(encoding="utf-8")), hoy, exp[max(exp)] if exp else None)
+    print(f"::notice::inflación esperada 12m {exp[max(exp)] if exp else None} ({max(exp) if exp else ''}) | LECAP/BONCAP: " + json.dumps(
+        [{k: x.get(k) for k in ("ticker", "precio", "vence", "dias", "tem", "tir", "le_gana")} for x in res["lecaps"]]))
     a.put("renta_fija/propuestas", res)
     print(f"::notice::analizados {res['analizados']}, aptos {res['aptos']}")
     print("::notice::pesos vistos: " + json.dumps(res.get("pesos_vistos"), ensure_ascii=False)[:1500])
