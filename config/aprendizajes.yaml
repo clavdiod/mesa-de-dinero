@@ -1,171 +1,157 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
-- fecha: "2026-10-28"
-  caso: "BAK: el pronóstico se cumplió, pero la operación perdió"
-  que_paso: "El Anticipador marcó BAK el 26/10 a $950,50 para subir 5% en la semana: llegó a $1.210 el 27/10 (+27%). Clau compró a $988 el 27/10 y vendió el 28/10 a ~$990 cuando en Nueva York cayó 7%: −$940 neto. En Mi cartera el objetivo de BAK salía del consenso de analistas ($1.472) en vez del +5% de la idea (~$998), así que el cartel siguió diciendo 'mantener' cuando ya había llegado."
-  leccion: "Si la idea que te hizo comprar tiene un objetivo probado, ese objetivo manda: cuando llega, se vende al menos la mitad. Esperar más es devolverlo."
-  cambio: "Dos alarmas de salida para todo lo que tenés, revisadas cada 5 minutos y con aviso urgente al celular (🚨 VENDÉ): 1) llegó al objetivo de la idea → vender la mitad; 2) llegó a ganar 5% o más y ya devolvió la mitad → vender (todo si ya casi no gana). Además, en Mi cartera el objetivo de una compra sale de la idea que la marcó (Anticipador, Cazador, Corresponsal...) si la hubo; cuando el precio lo toca (o el pronóstico ya se dio y está cerca), el cartel dice 'VENDER LA MITAD HOY' y llega el aviso. El acierto del pronóstico no se cambia (sigue siendo un acierto de la herramienta), pero en Resultados cada pronóstico muestra también 'Tu operación' con tu resultado real."
-- fecha: "2026-10-28"
-  caso: "Anticipador ARG: aprobó con 10 años de historia medida en dólares"
-  que_paso: "Con los 270 días guardados no aprobaba (+0,5% a 5 ruedas). Con 5 años de Yahoo en pesos: +1,1%, todavía no cubría la comisión. Con 10 años en pesos: +2,3%. Con 10 años en dólares CCL: 51 de cada 100 marcadas subieron 5% o más en la semana (al azar 29), +4,3% promedio a 5 ruedas contra +0,6% al azar (21.494 casos que no vio). Además había un error de cuenta con datos extremos (riesgo país de 2019) que hacía fallar el entrenamiento."
-  leccion: "En Argentina la inflación y las devaluaciones esconden las señales: medido en dólares, el método funciona igual de bien que en los CEDEARs. Y hace falta mucha historia para ver varios ciclos."
-  cambio: "El Anticipador ARG aprende con 10 años de Yahoo (gratis) en dólares CCL, arma su lista también en dólares y vota en el Comité (con peso x1 hasta juntar 10 resultados en vivo). Se vuelve a examinar cada viernes. Ojo: sus marcadas se mueven fuerte para los dos lados (4 de cada 10 también caen 5% en la semana): stop siempre."
-- fecha: "2026-10-28"
-  caso: "'No cubre el costo' en todos los anticipos: estaba mal calculado fuera de horario"
-  que_paso: "La ronda de las 19:40 midió la diferencia entre compra y venta con las puntas que quedan después del cierre de BYMA: ofertas sueltas como BAK compra $948 / venta $1.490 (57%) o RKLB 43%. Con eso, todos los anticipos parecían no cubrir el costo."
-  leccion: "Después de las 17 las puntas no son precios reales. Y una diferencia de más de 8% casi siempre es un libro vacío, no un costo."
-  cambio: "La diferencia entre compra y venta solo se usa de 11 a 17 y si es creíble (8% o menos); si no, solo se descuenta la comisión. La comisión de 1,2% ida y vuelta se verificó contra el tarifario de Cocos (0,45% + IVA por operación más derechos de mercado)."
-- fecha: "2026-10-28"
-  caso: "El plazo de cada papel no puede ser fijo"
-  que_paso: "El plazo salía de la idea que había marcado el papel el día de la compra (por ejemplo, 5 ruedas para el Anticipador o 60 para una oportunidad de mediano plazo) y no se movía, aunque cambiaran la mesa, la estadística o las noticias."
-  leccion: "Un evento puede cambiar si conviene tener un papel: el plazo se revisa todos los días."
-  cambio: "En cada ronda se recalcula el plazo de lo que tenés: termina el día antes de un balance; se acorta a 1 rueda con una noticia fuerte en contra; a 2 ruedas si la mesa se da vuelta o si le queda 5% o menos al objetivo; y se estira 5 ruedas (hasta 60 desde la compra) si la mesa sigue a favor con recorrido o hay una noticia fuerte a favor. El motivo se muestra en Mi cartera, y el cartel ('MANTENER hasta tal fecha', 'SALIR MAÑANA') usa el plazo recalculado."
-- fecha: "2026-10-27"
-  caso: "Anticipador ARG y Anticipador Mundo: examinados con la historia"
-  que_paso: "Anticipador ARG (50 acciones argentinas, con Merval, riesgo país y CCL): de cada 100 marcados, 30 subieron 5% o más en la semana (al azar 12) y cayeron menos, pero en promedio ganaron +0,5% a 5 ruedas, que no cubre la comisión de 1,2%. Anticipador Mundo (CEDEARs con petróleo, oro, cobre, dólar global, tasas, Japón, Alemania y el sector de cada empresa): 47 de cada 100 subieron 5%, igual que el Anticipador común (47,5): elige casi los mismos papeles."
-  leccion: "Lo que pasa en el mundo ya se ve en el gráfico de cada CEDEAR: sumar esos datos no mejoró la anticipación. En acciones argentinas el método marca bien pero todavía no deja ganancia neta, y la historia guardada es corta (unos 270 días por acción)."
-  cambio: "Los dos quedan en observación: no votan ni se muestran hasta que pasen el examen (se vuelve a tomar cada viernes, y el de Argentina mejora a medida que se junta historia). El Anticipador Mundo además tiene que superar al común para votar, así no se cuenta dos veces la misma idea. En el Comité solo se ven las aprobadas; las filtradas quedan plegadas y los días anteriores se consultan por fecha."
-- fecha: "2026-10-27"
-  caso: "El Jefe casi no sumaba: lo reemplaza un Comité que vota"
-  que_paso: "Sin IA disponible, el Jefe elegía 'por puntaje': ordenaba la suma de votos y nada más. Mientras tanto, los anticipadores venían acertando mucho más que el resto, pero sus votos pesaban igual que los de cualquiera."
-  leccion: "Una decisión de mesa tiene que mostrar quién votó qué, y el voto de cada uno tiene que pesar según lo que acertó de verdad."
-  cambio: "Nace el Comité: vota cada candidato que pasó Riesgo. Cada voto pesa entre x0,4 y x2 según su acierto en vivo (los anticipadores por su libreta de pronósticos, el resto por sus señales a 10 ruedas). Se aprueba con 2 o más analistas a favor y al menos 1,6 veces más peso a favor que en contra. El modelo de combinaciones deja de filtrar y pasa a ser un voto más. La conclusión dice quién votó qué y el plazo para tenerla; Riesgo sigue con veto. Además, Mi cartera tiene seguimiento diario con plazo, qué cambió hoy y un cartel para decidir (la decisión es tuya)."
-- fecha: "2026-10-27"
-  caso: "BAK: la diferencia entre compra y venta era 5,9% y la mesa medía como si fuera gratis"
-  que_paso: "La mesa marcó BAK por el Anticipo NY (le faltaba +8,2%) pero la diferencia entre la punta compradora y la vendedora era 5,9%. Entrar y salir enseguida costaba más de 7% con la comisión: el anticipo casi no dejaba nada. Además, las pruebas con la historia se miraban sumando todos los años juntos."
-  leccion: "En papeles que operan poco, la diferencia entre compra y venta es un costo tan real como la comisión. Y una herramienta que gana solo en un año bueno no está probada."
-  cambio: "Riesgo calcula la relación ganancia/pérdida con el costo real (comisión + diferencia de puntas) y lo muestra; el Anticipo NY dice cuánto queda neto y pesa poco si no cubre el costo; la simulación compra a la punta vendedora; Mi cartera avisa cuándo vender con orden límite. Nueva etiqueta por agente en Resultados: 'habilidad probada', 'prometedor', 'todavía es ruido' o 'erra de más', midiendo día por día. Nuevo informe profesional de la simulación (peor caída, ganancia/pérdida promedio, factor de ganancia, peor racha). Las herramientas de Wall Street se prueban año por año: hacen falta 3 años o más y ganarle al promedio en al menos 60% de ellos (el gap con volumen pasa: 3 de 4 años)."
-- fecha: "2026-10-26"
-  caso: "Noticias internacionales: Lula reelecto en Brasil, se desploman el real y la bolsa, y el Corresponsal no lo vio"
-  que_paso: "El domingo 25/10 Lula ganó la segunda vuelta. El lunes el real cayó fuerte, la bolsa de San Pablo se desplomó y los bancos brasileños perdieron casi un tercio en Nueva York. El Corresponsal leía 63 titulares sobre el tema pero no tenía un tema 'Brasil': solo conocía petróleo, Fed, aranceles, China, Vaca Muerta, FMI y sequía."
-  leccion: "Brasil es el principal socio comercial de Argentina y lo que pasa allá contagia: tenía que estar entre los temas que se vigilan."
-  cambio: "En vez de armar un tema por cada país, el Corresponsal ahora tiene un detector general de 'sacudones' para 22 países (Brasil, Chile, México, Uruguay, EE.UU., China, Europa, Japón, India, Rusia, Ucrania y más): si de golpe aparecen muchos titulares de un país con palabras de crisis (se desploma la bolsa o la moneda, default, golpe, protestas, terremoto, elecciones con mala reacción) o de alivio, lo marca solo. Pega en los papeles ligados a ese país y, si es vecino o socio, en los bonos argentinos por contagio. Los países que siempre están en las noticias (EE.UU., China) necesitan más titulares para que cuente. Hoy detectó Brasil con 69 titulares y ningún falso aviso en el resto."
-- fecha: "2026-10-26"
-  caso: "Ideas de los repos grandes de GitHub: memoria por papel, protecciones y control de trampa con el futuro"
-  que_paso: "Se revisaron TradingAgents, ai-hedge-fund, freqtrade, qlib y quantstats. Con el control de freqtrade se volvieron a correr todas las pruebas entrando cuando de verdad se puede (la apertura del día siguiente, porque las listas salen después del cierre de EE.UU.) en vez de al cierre del día de la señal. Gap con volumen: +3,9% contra el promedio igual que antes. Anticipador: 50 de cada 100 marcados suben 5% en la semana (antes 51), pero la ganancia promedio a 5 ruedas baja de +2,1% a +1,7%. Analistas: siguen sin servir, aun contando el consenso un mes después. Compras de insiders: quedan apenas por encima de la vara a 60 ruedas."
-  leccion: "Las pruebas no estaban infladas por usar el futuro, salvo una parte de la ganancia del Anticipador: comprar al día siguiente cuesta cerca de 0,3% por idea. Desde ahora todas las pruebas usan la entrada realista."
-  cambio: "Pruebas con entrada realista por defecto. Nacen las protecciones automáticas: 3 stops en 2 ruedas o -3R en 10 días frenan las compras nuevas del Jefe ese día; un papel cuyas 2 últimas propuestas perdieron queda fuera 7 días. Nace la memoria por papel: el debate muestra arriba qué pasó las últimas veces que la mesa tuvo una idea con ese papel."
-- fecha: "2026-10-23"
-  caso: "Herramientas de Wall Street: analistas, insiders y rotación sectorial"
-  que_paso: "Se probaron tres herramientas más que usan los fondos grandes, contra el CEDEAR típico de cada día (la mediana, para que un par de datos rotos no inflen nada). Mejora del consenso de analistas (13 meses de historia de Nasdaq, 207 casos): acertó solo 46% y la mediana quedó debajo del promedio. Compras de directivos con plata propia (198 compras de más de US$ 100.000 en 4 años): 56% de aciertos pero apenas +0,05% de mediana sobre el promedio. Papeles de los 3 sectores que más subieron en 3 meses (1.412 casos): 56% de aciertos y le ganó al CEDEAR típico a 20 y 60 ruedas."
-  leccion: "Cuando los analistas mejoran su opinión, el precio ya lo descontó: llegan tarde. Las compras de insiders son buena noticia pero, en estos CEDEARs grandes, no alcanzan solas. La rotación sectorial (seguir los sectores que lideran) sí funcionó, aunque con ventaja chica: sirve como confirmación, no como idea propia."
-  cambio: "Nace la tarjeta Herramientas de Wall Street en Mercado (analistas, insiders y ranking de sectores). Solo vota la rotación sectorial; analistas e insiders quedan informativos. Todo lo que marcan las herramientas se junta en el nuevo Radar de ganadores de Hoy, con cuántas coinciden en cada papel. Mercado se ordena por grupos (Argentina, Wall Street, Noticias, Cripto). Se vuelve a probar cada viernes."
-- fecha: "2026-10-23"
-  caso: "Cazador de ganadores: las herramientas de Wall Street, probadas con 5 años"
-  que_paso: "Se probaron en 95 CEDEARs (precio en dólares, 5 años) las cuatro herramientas más usadas por los profesionales para encontrar ganadores antes de la suba. Como en estos años casi todo subió (un CEDEAR cualquiera ganó +3,1% promedio a 20 ruedas), cada una se midió contra ese promedio. Plantilla de tendencia (Minervini / CAN SLIM): -0,4% contra el promedio (990 casos). Ruptura de máximo de 52 semanas con volumen: -0,5% (310). Contracción de volatilidad: -0,6% (1.420). Gap con volumen (deriva post-resultados): +3,9% por encima del promedio a 20 ruedas, acertando 58,5% (53 casos)."
-  leccion: "Las recetas famosas de tendencia no le ganaron a simplemente tener CEDEARs en un mercado alcista: sirven para no comprar basura, no para ganarle al mercado. Lo que sí anticipó ganadores fue el gap con volumen enorme (casi siempre un buen balance): el mercado tarda semanas en terminar de creerlo. Es lo que pasó con NOW (+15%) esta semana."
-  cambio: "Nace el Cazador de ganadores: cada día al cierre revisa los CEDEARs con las cuatro herramientas y las muestra en Mercado, pero solo vota el gap con volumen (probado). Sus ideas quedan en la libreta de pronósticos con objetivo +8% a 4 semanas. Se vuelve a probar cada viernes."
-- fecha: "2026-10-23"
-  caso: "Reunión de toda la mesa: lo que aprendimos del 19 al 23/10"
-  que_paso: "Se revisaron 803 señales, las propuestas del Jefe, la simulación y 76 pronósticos. Lo que funcionó: el Jefe propuso 3 y las 3 van bien (TXAR +7,8%, VIST +6,4%, MSFT +0,2%); los anticipos de Nueva York acertaron 78% (45 señales, +1,5%) y en la libreta se dieron 6 de 7; el Corresponsal acertó 64% (+1,3%) y 12 de sus 16 pronósticos cerrados se dieron; las oportunidades de mediano plazo, 59% (+1,9%); Comprador de pánico en acciones argentinas, 15 de 15 (+3,5%). Lo que no funcionó: Economista 25% (93 señales, -2,3%), Técnico 36%, Cripto 25%, el analista de CEDEARs 44% y Comprador de pánico en CEDEARs 29%. Cuando la mesa entera tenía una opinión clara, acertó la dirección solo en 15 de 38 papeles. Se escaparon NOW +15%, SUPV +9%, DD +9% y PAGS +8%."
-  leccion: "Sumar votos de todos no alcanza: la mesa en conjunto acertó menos de la mitad, pero el filtro exigente del Jefe acertó 3 de 3. Lo que más sirve es lo que llega primero (Nueva York antes que BYMA, las noticias antes que el precio) y las ideas de mediano plazo con confirmación. El contexto macro 'de manual' (Economista) sigue sin funcionar. El pánico funciona en acciones argentinas, no en CEDEARs de tecnología en caída."
-  cambio: "Por una semana: Anticipo NY y Corresponsal votan ×1,2; CEDEARs y Técnico ×0,85; el Economista baja a la mitad hasta que demuestre lo contrario. La reunión ahora descarta los datos rotos (variaciones imposibles por cambio de línea o de ratio). El Ministro entra a la mesa con su regla probada (el BCRA acumula reservas → soberanos y bancos)."
-- fecha: "2026-10-22"
-  caso: "Primera reunión de la mesa: semana del 19 al 22/10 (venta fuerte de tecnológicas e IA)"
-  que_paso: "Se revisaron 483 señales de la semana contra el precio de hoy. Fue una semana de ventas en tecnológicas (el Nasdaq cayó 2,2% el jueves) y comprar lo que caía perdió. Fuerza relativa acertó 76% (25 señales); sus avisos de 'evitar' a los más débiles, 13 de 14 (+5,5%): IREN, AMD y LRCX siguieron cayendo. El Economista, a favor de los CEDEARs, acertó 26% (65). El 'caro por dólar implícito' del analista de CEDEARs acertó 29% en 114 casos: esos papeles subieron (EFX +19%, GLOB +14%, SPOT +13%). Comprador de pánico: 0 de 7 en CEDEARs (-7,9%), pero en 5 años, a 20 ruedas, acierta 50% con +4,4% promedio, porque gana mucho en pocos casos; esperar a que confirme el rebote lo empeoró (-1,2% en 53 casos). Jefe: TXAR +7,7%, VIST -0,4%, MSFT -1,3%. Anticipos de Nueva York: 3 de 3. Lista del Anticipador: -3,7% promedio en sus 7 papeles de la semana (todavía en curso). Cuando la mesa tuvo opinión clara, acertó la dirección en 10 de 38."
-  leccion: "Cuando un sector entra en venta, lo débil sigue cayendo: 'barato' o 'sobrevendido' no alcanza si Fuerza relativa dice que es de los más débiles. Y una semana no alcanza para juzgar estrategias de meses (Pánico, Wall Street, Economista): se las mide en su plazo."
-  cambio: "La reunión se repite cada día al cierre y ajusta por una semana el voto de los analistas de corto plazo (máximo ±30%): esta semana Fuerza relativa ×1,2 y CEDEARs ×0,85. El 'caro' del analista de CEDEARs queda como dato, sin voto. El Anticipador vota la mitad cuando el papel está entre los más débiles, y la app lo marca. Comprador de pánico sigue igual: su prueba es a 20 ruedas."
-- fecha: "2026-10-21"
-  caso: "MSTR +8%: el aviso llegó tarde → nace el Anticipador"
-  que_paso: "El Radar avisó a las 13:04 que MSTR subía 8%, pero esa suba ya se veía en Nueva York desde el pre-market y la apertura de las 10:30, antes de que abra BYMA a las 11. Se entrenó además un modelo de 'precursores' con 5 años: de cada 100 papeles que marca, 52 subieron 5% o más en la semana (al azar, 24), pero también 43 cayeron 5% o más (al azar, 23). Neto: +2,6% promedio a 5 ruedas contra +0,4% al azar."
-  leccion: "Lo que pasa en Nueva York se ve antes que en BYMA: hay que mirarlo en cada ronda, y sobre todo antes de las 11. Los papeles que el modelo marca se mueven mucho para los dos lados: ganan en promedio, pero exigen stop y tamaño chico."
-  cambio: "Cada ronda compara 80 CEDEARs con su acción en Nueva York (incluido el pre-market) y avisa si al CEDEAR le falta acomodarse 2% o más; con las acciones argentinas pasa lo mismo con sus ADRs antes de las 11. Cada día al cierre sale la lista de precursores para los próximos días. Todo se mide con estadística propia."
-- fecha: "2026-10-21"
-  caso: "Comprador de pánico, Noche de Nueva York y el Jefe que aprende"
-  que_paso: "Comprador de pánico: 59% de aciertos en 242 casos a 20 ruedas (índices con pánico +5,2%; capitulación de CEDEARs sanos +3,7%; susto argentino +17% pero en solo 14 casos). Noche de Nueva York: la acción local sí se pone al día con su ADR (+0,5% desde la apertura), pero no alcanza para pagar la comisión de 1,2%. El Jefe que aprende combinaciones, probado con datos que no vio, eligió ideas que rindieron +7,0% a 20 ruedas contra +4,4% de la suma de votos."
-  leccion: "Comprar el miedo fue lo más rentable de todo lo probado. El arbitraje con ADRs existe pero es chico para un inversor que paga 1,2% de comisión. Combinar bien a los agentes vale más que sumarlos."
-  cambio: "Comprador de pánico vota x1,5 (el máximo). Noche de Nueva York queda como información de la mañana con voto mínimo. El Jefe ahora elige con lo que aprendió y solo propone ideas con probabilidad alta. Cada propuesta tiene el plazo del agente que la originó. Todo se re-entrena cada semana; si deja de funcionar, se apaga solo."
-- fecha: "2026-10-21"
-  caso: "Agente Cripto a prueba (Bitcoin 5 años, dólar cripto desde 2023)"
-  que_paso: "Tres pruebas con la historia. (1) Los CEDEARs cripto (IBIT, MSTR, HUT...) siguiendo la tendencia de Bitcoin: +2,3% promedio a 10 ruedas, acierta 54% (1.263 casos); a 3 meses no sirve (-1,3%): la tendencia cripto es de corto plazo. (2) Comprar cualquier CEDEAR con Bitcoin alcista rindió +1,4% a 10 ruedas contra +0,3% con Bitcoin bajista (más de 10.000 casos). (3) Cuando el dólar cripto estuvo 1% o más arriba del CCL, el CCL subió +1,15% en los 5 días siguientes; cuando estuvo abajo, bajó -1,6%."
-  leccion: "Bitcoin funciona como termómetro del apetito por riesgo, y el dólar cripto, que cotiza de noche y los fines de semana, anticipa al dólar de bolsa. Es información que ningún otro agente miraba."
-  cambio: "El agente Cripto vota x1,0 en corto plazo, enseña al resto (con Bitcoin alcista se les cree más a las compras de CEDEARs) y usa el dólar cripto como anticipo del CCL. Sigue a prueba: se recalibra cada semana y se discontinúa si deja de aportar. Al sumar los CEDEARs cripto al universo, el Estratega de Wall Street bajó de +2,9% a +1,4% a 3 meses (voto x0,6): sus resultados dependen de qué papeles se miran."
-- fecha: "2026-10-21"
-  caso: "Llegó el Estratega de Wall Street (CEDEARs), entrenado con 5 años"
-  que_paso: "Se probaron las reglas con más evidencia de Wall Street sobre el precio en dólares de 57 CEDEARs, de 2021 a hoy (incluye la baja de 2022). Comprar los que están sobre su promedio de 200 ruedas y entre los que más subieron en 12 meses (sin el último) rindió +2,9% promedio a 3 meses, acertando 53,5% (3.244 casos). A 10 ruedas no servía (+0,3%): es una estrategia de meses, no de días. Y comprar CEDEARs con clima de miedo en Wall Street rindió +3,7% a 10 ruedas contra +0,9% con clima de euforia."
-  leccion: "Hay estrategias que aciertan apenas más de la mitad pero ganan mucho cuando aciertan; hay que medirlas en su plazo y por la plata que dejan, no solo por el % de aciertos. Y en CEDEARs, 'ser codicioso cuando los demás tienen miedo' tuvo respaldo en los datos."
-  cambio: "El Estratega vota x1,33 (el primero con ventaja demostrada) y sus ideas apuntan a mediano plazo. Enseña al resto: con miedo en Wall Street, a las compras de CEDEARs se les cree más; con euforia, un poco menos. El voto de cada agente ahora depende de la plata neta de comisión que deja su señal."
-- fecha: "2026-10-21"
-  caso: "Llegó el Economista (contexto macro argentino)"
-  que_paso: "Se probó con la historia de 56 papeles la regla de manual: si el riesgo país baja, comprar bancos, acciones y bonos; si el dólar se acelera, CEDEARs. Su opinión propia acertó 41% (1.043 casos). Y las señales de los demás que iban a favor de su contexto rindieron -1,7% a 10 ruedas, contra +0,8% de las que iban en contra."
-  leccion: "En este último año, cuando el contexto ya era bueno el mercado ya lo había descontado: después de un mes de riesgo país en baja, los papeles tendieron a devolver. Las reglas de manual no alcanzan si el precio ya las reflejó."
-  cambio: "El Economista explica el contexto todos los días (Mercado), pero su voto quedó en el mínimo y su ajuste sobre los demás está en pausa hasta que la historia muestre que mejora resultados. Se vuelve a medir en cada entrenamiento."
-- fecha: "2026-10-21"
-  caso: "Entrenamiento con la historia (56 papeles: 18 acciones y 38 CEDEARs, ~1 año)"
-  que_paso: "Se hizo opinar a los agentes en cada día pasado y se midió qué pasó 10 ruedas después. Con solo 18 acciones, los rebotes de Técnico parecían buenos (62%), pero al sumar los CEDEARs bajaron a 52% y +0,3% promedio: menos que la comisión. Los quiebres de Técnico acertaron 45% (-0,7%) y Fuerza relativa 48% (-0,4%) sobre más de 1.500 casos."
-  leccion: "Con pocos datos una regla puede parecer buena por casualidad. Hoy ninguna de las reglas técnicas simples gana más que la comisión: la mesa no les puede creer de más."
-  cambio: "Su voto quedó en el mínimo (x0,3) hasta que demuestren lo contrario. Una señal solo vota completo si, además de acertar, gana más que el 1,2% de comisión. Se recalibra cada viernes y el historial de CEDEARs ahora se arma gratis, así cada semana hay más casos."
-- fecha: "2026-10-20"
-  caso: "Comité para las oportunidades"
-  que_paso: "Las oportunidades salían de un solo agente, sin que el resto de la mesa opinara. De 13 simuladas, 12 eran de un agente solo y casi todas perdían."
-  leccion: "Con tantos analistas, una idea que nadie más confirma no se muestra."
-  cambio: "Una oportunidad solo aparece si otro analista con un método distinto la confirma, nadie la ataca con fuerza y pasa Riesgo. Técnico e Historiador ahora opinan sobre cada una. Las demás quedan 'en observación': se miden en papel pero no se muestran."
-- fecha: "2026-10-20"
-  caso: "TXAR (ganadora)"
-  que_paso: "El agente de Oportunidades (mediano) la marcó a las 11:51 a 690,50: tendencia alcista y retroceso a su media de 50. Subió con volumen 3 veces el normal y a las 16:41 el Jefe recién la propuso, a 715 (3,5% más cara), porque las oportunidades se calculaban después de que él decidía y por sí sola no llegaba al puntaje."
-  leccion: "La señal buena estaba temprano; el Jefe llegó tarde y persiguiendo la suba."
-  cambio: "Las oportunidades ahora se calculan antes del Jefe y suman en su puntaje. Si un papel ya subió 2,5% o más en el día, la entrada va con límite medio ATR más abajo (no se persigue)."
-- fecha: "2026-10-20"
-  caso: "11 CEDEARs 'baratos' (CAR, NG, MOS, HL, DELL, SE, HOOD, RIOT, OKLO, KLAC, PLD)"
-  que_paso: "Se marcaron con dólar implícito entre 11% y 78% debajo del promedio. Un desvío real entre CEDEARs es de 1% a 3%: esos números salían de precios viejos de la línea en dólares, que no había operado. 8 de 11 bajaron en el día. El Jefe no los tomó (no tenían historial para armar un plan), y eso estuvo bien."
-  leccion: "Un 'descuento' enorme casi siempre es un dato malo, no una oportunidad."
-  cambio: "Solo cuentan CEDEARs con las dos líneas (pesos y dólares) operadas hoy, más de $20 millones operados, desvío entre 3% y 6%, y como máximo 3 por día."
-- fecha: "2026-10-20"
-  caso: "METR (perdedora)"
-  que_paso: "Se marcó como 'tendencia alcista, retroceso a la media', pero hace dos meses que va de costado entre 2.255 y 2.442. Estaba encima de sus medias por poco, sin tendencia real."
-  leccion: "Estar arriba de las medias no alcanza: las medias tienen que venir subiendo."
-  cambio: "Para 'tendencia alcista' la media de 50 ruedas tiene que haber subido al menos 1% en las últimas 20 ruedas."
-- fecha: "2026-10-20"
-  caso: "Resultado en rojo de entrada"
-  que_paso: "Toda operación simulada arranca 1,2% abajo por la comisión de compra y venta."
-  leccion: "Una oportunidad tiene que apuntar a bastante más que 1,2% para que valga la pena."
-  cambio: "La simulación muestra el movimiento del precio y el resultado con comisión por separado."
-- fecha: "2026-10-28"
-  tema: Dejar correr a los ganadores
-  texto: >-
-    Llegar al objetivo de la idea ya no alcanza para decir "vendé". Si todavía puede subir (analistas o techo normal a 1 mes),
-    el objetivo pasa al siguiente y el stop sube solo (nunca debajo de la compra ni del objetivo cumplido, 6% debajo del máximo).
-    Antes de cualquier "vender" la mesa revisa analistas, noticias, balance, anticipadores, recorrido y si está devolviendo:
-    solo dice vender si la mayoría lo pide, si devolvió la mitad de lo ganado o si tocó el stop.
-- fecha: "2026-10-28"
-  tema: Anticipador ARG con 15, 20 y 26 años
-  texto: >-
-    Se probó con toda la historia diaria de Yahoo (desde 2000) y el CCL implícito de Galicia antes de 2013, todos con el
-    mismo examen (últimos 3 años). 10 años: 55,3 de cada 100 / +5,16% a 5 ruedas; 15: 54,2 / +4,65%; 20: 55,1 / +5,40%;
-    26: 53,0 / +4,85%. Más historia no mejora de forma clara (la Argentina de 2001-2012 se movía distinto): queda 10 años.
-- fecha: "2026-10-28"
-  tema: Capacitación para tiempos volátiles
-  texto: >-
-    Día volátil = índice (Merval USD o S&P 500) con volatilidad de 20 ruedas en el 25% más alto, riesgo país +10% en 5 ruedas
-    o VIX 25+. Con el mismo examen (el 30% más reciente de los días volátiles): Anticipador: de siempre 53/100 +3,0%,
-    especialista 54/100 +3,3% → se usa el especialista. ARG: de siempre 61/100 +6,0%, especialista 59/100 +6,2% → queda el de
-    siempre. Mundo: de siempre 63/100 +5,7%, especialista 60/100 +5,3% → queda el de siempre. Los tres anticipan bien en días
-    volátiles (mejor que al azar: 30-42). Se rehace cada viernes con el reentrenamiento.
-- fecha: "2026-10-29"
-  tema: Propuestas de 2 semanas o más
-  texto: >-
-    Pedido del usuario: comprar y vender en la semana deja poco después de comisiones. El Comité solo propone si la idea la
-    empuja un analista de 10 ruedas o más; los de corto plazo solo confirman. Prueba de horizontes (mismo examen, neto de 1,2%):
-    ARG 5 ruedas +2,9% neto por idea, 10 → +5,3%, 15 → +7,5%, 20 (+12%) → +11,7% (55 de cada 100 llegan, al azar 30): pasa a
-    20 ruedas. CEDEARs: a 5 ruedas ya no pasa el examen y a 20 rinde +1,8% neto con muchas caídas grandes: quedan de 1 semana y
-    solo confirman.
-- fecha: "2026-10-29"
-  tema: Renta fija para cobrar
-  texto: >-
-    Pedido del usuario: que la mesa también proponga ONs y bonos con pagos periódicos, con el cronograma. Nuevo analista:
-    ONs y soberanos en dólares (línea D), cronograma oficial de MAE, TIR con el precio de venta, uno por emisor, vencimiento
-    6 meses a 6 años, pagos cada 6 meses o menos, TIR 3-16%, diferencia de puntas hasta 2%, sin baja de calificación.
-    MAE publica el cronograma de 46 de las 232 ONs en dólares con puntas (las principales).
-- fecha: "2026-10-29"
-  tema: Renta fija en pesos
-  texto: >-
-    Se suman los bonos de data912 (gratis) y las ONs/bonos que pagan pesos, con la frecuencia de pago (mensual, trimestral,
-    semestral) y el tipo de tasa (fija, variable Badlar/TAMAR, dual). Los CER quedan afuera: el cronograma de MAE no trae el
-    ajuste por inflación y la TIR saldría mal. Hoy en pesos con cuotas y cronograma publicado solo pasa BDC28 (CABA, Badlar+3,75%,
-    trimestral): en pesos casi todo paga junto al vencimiento (LECAP, BONCAP, duales).
-- fecha: "2026-10-29"
-  tema: LECAP y BONCAP automáticas
-  texto: >-
-    Las LECAP/BONCAP nuevas del panel se suman solas: ficha técnica gratis de BYMA (emisión, vencimiento, tasa mensual) y
-    VF = 100 × (1+TEM)^(meses 30/360). Verificado contra IOL (S13N6, S29E7, T30A7 exactos). La S30N6, que IOL traía mal,
-    salió bien de BYMA (VF 129,89, TEM 1,95%, en línea con la curva). Si BYMA no publica la tasa, queda la lista manual.
+- fecha: '2026-10-29'
+  caso: 'LECAP y BONCAP: se suman solas'
+  que_paso: Para calcular cuánto rinde una LECAP o BONCAP hace falta saber cuánto paga al final, y ese dato se cargaba a mano. IOL traía mal el de la S30N6.
+  leccion: 'El valor final sale de la fecha de emisión y la tasa mensual: 100 × (1 + TEM) elevado a los meses (contados 30/360). Verificado exacto contra IOL en S13N6, S29E7 y T30A7.'
+  cambio: Cada cierre busca las letras nuevas del panel y lee su ficha técnica gratis en BYMA (emisión, vencimiento, tasa). Las vencidas se borran. Si BYMA no publica la tasa, la letra aparece como 'sin calcular' y se carga a mano. La S30N6 salió bien de BYMA (paga 129,89, 1,95% por mes).
+- fecha: '2026-10-29'
+  caso: 'Renta fija en pesos: frecuencia de pago y pago único'
+  que_paso: Clau pidió también opciones en pesos y que diga si pagan mensual, trimestral o semestral. En pesos casi todo paga junto al vencimiento (LECAP, BONCAP, duales); con cuotas y cronograma publicado hoy solo pasa BDC28 (CABA, Badlar + 3,75%, trimestral).
+  leccion: 'Los bonos que ajustan por inflación (CER) no se pueden calcular con el cronograma de MAE: no trae el ajuste y la TIR sale mal.'
+  cambio: Cada papel muestra cada cuánto paga y el tipo de tasa (fija, variable Badlar/TAMAR, dual). Se suman los bonos en pesos de data912 (gratis) y una tabla de LECAP/BONCAP con lo que rinden por mes contra la inflación esperada del REM. Los CER quedan afuera.
+- fecha: '2026-10-29'
+  caso: 'Renta fija para cobrar: ONs y bonos con cronograma'
+  que_paso: Clau pidió que la mesa también proponga ONs y bonos con pagos periódicos, con el cronograma de pagos.
+  leccion: Para cobrar importa la TIR con el precio de venta, cada cuánto paga, cuándo vence y la liquidez. Más TIR es más riesgo. MAE publica el cronograma de 46 de las 232 ONs en dólares con puntas (las principales).
+  cambio: 'Nuevo analista de renta fija: ONs y soberanos en dólares (línea D) con el cronograma oficial de MAE; vencen entre 6 meses y 6 años, pagan cada 6 meses o menos, TIR entre 3% y 16%, diferencia de puntas hasta 2%, sin baja de calificación, uno por emisor. En Hoy: ''💵 Para cobrar'', con lo que cobrás en cada fecha con US$ 1.000.'
+- fecha: '2026-10-29'
+  caso: Propuestas de 2 semanas o más
+  que_paso: 'Clau: comprar y vender en la misma semana deja poco después de comisiones. Se probó cada anticipador a 1, 2, 3 y 4 semanas con el mismo examen. Acciones argentinas: a 1 semana +2,9% neto por idea; a 4 semanas buscando +12%, +11,7% neto, con 55 de cada 100 que llegan (al azar 30). CEDEARs: a 1 semana ya no pasa el examen y a 4 semanas rinde +1,8% neto con muchas caídas grandes.'
+  leccion: Con el mismo acierto, una idea a 4 semanas en acciones argentinas deja 4 veces más que una de 1 semana, con menos comisiones.
+  cambio: 'El Comité solo propone si la idea la empuja un analista de 10 ruedas o más; los de corto plazo solo confirman. El Anticipador ARG pasa a 20 ruedas y +12% (planes con stop de 6–12% y plazo de 20 ruedas). Los de 1 semana se muestran como ''corto plazo: solo confirma''.'
+- fecha: '2026-10-28'
+  caso: Capacitación para tiempos volátiles
+  que_paso: 'Día volátil = el Merval en dólares o el S&P 500 con la volatilidad de 20 ruedas en el 25% más alto de su historia, el riesgo país +10% en 5 ruedas o el VIX en 25 o más. Con el mismo examen, en días volátiles: Anticipador 53 de cada 100 (especialista 54); ARG 61 (especialista 59); Mundo 63 (especialista 60). Al azar, entre 30 y 42.'
+  leccion: Los tres anticipadores siguen funcionando en días volátiles. Un especialista entrenado solo con días así ayuda en los CEDEARs y no en los otros dos.
+  cambio: Cada día la mesa detecta si es volátil y, donde ganó, usa el especialista. En Anticipos aparece '⚡ Día volátil' con el motivo. La capacitación se rehace cada viernes.
+- fecha: '2026-10-28'
+  caso: Anticipador ARG con 15, 20 y 26 años de historia
+  que_paso: 'Se probó con toda la historia diaria de Yahoo (desde 2000) y el CCL implícito de Galicia antes de 2013, todos con el mismo examen (los últimos 3 años). 10 años: 55,3 de cada 100 y +5,16% a 5 ruedas; 15 años: 54,2 y +4,65%; 20 años: 55,1 y +5,40%; 26 años: 53,0 y +4,85%.'
+  leccion: 'Más historia no mejora de forma clara: la Argentina de 2001–2012 se movía distinto.'
+  cambio: Se quedan los 10 años. La comparación queda guardada para repetirla.
+- fecha: '2026-10-28'
+  caso: Dejar correr a los ganadores (IREN)
+  que_paso: 'IREN llegó al objetivo de la idea ($3.675) y la mesa decía ''vender la mitad'', aunque todavía podía subir. Clau: ''si recalcula y puede subir, ¿por qué voy a vender?''.'
+  leccion: 'Llegar al objetivo no alcanza para vender: hay que revisar todo y, si sigue a favor, proteger la ganancia y dejarla correr.'
+  cambio: 'Al llegar al objetivo se busca el siguiente (analistas o techo normal a 1 mes) y el stop sube solo: nunca debajo de la compra ni del objetivo cumplido, 6% debajo del máximo. Antes de cualquier ''vendé'' se revisan analistas, noticias, balance, anticipadores, recorrido y si está devolviendo; solo dice vender si la mayoría lo pide, si devolvió la mitad de lo ganado o si tocó el stop. El máximo del día de compra no cuenta (aviso falso de TRAN).'
+- fecha: '2026-10-28'
+  caso: 'BAK: el pronóstico se cumplió, pero la operación perdió'
+  que_paso: 'El Anticipador marcó BAK el 26/10 a $950,50 para subir 5% en la semana: llegó a $1.210 el 27/10 (+27%). Clau compró a $988 el 27/10 y vendió el 28/10 a ~$990 cuando en Nueva York cayó 7%: −$940 neto. En Mi cartera el objetivo de BAK salía del consenso de analistas ($1.472) en vez del +5% de la idea (~$998), así que el cartel siguió diciendo ''mantener'' cuando ya había llegado.'
+  leccion: 'Si la idea que te hizo comprar tiene un objetivo probado, ese objetivo manda: cuando llega, se vende al menos la mitad. Esperar más es devolverlo.'
+  cambio: 'Dos alarmas de salida para todo lo que tenés, revisadas cada 5 minutos y con aviso urgente al celular (🚨 VENDÉ): 1) llegó al objetivo de la idea → vender la mitad; 2) llegó a ganar 5% o más y ya devolvió la mitad → vender (todo si ya casi no gana). Además, en Mi cartera el objetivo de una compra sale de la idea que la marcó (Anticipador, Cazador, Corresponsal...) si la hubo; cuando el precio lo toca (o el pronóstico ya se dio y está cerca), el cartel dice ''VENDER LA MITAD HOY'' y llega el aviso. El acierto del pronóstico no se cambia (sigue siendo un acierto de la herramienta), pero en Resultados cada pronóstico muestra también ''Tu operación'' con tu resultado real.'
+- fecha: '2026-10-28'
+  caso: 'Anticipador ARG: aprobó con 10 años de historia medida en dólares'
+  que_paso: 'Con los 270 días guardados no aprobaba (+0,5% a 5 ruedas). Con 5 años de Yahoo en pesos: +1,1%, todavía no cubría la comisión. Con 10 años en pesos: +2,3%. Con 10 años en dólares CCL: 51 de cada 100 marcadas subieron 5% o más en la semana (al azar 29), +4,3% promedio a 5 ruedas contra +0,6% al azar (21.494 casos que no vio). Además había un error de cuenta con datos extremos (riesgo país de 2019) que hacía fallar el entrenamiento.'
+  leccion: 'En Argentina la inflación y las devaluaciones esconden las señales: medido en dólares, el método funciona igual de bien que en los CEDEARs. Y hace falta mucha historia para ver varios ciclos.'
+  cambio: 'El Anticipador ARG aprende con 10 años de Yahoo (gratis) en dólares CCL, arma su lista también en dólares y vota en el Comité (con peso x1 hasta juntar 10 resultados en vivo). Se vuelve a examinar cada viernes. Ojo: sus marcadas se mueven fuerte para los dos lados (4 de cada 10 también caen 5% en la semana): stop siempre.'
+- fecha: '2026-10-28'
+  caso: '''No cubre el costo'' en todos los anticipos: estaba mal calculado fuera de horario'
+  que_paso: 'La ronda de las 19:40 midió la diferencia entre compra y venta con las puntas que quedan después del cierre de BYMA: ofertas sueltas como BAK compra $948 / venta $1.490 (57%) o RKLB 43%. Con eso, todos los anticipos parecían no cubrir el costo.'
+  leccion: Después de las 17 las puntas no son precios reales. Y una diferencia de más de 8% casi siempre es un libro vacío, no un costo.
+  cambio: La diferencia entre compra y venta solo se usa de 11 a 17 y si es creíble (8% o menos); si no, solo se descuenta la comisión. La comisión de 1,2% ida y vuelta se verificó contra el tarifario de Cocos (0,45% + IVA por operación más derechos de mercado).
+- fecha: '2026-10-28'
+  caso: El plazo de cada papel no puede ser fijo
+  que_paso: El plazo salía de la idea que había marcado el papel el día de la compra (por ejemplo, 5 ruedas para el Anticipador o 60 para una oportunidad de mediano plazo) y no se movía, aunque cambiaran la mesa, la estadística o las noticias.
+  leccion: 'Un evento puede cambiar si conviene tener un papel: el plazo se revisa todos los días.'
+  cambio: 'En cada ronda se recalcula el plazo de lo que tenés: termina el día antes de un balance; se acorta a 1 rueda con una noticia fuerte en contra; a 2 ruedas si la mesa se da vuelta o si le queda 5% o menos al objetivo; y se estira 5 ruedas (hasta 60 desde la compra) si la mesa sigue a favor con recorrido o hay una noticia fuerte a favor. El motivo se muestra en Mi cartera, y el cartel (''MANTENER hasta tal fecha'', ''SALIR MAÑANA'') usa el plazo recalculado.'
+- fecha: '2026-10-27'
+  caso: 'Anticipador ARG y Anticipador Mundo: examinados con la historia'
+  que_paso: 'Anticipador ARG (50 acciones argentinas, con Merval, riesgo país y CCL): de cada 100 marcados, 30 subieron 5% o más en la semana (al azar 12) y cayeron menos, pero en promedio ganaron +0,5% a 5 ruedas, que no cubre la comisión de 1,2%. Anticipador Mundo (CEDEARs con petróleo, oro, cobre, dólar global, tasas, Japón, Alemania y el sector de cada empresa): 47 de cada 100 subieron 5%, igual que el Anticipador común (47,5): elige casi los mismos papeles.'
+  leccion: 'Lo que pasa en el mundo ya se ve en el gráfico de cada CEDEAR: sumar esos datos no mejoró la anticipación. En acciones argentinas el método marca bien pero todavía no deja ganancia neta, y la historia guardada es corta (unos 270 días por acción).'
+  cambio: 'Los dos quedan en observación: no votan ni se muestran hasta que pasen el examen (se vuelve a tomar cada viernes, y el de Argentina mejora a medida que se junta historia). El Anticipador Mundo además tiene que superar al común para votar, así no se cuenta dos veces la misma idea. En el Comité solo se ven las aprobadas; las filtradas quedan plegadas y los días anteriores se consultan por fecha.'
+- fecha: '2026-10-27'
+  caso: 'El Jefe casi no sumaba: lo reemplaza un Comité que vota'
+  que_paso: 'Sin IA disponible, el Jefe elegía ''por puntaje'': ordenaba la suma de votos y nada más. Mientras tanto, los anticipadores venían acertando mucho más que el resto, pero sus votos pesaban igual que los de cualquiera.'
+  leccion: Una decisión de mesa tiene que mostrar quién votó qué, y el voto de cada uno tiene que pesar según lo que acertó de verdad.
+  cambio: 'Nace el Comité: vota cada candidato que pasó Riesgo. Cada voto pesa entre x0,4 y x2 según su acierto en vivo (los anticipadores por su libreta de pronósticos, el resto por sus señales a 10 ruedas). Se aprueba con 2 o más analistas a favor y al menos 1,6 veces más peso a favor que en contra. El modelo de combinaciones deja de filtrar y pasa a ser un voto más. La conclusión dice quién votó qué y el plazo para tenerla; Riesgo sigue con veto. Además, Mi cartera tiene seguimiento diario con plazo, qué cambió hoy y un cartel para decidir (la decisión es tuya).'
+- fecha: '2026-10-27'
+  caso: 'BAK: la diferencia entre compra y venta era 5,9% y la mesa medía como si fuera gratis'
+  que_paso: 'La mesa marcó BAK por el Anticipo NY (le faltaba +8,2%) pero la diferencia entre la punta compradora y la vendedora era 5,9%. Entrar y salir enseguida costaba más de 7% con la comisión: el anticipo casi no dejaba nada. Además, las pruebas con la historia se miraban sumando todos los años juntos.'
+  leccion: En papeles que operan poco, la diferencia entre compra y venta es un costo tan real como la comisión. Y una herramienta que gana solo en un año bueno no está probada.
+  cambio: 'Riesgo calcula la relación ganancia/pérdida con el costo real (comisión + diferencia de puntas) y lo muestra; el Anticipo NY dice cuánto queda neto y pesa poco si no cubre el costo; la simulación compra a la punta vendedora; Mi cartera avisa cuándo vender con orden límite. Nueva etiqueta por agente en Resultados: ''habilidad probada'', ''prometedor'', ''todavía es ruido'' o ''erra de más'', midiendo día por día. Nuevo informe profesional de la simulación (peor caída, ganancia/pérdida promedio, factor de ganancia, peor racha). Las herramientas de Wall Street se prueban año por año: hacen falta 3 años o más y ganarle al promedio en al menos 60% de ellos (el gap con volumen pasa: 3 de 4 años).'
+- fecha: '2026-10-26'
+  caso: 'Noticias internacionales: Lula reelecto en Brasil, se desploman el real y la bolsa, y el Corresponsal no lo vio'
+  que_paso: 'El domingo 25/10 Lula ganó la segunda vuelta. El lunes el real cayó fuerte, la bolsa de San Pablo se desplomó y los bancos brasileños perdieron casi un tercio en Nueva York. El Corresponsal leía 63 titulares sobre el tema pero no tenía un tema ''Brasil'': solo conocía petróleo, Fed, aranceles, China, Vaca Muerta, FMI y sequía.'
+  leccion: 'Brasil es el principal socio comercial de Argentina y lo que pasa allá contagia: tenía que estar entre los temas que se vigilan.'
+  cambio: 'En vez de armar un tema por cada país, el Corresponsal ahora tiene un detector general de ''sacudones'' para 22 países (Brasil, Chile, México, Uruguay, EE.UU., China, Europa, Japón, India, Rusia, Ucrania y más): si de golpe aparecen muchos titulares de un país con palabras de crisis (se desploma la bolsa o la moneda, default, golpe, protestas, terremoto, elecciones con mala reacción) o de alivio, lo marca solo. Pega en los papeles ligados a ese país y, si es vecino o socio, en los bonos argentinos por contagio. Los países que siempre están en las noticias (EE.UU., China) necesitan más titulares para que cuente. Hoy detectó Brasil con 69 titulares y ningún falso aviso en el resto.'
+- fecha: '2026-10-26'
+  caso: 'Ideas de los repos grandes de GitHub: memoria por papel, protecciones y control de trampa con el futuro'
+  que_paso: 'Se revisaron TradingAgents, ai-hedge-fund, freqtrade, qlib y quantstats. Con el control de freqtrade se volvieron a correr todas las pruebas entrando cuando de verdad se puede (la apertura del día siguiente, porque las listas salen después del cierre de EE.UU.) en vez de al cierre del día de la señal. Gap con volumen: +3,9% contra el promedio igual que antes. Anticipador: 50 de cada 100 marcados suben 5% en la semana (antes 51), pero la ganancia promedio a 5 ruedas baja de +2,1% a +1,7%. Analistas: siguen sin servir, aun contando el consenso un mes después. Compras de insiders: quedan apenas por encima de la vara a 60 ruedas.'
+  leccion: 'Las pruebas no estaban infladas por usar el futuro, salvo una parte de la ganancia del Anticipador: comprar al día siguiente cuesta cerca de 0,3% por idea. Desde ahora todas las pruebas usan la entrada realista.'
+  cambio: 'Pruebas con entrada realista por defecto. Nacen las protecciones automáticas: 3 stops en 2 ruedas o -3R en 10 días frenan las compras nuevas del Jefe ese día; un papel cuyas 2 últimas propuestas perdieron queda fuera 7 días. Nace la memoria por papel: el debate muestra arriba qué pasó las últimas veces que la mesa tuvo una idea con ese papel.'
+- fecha: '2026-10-23'
+  caso: 'Herramientas de Wall Street: analistas, insiders y rotación sectorial'
+  que_paso: 'Se probaron tres herramientas más que usan los fondos grandes, contra el CEDEAR típico de cada día (la mediana, para que un par de datos rotos no inflen nada). Mejora del consenso de analistas (13 meses de historia de Nasdaq, 207 casos): acertó solo 46% y la mediana quedó debajo del promedio. Compras de directivos con plata propia (198 compras de más de US$ 100.000 en 4 años): 56% de aciertos pero apenas +0,05% de mediana sobre el promedio. Papeles de los 3 sectores que más subieron en 3 meses (1.412 casos): 56% de aciertos y le ganó al CEDEAR típico a 20 y 60 ruedas.'
+  leccion: 'Cuando los analistas mejoran su opinión, el precio ya lo descontó: llegan tarde. Las compras de insiders son buena noticia pero, en estos CEDEARs grandes, no alcanzan solas. La rotación sectorial (seguir los sectores que lideran) sí funcionó, aunque con ventaja chica: sirve como confirmación, no como idea propia.'
+  cambio: Nace la tarjeta Herramientas de Wall Street en Mercado (analistas, insiders y ranking de sectores). Solo vota la rotación sectorial; analistas e insiders quedan informativos. Todo lo que marcan las herramientas se junta en el nuevo Radar de ganadores de Hoy, con cuántas coinciden en cada papel. Mercado se ordena por grupos (Argentina, Wall Street, Noticias, Cripto). Se vuelve a probar cada viernes.
+- fecha: '2026-10-23'
+  caso: 'Cazador de ganadores: las herramientas de Wall Street, probadas con 5 años'
+  que_paso: 'Se probaron en 95 CEDEARs (precio en dólares, 5 años) las cuatro herramientas más usadas por los profesionales para encontrar ganadores antes de la suba. Como en estos años casi todo subió (un CEDEAR cualquiera ganó +3,1% promedio a 20 ruedas), cada una se midió contra ese promedio. Plantilla de tendencia (Minervini / CAN SLIM): -0,4% contra el promedio (990 casos). Ruptura de máximo de 52 semanas con volumen: -0,5% (310). Contracción de volatilidad: -0,6% (1.420). Gap con volumen (deriva post-resultados): +3,9% por encima del promedio a 20 ruedas, acertando 58,5% (53 casos).'
+  leccion: 'Las recetas famosas de tendencia no le ganaron a simplemente tener CEDEARs en un mercado alcista: sirven para no comprar basura, no para ganarle al mercado. Lo que sí anticipó ganadores fue el gap con volumen enorme (casi siempre un buen balance): el mercado tarda semanas en terminar de creerlo. Es lo que pasó con NOW (+15%) esta semana.'
+  cambio: 'Nace el Cazador de ganadores: cada día al cierre revisa los CEDEARs con las cuatro herramientas y las muestra en Mercado, pero solo vota el gap con volumen (probado). Sus ideas quedan en la libreta de pronósticos con objetivo +8% a 4 semanas. Se vuelve a probar cada viernes.'
+- fecha: '2026-10-23'
+  caso: 'Reunión de toda la mesa: lo que aprendimos del 19 al 23/10'
+  que_paso: 'Se revisaron 803 señales, las propuestas del Jefe, la simulación y 76 pronósticos. Lo que funcionó: el Jefe propuso 3 y las 3 van bien (TXAR +7,8%, VIST +6,4%, MSFT +0,2%); los anticipos de Nueva York acertaron 78% (45 señales, +1,5%) y en la libreta se dieron 6 de 7; el Corresponsal acertó 64% (+1,3%) y 12 de sus 16 pronósticos cerrados se dieron; las oportunidades de mediano plazo, 59% (+1,9%); Comprador de pánico en acciones argentinas, 15 de 15 (+3,5%). Lo que no funcionó: Economista 25% (93 señales, -2,3%), Técnico 36%, Cripto 25%, el analista de CEDEARs 44% y Comprador de pánico en CEDEARs 29%. Cuando la mesa entera tenía una opinión clara, acertó la dirección solo en 15 de 38 papeles. Se escaparon NOW +15%, SUPV +9%, DD +9% y PAGS +8%.'
+  leccion: 'Sumar votos de todos no alcanza: la mesa en conjunto acertó menos de la mitad, pero el filtro exigente del Jefe acertó 3 de 3. Lo que más sirve es lo que llega primero (Nueva York antes que BYMA, las noticias antes que el precio) y las ideas de mediano plazo con confirmación. El contexto macro ''de manual'' (Economista) sigue sin funcionar. El pánico funciona en acciones argentinas, no en CEDEARs de tecnología en caída.'
+  cambio: 'Por una semana: Anticipo NY y Corresponsal votan ×1,2; CEDEARs y Técnico ×0,85; el Economista baja a la mitad hasta que demuestre lo contrario. La reunión ahora descarta los datos rotos (variaciones imposibles por cambio de línea o de ratio). El Ministro entra a la mesa con su regla probada (el BCRA acumula reservas → soberanos y bancos).'
+- fecha: '2026-10-22'
+  caso: 'Primera reunión de la mesa: semana del 19 al 22/10 (venta fuerte de tecnológicas e IA)'
+  que_paso: 'Se revisaron 483 señales de la semana contra el precio de hoy. Fue una semana de ventas en tecnológicas (el Nasdaq cayó 2,2% el jueves) y comprar lo que caía perdió. Fuerza relativa acertó 76% (25 señales); sus avisos de ''evitar'' a los más débiles, 13 de 14 (+5,5%): IREN, AMD y LRCX siguieron cayendo. El Economista, a favor de los CEDEARs, acertó 26% (65). El ''caro por dólar implícito'' del analista de CEDEARs acertó 29% en 114 casos: esos papeles subieron (EFX +19%, GLOB +14%, SPOT +13%). Comprador de pánico: 0 de 7 en CEDEARs (-7,9%), pero en 5 años, a 20 ruedas, acierta 50% con +4,4% promedio, porque gana mucho en pocos casos; esperar a que confirme el rebote lo empeoró (-1,2% en 53 casos). Jefe: TXAR +7,7%, VIST -0,4%, MSFT -1,3%. Anticipos de Nueva York: 3 de 3. Lista del Anticipador: -3,7% promedio en sus 7 papeles de la semana (todavía en curso). Cuando la mesa tuvo opinión clara, acertó la dirección en 10 de 38.'
+  leccion: 'Cuando un sector entra en venta, lo débil sigue cayendo: ''barato'' o ''sobrevendido'' no alcanza si Fuerza relativa dice que es de los más débiles. Y una semana no alcanza para juzgar estrategias de meses (Pánico, Wall Street, Economista): se las mide en su plazo.'
+  cambio: 'La reunión se repite cada día al cierre y ajusta por una semana el voto de los analistas de corto plazo (máximo ±30%): esta semana Fuerza relativa ×1,2 y CEDEARs ×0,85. El ''caro'' del analista de CEDEARs queda como dato, sin voto. El Anticipador vota la mitad cuando el papel está entre los más débiles, y la app lo marca. Comprador de pánico sigue igual: su prueba es a 20 ruedas.'
+- fecha: '2026-10-21'
+  caso: 'MSTR +8%: el aviso llegó tarde → nace el Anticipador'
+  que_paso: 'El Radar avisó a las 13:04 que MSTR subía 8%, pero esa suba ya se veía en Nueva York desde el pre-market y la apertura de las 10:30, antes de que abra BYMA a las 11. Se entrenó además un modelo de ''precursores'' con 5 años: de cada 100 papeles que marca, 52 subieron 5% o más en la semana (al azar, 24), pero también 43 cayeron 5% o más (al azar, 23). Neto: +2,6% promedio a 5 ruedas contra +0,4% al azar.'
+  leccion: 'Lo que pasa en Nueva York se ve antes que en BYMA: hay que mirarlo en cada ronda, y sobre todo antes de las 11. Los papeles que el modelo marca se mueven mucho para los dos lados: ganan en promedio, pero exigen stop y tamaño chico.'
+  cambio: Cada ronda compara 80 CEDEARs con su acción en Nueva York (incluido el pre-market) y avisa si al CEDEAR le falta acomodarse 2% o más; con las acciones argentinas pasa lo mismo con sus ADRs antes de las 11. Cada día al cierre sale la lista de precursores para los próximos días. Todo se mide con estadística propia.
+- fecha: '2026-10-21'
+  caso: Comprador de pánico, Noche de Nueva York y el Jefe que aprende
+  que_paso: 'Comprador de pánico: 59% de aciertos en 242 casos a 20 ruedas (índices con pánico +5,2%; capitulación de CEDEARs sanos +3,7%; susto argentino +17% pero en solo 14 casos). Noche de Nueva York: la acción local sí se pone al día con su ADR (+0,5% desde la apertura), pero no alcanza para pagar la comisión de 1,2%. El Jefe que aprende combinaciones, probado con datos que no vio, eligió ideas que rindieron +7,0% a 20 ruedas contra +4,4% de la suma de votos.'
+  leccion: Comprar el miedo fue lo más rentable de todo lo probado. El arbitraje con ADRs existe pero es chico para un inversor que paga 1,2% de comisión. Combinar bien a los agentes vale más que sumarlos.
+  cambio: Comprador de pánico vota x1,5 (el máximo). Noche de Nueva York queda como información de la mañana con voto mínimo. El Jefe ahora elige con lo que aprendió y solo propone ideas con probabilidad alta. Cada propuesta tiene el plazo del agente que la originó. Todo se re-entrena cada semana; si deja de funcionar, se apaga solo.
+- fecha: '2026-10-21'
+  caso: Agente Cripto a prueba (Bitcoin 5 años, dólar cripto desde 2023)
+  que_paso: 'Tres pruebas con la historia. (1) Los CEDEARs cripto (IBIT, MSTR, HUT...) siguiendo la tendencia de Bitcoin: +2,3% promedio a 10 ruedas, acierta 54% (1.263 casos); a 3 meses no sirve (-1,3%): la tendencia cripto es de corto plazo. (2) Comprar cualquier CEDEAR con Bitcoin alcista rindió +1,4% a 10 ruedas contra +0,3% con Bitcoin bajista (más de 10.000 casos). (3) Cuando el dólar cripto estuvo 1% o más arriba del CCL, el CCL subió +1,15% en los 5 días siguientes; cuando estuvo abajo, bajó -1,6%.'
+  leccion: Bitcoin funciona como termómetro del apetito por riesgo, y el dólar cripto, que cotiza de noche y los fines de semana, anticipa al dólar de bolsa. Es información que ningún otro agente miraba.
+  cambio: 'El agente Cripto vota x1,0 en corto plazo, enseña al resto (con Bitcoin alcista se les cree más a las compras de CEDEARs) y usa el dólar cripto como anticipo del CCL. Sigue a prueba: se recalibra cada semana y se discontinúa si deja de aportar. Al sumar los CEDEARs cripto al universo, el Estratega de Wall Street bajó de +2,9% a +1,4% a 3 meses (voto x0,6): sus resultados dependen de qué papeles se miran.'
+- fecha: '2026-10-21'
+  caso: Llegó el Estratega de Wall Street (CEDEARs), entrenado con 5 años
+  que_paso: 'Se probaron las reglas con más evidencia de Wall Street sobre el precio en dólares de 57 CEDEARs, de 2021 a hoy (incluye la baja de 2022). Comprar los que están sobre su promedio de 200 ruedas y entre los que más subieron en 12 meses (sin el último) rindió +2,9% promedio a 3 meses, acertando 53,5% (3.244 casos). A 10 ruedas no servía (+0,3%): es una estrategia de meses, no de días. Y comprar CEDEARs con clima de miedo en Wall Street rindió +3,7% a 10 ruedas contra +0,9% con clima de euforia.'
+  leccion: Hay estrategias que aciertan apenas más de la mitad pero ganan mucho cuando aciertan; hay que medirlas en su plazo y por la plata que dejan, no solo por el % de aciertos. Y en CEDEARs, 'ser codicioso cuando los demás tienen miedo' tuvo respaldo en los datos.
+  cambio: 'El Estratega vota x1,33 (el primero con ventaja demostrada) y sus ideas apuntan a mediano plazo. Enseña al resto: con miedo en Wall Street, a las compras de CEDEARs se les cree más; con euforia, un poco menos. El voto de cada agente ahora depende de la plata neta de comisión que deja su señal.'
+- fecha: '2026-10-21'
+  caso: Llegó el Economista (contexto macro argentino)
+  que_paso: 'Se probó con la historia de 56 papeles la regla de manual: si el riesgo país baja, comprar bancos, acciones y bonos; si el dólar se acelera, CEDEARs. Su opinión propia acertó 41% (1.043 casos). Y las señales de los demás que iban a favor de su contexto rindieron -1,7% a 10 ruedas, contra +0,8% de las que iban en contra.'
+  leccion: 'En este último año, cuando el contexto ya era bueno el mercado ya lo había descontado: después de un mes de riesgo país en baja, los papeles tendieron a devolver. Las reglas de manual no alcanzan si el precio ya las reflejó.'
+  cambio: El Economista explica el contexto todos los días (Mercado), pero su voto quedó en el mínimo y su ajuste sobre los demás está en pausa hasta que la historia muestre que mejora resultados. Se vuelve a medir en cada entrenamiento.
+- fecha: '2026-10-21'
+  caso: 'Entrenamiento con la historia (56 papeles: 18 acciones y 38 CEDEARs, ~1 año)'
+  que_paso: 'Se hizo opinar a los agentes en cada día pasado y se midió qué pasó 10 ruedas después. Con solo 18 acciones, los rebotes de Técnico parecían buenos (62%), pero al sumar los CEDEARs bajaron a 52% y +0,3% promedio: menos que la comisión. Los quiebres de Técnico acertaron 45% (-0,7%) y Fuerza relativa 48% (-0,4%) sobre más de 1.500 casos.'
+  leccion: 'Con pocos datos una regla puede parecer buena por casualidad. Hoy ninguna de las reglas técnicas simples gana más que la comisión: la mesa no les puede creer de más.'
+  cambio: Su voto quedó en el mínimo (x0,3) hasta que demuestren lo contrario. Una señal solo vota completo si, además de acertar, gana más que el 1,2% de comisión. Se recalibra cada viernes y el historial de CEDEARs ahora se arma gratis, así cada semana hay más casos.
+- fecha: '2026-10-20'
+  caso: Comité para las oportunidades
+  que_paso: Las oportunidades salían de un solo agente, sin que el resto de la mesa opinara. De 13 simuladas, 12 eran de un agente solo y casi todas perdían.
+  leccion: Con tantos analistas, una idea que nadie más confirma no se muestra.
+  cambio: 'Una oportunidad solo aparece si otro analista con un método distinto la confirma, nadie la ataca con fuerza y pasa Riesgo. Técnico e Historiador ahora opinan sobre cada una. Las demás quedan ''en observación'': se miden en papel pero no se muestran.'
+- fecha: '2026-10-20'
+  caso: TXAR (ganadora)
+  que_paso: 'El agente de Oportunidades (mediano) la marcó a las 11:51 a 690,50: tendencia alcista y retroceso a su media de 50. Subió con volumen 3 veces el normal y a las 16:41 el Jefe recién la propuso, a 715 (3,5% más cara), porque las oportunidades se calculaban después de que él decidía y por sí sola no llegaba al puntaje.'
+  leccion: La señal buena estaba temprano; el Jefe llegó tarde y persiguiendo la suba.
+  cambio: Las oportunidades ahora se calculan antes del Jefe y suman en su puntaje. Si un papel ya subió 2,5% o más en el día, la entrada va con límite medio ATR más abajo (no se persigue).
+- fecha: '2026-10-20'
+  caso: 11 CEDEARs 'baratos' (CAR, NG, MOS, HL, DELL, SE, HOOD, RIOT, OKLO, KLAC, PLD)
+  que_paso: 'Se marcaron con dólar implícito entre 11% y 78% debajo del promedio. Un desvío real entre CEDEARs es de 1% a 3%: esos números salían de precios viejos de la línea en dólares, que no había operado. 8 de 11 bajaron en el día. El Jefe no los tomó (no tenían historial para armar un plan), y eso estuvo bien.'
+  leccion: Un 'descuento' enorme casi siempre es un dato malo, no una oportunidad.
+  cambio: Solo cuentan CEDEARs con las dos líneas (pesos y dólares) operadas hoy, más de $20 millones operados, desvío entre 3% y 6%, y como máximo 3 por día.
+- fecha: '2026-10-20'
+  caso: METR (perdedora)
+  que_paso: Se marcó como 'tendencia alcista, retroceso a la media', pero hace dos meses que va de costado entre 2.255 y 2.442. Estaba encima de sus medias por poco, sin tendencia real.
+  leccion: 'Estar arriba de las medias no alcanza: las medias tienen que venir subiendo.'
+  cambio: Para 'tendencia alcista' la media de 50 ruedas tiene que haber subido al menos 1% en las últimas 20 ruedas.
+- fecha: '2026-10-20'
+  caso: Resultado en rojo de entrada
+  que_paso: Toda operación simulada arranca 1,2% abajo por la comisión de compra y venta.
+  leccion: Una oportunidad tiene que apuntar a bastante más que 1,2% para que valga la pena.
+  cambio: La simulación muestra el movimiento del precio y el resultado con comisión por separado.
