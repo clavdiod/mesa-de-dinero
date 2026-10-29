@@ -94,7 +94,7 @@ def capacitar(entrenar_fn, dias: set, u: float | None, nombre: str) -> dict:
     if usar:
         out.update(mu=esp["mu"], sd=esp["sd"], w=esp["w"], umbral=esp["umbral"])
     def _t(p):
-        return f"{p['top10_pct']:.0f} de cada 100 subieron 5% (al azar {p['base_pct']:.0f}), {p['ret5_top10']:+.1f}% a 5 ruedas" if p else "sin datos suficientes"
+        return f"{p['top10_pct']:.0f} de cada 100 llegaron a la meta (al azar {p['base_pct']:.0f}), {p['ret5_top10']:+.1f}% al final del plazo" if p else "sin datos suficientes"
     out["texto"] = (f"{nombre} en días volátiles: el de siempre {_t(pv)}; el especialista {_t(pe)}. "
                     + ("Se usa el especialista." if usar else "Se queda el de siempre.")
                     + ("" if bueno else " En días volátiles no anticipa bien: su voto pesa menos (x0,6)."))

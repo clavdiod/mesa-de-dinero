@@ -24,6 +24,9 @@ try:
         lista = {"fecha": hoy, "activo": True, "umbral": md.get("umbral"), "horizonte": 20, "meta": 12.0, "prueba": m.get("prueba"),
                  "volatil": V.estado_lista(m, vh, vpor), "lista": [x for x in la if x["prob"] >= (md.get("umbral") or 1)][:10]}
         a.put("anticipo_arg/lista", lista)
+        lg = A.lista_arg(m, {k: v[-200:] for k, v in acc.items()}, mer, rp, ccl, hoy)
+        print(f"::notice::umbral especialista {md.get('umbral')} general {m.get('umbral')} | top especialista: " + ", ".join(f"{x['ticker']} {x['prob']}" for x in la[:5])
+              + " | top general: " + ", ".join(f"{x['ticker']} {x['prob']}" for x in lg[:5]) + f" | última vela {max(v[-1]['fecha'] for v in acc.values())}")
         print("::notice::lista hoy: " + ", ".join(f"{x['ticker']} {x['prob']}" for x in lista["lista"]) + f" | volátil {vh} {vpor}")
 except Exception:
     print("::notice::ERR " + traceback.format_exc().replace(chr(10), " | ")[-700:])
