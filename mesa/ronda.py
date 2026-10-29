@@ -759,7 +759,12 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         sh = [s for s in por_ticker.get(tk, [])]
         # el plazo lo marca el agente que más empuja la idea (cada estrategia gana en su plazo)
         aportes = [(s.direccion * s.fuerza * reg.peso(s.agente, s.fuerza), s.agente) for s in sh if s.direccion > 0]
-        principal = max(aportes)[1] if aportes else None
+        # 29/10: solo propuestas de 2 semanas o más (comprar y vender en la semana deja poco después de comisiones).
+        # La idea la tiene que empujar un analista que trabaja a ese plazo; los de corto plazo solo confirman.
+        largos = [a_ for a_ in aportes if riesgo.plazo_de(a_[1]) >= riesgo.MIN_RUEDAS_PROPUESTA]
+        if not largos:
+            continue
+        principal = max(largos)[1]
         ruedas = riesgo.plazo_de(principal)
         plan = riesgo.armar_plan(ctx, tk, ruedas)
         if not plan:

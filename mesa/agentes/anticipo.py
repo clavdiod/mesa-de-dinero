@@ -115,11 +115,12 @@ def contexto_mkt(fecha: str, spy: dict[str, float], vix: dict[str, float], btc: 
 
 def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, paso: int = 2, realista: bool = True,
              ctx_fn=None, rasgos_fn=None, nombres: list[str] | None = None, desde_prueba: str | None = None,
-             solo_fechas: set | None = None, regimen: set | None = None) -> dict:
+             solo_fechas: set | None = None, regimen: set | None = None, horizonte: int | None = None, meta: float | None = None) -> dict:
     """desde_prueba: examen fijo desde esa fecha (para comparar historias de distinto largo con el mismo examen).
     Aprende con el 70% inicial del tiempo y se prueba con el 30% final.
     Objetivo: ¿sube 5% o más (en algún cierre) en las 5 ruedas siguientes?
     ctx_fn(fecha) y rasgos_fn(f, i, ctx, ticker) permiten otros anticipadores (Argentina, Mundo) con el mismo método."""
+    HORIZONTE_, META_ = horizonte or HORIZONTE, meta or META
     filas = []
     ctx_cache: dict[str, dict] = {}
     spy_o, vix_o, btc_o = dict(sorted(spy.items())), dict(sorted(vix.items())), dict(sorted(btc.items()))
@@ -127,7 +128,7 @@ def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, pas
     rasgos_fn = rasgos_fn or (lambda f, i, cx, tk: rasgos(f, i, cx))
     nombres = nombres or NOMBRES
     for tk, f in series.items():
-        for i in range(60, len(f) - HORIZONTE, paso):
+        for i in range(60, len(f) - HORIZONTE_, paso):
             fe = f[i]["fecha"]
             if fe not in ctx_cache:
                 ctx_cache[fe] = ctx_fn(fe)
@@ -138,10 +139,10 @@ def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, pas
             p0 = (f[i + 1].get("o") or f[i + 1]["c"]) if realista else f[i]["c"]
             if not p0:
                 continue
-            futuro = max(y["c"] for y in f[i + 1: i + 1 + HORIZONTE]) / p0 - 1
-            peor = min(y["c"] for y in f[i + 1: i + 1 + HORIZONTE]) / p0 - 1
-            r5 = f[i + HORIZONTE]["c"] / p0 - 1
-            filas.append((fe, tk, x, 1.0 if futuro * 100 >= META else 0.0, r5 * 100, 1.0 if peor * 100 <= -META else 0.0))
+            futuro = max(y["c"] for y in f[i + 1: i + 1 + HORIZONTE_]) / p0 - 1
+            peor = min(y["c"] for y in f[i + 1: i + 1 + HORIZONTE_]) / p0 - 1
+            r5 = f[i + HORIZONTE_]["c"] / p0 - 1
+            filas.append((fe, tk, x, 1.0 if futuro * 100 >= META_ else 0.0, r5 * 100, 1.0 if peor * 100 <= -META_ else 0.0))
     if solo_fechas is not None:  # especialista: aprende y se examina solo en esos días (ej. días volátiles)
         filas = [r for r in filas if r[0] in solo_fechas]
     if len(filas) < 2000:
@@ -190,7 +191,7 @@ def entrenar(series: dict[str, list[dict]], spy: dict, vix: dict, btc: dict, pas
         else:
             pv = None
     importancia = sorted(((nombres[k], round(float(w[1 + k]), 3)) for k in range(len(nombres))), key=lambda t: -abs(t[1]))[:5]
-    return {"activo": activo, "mu": mu.tolist(), "sd": sd.tolist(), "w": w.tolist(), "umbral": round(umbral, 4),
+    return {"activo": activo, "horizonte": HORIZONTE_, "meta": META_, "mu": mu.tolist(), "sd": sd.tolist(), "w": w.tolist(), "umbral": round(umbral, 4),
             "prueba": {"casos": len(te), "base_pct": round(base * 100, 1), "top5_pct": round(prec5 * 100, 1),
                        "top10_pct": round(prec10 * 100, 1), "lift10": round(prec10 / base, 2) if base else None,
                        "caen5_top10_pct": round(caen10 * 100, 1), "caen5_base_pct": round(caen_base * 100, 1),

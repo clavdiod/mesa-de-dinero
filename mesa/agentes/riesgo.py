@@ -25,6 +25,9 @@ PLAZO_AGENTE = {"wallstreet": 60, "oportunidades_mediano": 60, "economista": 20,
                 "cripto": 10, "adr": 3, "volumen_flujo": 5, "anticipo": 3, "anticipador": 5, "mundo": 5, "ministro": 20, "ganadores": 20, "profesionales": 40, "anticipador_arg": 5, "anticipador_mundo": 5}
 
 
+MIN_RUEDAS_PROPUESTA = 10  # 29/10: propuestas de 2 semanas o más
+
+
 def plazo_de(agente: str | None) -> int:
     return PLAZO_AGENTE.get(agente or "", int(config()["riesgo"]["salida_por_tiempo_dias"]))
 
