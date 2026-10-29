@@ -803,22 +803,24 @@ function pintarAnticipos() {
 
 // ---------- renta fija para cobrar: ONs y bonos con cronograma ----------
 function pintarRentaFija() {
-  const r = ESTADO.estado?.renta_fija || {}, l = [...(r.ons || []), ...(r.soberanos || [])];
+  const r = ESTADO.estado?.renta_fija || {}, l = [...(r.ons || []), ...(r.soberanos || []), ...(r.pesos || [])];
   if (!l.length) { $("#renta-fija").innerHTML = ""; return; }
-  const usd = (x) => "US$ " + num(x, 2);
-  const card = (x) => { const e = x.ejemplo || {};
-    const filas = (e.pagos || []).slice(0, 24).map((p) => `<tr><td>${esc(fecha(p.fecha))}/${esc(p.fecha.slice(2, 4))}</td><td class="n">${usd(p.renta)}</td><td class="n">${p.amortizacion ? usd(p.amortizacion) : "—"}</td><td class="n"><b>${usd(p.total)}</b></td></tr>`).join("");
+  const card = (x) => { const e = x.ejemplo || {}, ars = x.grupo === "pesos";
+    const usd = (v) => (ars ? "$ " + num(v, 0) : "US$ " + num(v, 2));
+    const FREC = { mensual: "paga todos los meses", trimestral: "paga cada 3 meses", semestral: "paga cada 6 meses", anual: "paga una vez por año", "pago único al vencimiento": "paga todo junto al vencimiento" };
+    const filas = (e.pagos || []).slice(0, 24).map((p) => `<tr><td>${esc(fecha(p.fecha))}/${esc(p.fecha.slice(2, 4))}</td><td class="n">${p.a_definir ? '<span class="tenue">según la tasa</span>' : usd(p.renta)}</td><td class="n">${p.amortizacion ? usd(p.amortizacion) : "—"}</td><td class="n"><b>${p.a_definir && !p.amortizacion ? "—" : usd(p.total)}</b></td></tr>`).join("");
     return `<details class="dia-pron"><summary><b>${esc(x.ticker)}</b> <span class="tenue">· ${esc(x.descripcion || x.emisor)}</span><br>
-      <span class="chip ${x.tir >= 10 ? "amar" : "verde"}">TIR ${num(x.tir, 1)}%</span> <span class="tenue">paga ${x.pagos_por_anio} veces por año · vence ${esc(fecha(x.vence))}/${esc(x.vence.slice(0, 4))} · próximo pago ${esc(fecha(x.proximo.fecha))}</span></summary>
-      <p class="tenue">Precio de venta hoy <b>US$ ${num(x.precio, 2)}</b> cada 100 nominales (MEP, línea D). Riesgo ${esc(x.riesgo)}. ${x.ya_tenes ? "<b>Ya lo tenés.</b>" : ""}
-      Rinde ${num(x.renta_actual_pct, 1)}% por año solo en cupones; la TIR suma además la diferencia hasta cobrar los 100 al final.</p>
+      <span class="chip ${x.tir >= 10 ? "amar" : "verde"}">TIR ${num(x.tir, 1)}%</span> <span class="chip">${esc(FREC[x.frecuencia] || x.frecuencia || "")}</span> ${x.tasa && x.tasa !== "fija" ? `<span class="chip">tasa ${esc(x.tasa)}</span>` : ""} <span class="tenue">vence ${esc(fecha(x.vence))}/${esc(x.vence.slice(0, 4))} · próximo pago ${esc(fecha(x.proximo.fecha))}</span></summary>
+      <p class="tenue">Precio de venta hoy <b>${ars ? "$ " + num(x.precio, 2) : "US$ " + num(x.precio, 2)}</b> cada 100 nominales${ars ? " (en pesos)" : " (MEP, línea D)"}. Riesgo ${esc(x.riesgo)}. ${x.tasa_txt ? esc(x.tasa_txt) + "." : ""} ${x.ya_tenes ? "<b>Ya lo tenés.</b>" : ""}
+      ${x.tasa_txt ? "" : `Rinde ${num(x.renta_actual_pct, 1)}% por año solo en cupones; la TIR suma además la diferencia hasta cobrar los 100 al final.`}</p>
       <p><b>Con ${usd(e.monto)}</b> comprás unos <b>${num(e.nominales, 0)} nominales</b> (${usd(e.costo)}, más ~0,6% de comisión). En los próximos 12 meses cobrás <b>${usd(e.cobras_12m)}</b>; hasta el final, <b>${usd(e.cobras_total)}</b>.</p>
       <div class="tabla-scroll"><table><tr><th>Fecha</th><th class="n">Renta</th><th class="n">Amortización</th><th class="n">Cobrás</th></tr>${filas}</table></div></details>`; };
   $("#renta-fija").innerHTML = `<h2>💵 Para cobrar · ONs y bonos <span class="hora">· ${esc(fecha(r.fecha))}</span></h2><div class="card eco">
-    <p class="tenue">En dólares, con pagos cada 6 meses o menos, que vencen entre 6 meses y 6 años, con buena liquidez y sin bajas de calificación. Uno por empresa.
-    El cronograma es el oficial (MAE), cada 100 nominales; abajo, lo que cobrás con US$ 1.000. ${r.aptos ? `Pasaron ${r.aptos} de ${r.analizados} con cronograma.` : ""}</p>
+    <p class="tenue">En dólares y en pesos, con pagos mensuales, trimestrales o semestrales, que vencen entre 6 meses y 6 años, con buena liquidez y sin bajas de calificación. Uno por empresa.
+    El cronograma es el oficial (MAE), cada 100 nominales; abajo, lo que cobrás con US$ 1.000 (o $ 1.000.000 en pesos). ${r.aptos ? `Pasaron ${r.aptos} de ${r.analizados} con cronograma.` : ""}</p>
     ${(r.ons || []).length ? "<h3>Obligaciones negociables (empresas)</h3>" + r.ons.map(card).join("") : ""}
     ${(r.soberanos || []).length ? "<h3>Bonos del Tesoro</h3>" + r.soberanos.map(card).join("") : ""}
+    ${(r.pesos || []).length ? `<h3>En pesos</h3><p class="tenue">Rinden en pesos: para que te convenga, la TIR tiene que ganarle a la inflación esperada. Ejemplo con $ 1.000.000.</p>` + r.pesos.map(card).join("") : ""}
     <p class="tenue">TIR = lo que rinde por año si lo tenés hasta el final y cobrás todo. Más TIR = más riesgo: el mercado pide más porque duda más de que pague.</p></div>`;
 }
 

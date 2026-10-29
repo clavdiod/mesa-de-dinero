@@ -7,7 +7,8 @@ from mesa.nucleo.almacen import almacen_por_defecto
 a = almacen_por_defecto()
 try:
     pan = (a.get("ui/panel") or {}).get("titulos") or {}
-    tks = sorted(tk for tk, x in pan.items() if x and len(x) > 4 and x[4] == "ons" and tk.endswith("D") and x[2] and x[3])
+    tks = sorted(tk for tk, x in pan.items() if x and len(x) > 4 and x[2] and x[3] and ((x[4] == "ons" and tk.endswith("D"))
+                  or (x[4] in ("ons", "letras", "soberanos") and not tk.endswith(("D", "C")) and (x[4] != "ons" or (tk[:-1] + "D") not in pan))))
     print(f"::notice::{len(tks)} ONs en dólares con puntas")
     hoy = date.today()
     fl = cobros.asegurar_flujos(a, tks, hoy, maximo=400)
@@ -19,9 +20,9 @@ try:
     res = R.proponer(pan, fl, eventos.flujos_bonos(), hoy, malas, tengo)
     a.put("renta_fija/propuestas", res)
     print(f"::notice::analizados {res['analizados']}, aptos {res['aptos']}")
-    for g in ("ons", "soberanos"):
+    for g in ("ons", "soberanos", "pesos"):
         for x in res[g]:
             print(f"::notice::{g} {x['ticker']} {x['descripcion'][:40]} | precio {x['precio']} TIR {x['tir']}% dur {x['duration']} vence {x['vence']} "
-                  f"pagos/año {x['pagos_por_anio']} renta actual {x['renta_actual_pct']}% | próximo {x['proximo']} | 1000 USD → {x['ejemplo']['nominales']} VN, 12m {x['ejemplo']['cobras_12m']}")
+                  f"{x['frecuencia']} tasa {x['tasa']} {x.get('tasa_txt') or ''} pagos/año {x['pagos_por_anio']} renta actual {x['renta_actual_pct']}% | próximo {x['proximo']} | 1000 USD → {x['ejemplo']['nominales']} VN, 12m {x['ejemplo']['cobras_12m']}")
 except Exception:
     print("::notice::ERR " + traceback.format_exc().replace(chr(10), " | ")[-800:])
