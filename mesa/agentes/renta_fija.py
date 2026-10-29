@@ -213,4 +213,5 @@ def proponer(panel: dict, flujos: dict, soberanos: dict, hoy: date, malas: set[s
                 break
         return out
     return {"fecha": hoy.isoformat(), "liquida": liq.isoformat(), "analizados": len(cand), "aptos": len(ok),
-            "ons": mejores("ons", n_ons), "soberanos": mejores("soberanos", n_sob), "pesos": mejores("pesos", 5)}
+            "ons": mejores("ons", n_ons), "soberanos": mejores("soberanos", n_sob), "pesos": mejores("pesos", 5),
+            "pesos_vistos": [{k: x.get(k) for k in ("ticker", "descripcion", "precio", "tir", "frecuencia", "tasa", "vence", "motivos_fuera")} for x in cand if x["grupo"] == "pesos"]}

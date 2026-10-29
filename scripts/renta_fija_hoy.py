@@ -24,6 +24,9 @@ try:
     res = R.proponer(pan, fl, eventos.flujos_bonos(), hoy, malas, tengo)
     a.put("renta_fija/propuestas", res)
     print(f"::notice::analizados {res['analizados']}, aptos {res['aptos']}")
+    print("::notice::pesos vistos: " + json.dumps(res.get("pesos_vistos"), ensure_ascii=False)[:1500])
+    sinmae = [t for t, x in pan.items() if x[4] == "bonos" and not t.endswith(("D", "C")) and str((fl.get(t) or {}).get("moneda")) == "ARS"]
+    print("::notice::bonos con MAE ARS: " + ", ".join(sinmae) + " | precios " + json.dumps({t: pan[t][:4] for t in sinmae})[:700])
     for g in ("ons", "soberanos", "pesos"):
         for x in res[g]:
             print(f"::notice::{g} {x['ticker']} {x['descripcion'][:40]} | precio {x['precio']} TIR {x['tir']}% dur {x['duration']} vence {x['vence']} "
