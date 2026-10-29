@@ -265,7 +265,7 @@ def diario(simular: bool = False) -> dict:
             from .datos import cobros as _cob, eventos as _ev
             pan_rf = (a.get("ui/panel") or {}).get("titulos") or {}
             tks_rf = sorted(tk for tk, x in pan_rf.items() if x and len(x) > 4 and x[2] and x[3] and ((x[4] == "ons" and tk.endswith("D"))
-                            or (x[4] in ("ons", "letras", "soberanos") and not tk.endswith(("D", "C")) and (x[4] != "ons" or (tk[:-1] + "D") not in pan_rf))))
+                            or (x[4] in ("ons", "letras", "soberanos", "bonos") and not tk.endswith(("D", "C")) and (x[4] != "ons" or (tk[:-1] + "D") not in pan_rf))))
             fl_rf = _cob.asegurar_flujos(a, tks_rf, hoy, maximo=60)
             cal_rf = a.get("calificadoras/ultimo") or {}
             malas_rf = {str(c.get("ticker") or "").upper() for c in cal_rf.get("cambios", []) if int(c.get("dir", 0)) < 0}

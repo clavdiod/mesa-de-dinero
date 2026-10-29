@@ -99,4 +99,5 @@ fuentes:
   data912:
     ons: "https://data912.com/live/arg_corp"
     letras: "https://data912.com/live/arg_notes"
+    bonos: "https://data912.com/live/arg_bonds"
   google_news: "https://news.google.com/rss/search?q={q}&hl=es-419&gl=AR&ceid=AR:es-419"

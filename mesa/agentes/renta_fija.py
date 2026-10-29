@@ -181,7 +181,7 @@ def proponer(panel: dict, flujos: dict, soberanos: dict, hoy: date, malas: set[s
         cand.append(x)
     # ---- en pesos: ONs y bonos que pagan pesos (línea O / sin sufijo), con su cronograma de MAE ----
     for tk, p in panel.items():
-        if not p or len(p) < 5 or p[4] not in ("ons", "letras", "soberanos") or tk.endswith(("D", "C")):
+        if not p or len(p) < 5 or p[4] not in ("ons", "letras", "soberanos", "bonos") or tk.endswith(("D", "C")):
             continue
         compra, venta = p[2], p[3]
         f = flujos.get(tk)
@@ -193,7 +193,7 @@ def proponer(panel: dict, flujos: dict, soberanos: dict, hoy: date, malas: set[s
         if spread > 3:
             continue
         x = analizar(tk, float(venta), f, liq)
-        if not x:
+        if not x or x["tasa"] == "cer":  # CER: el cronograma de MAE no trae el ajuste por inflación; la TIR saldría mal
             continue
         x.update(grupo="pesos", compra=compra, spread_pct=round(spread, 2), riesgo="en pesos: compará con la inflación esperada",
                  emisor=_emisor(x["descripcion"], tk), ya_tenes=tk in tengo, moneda="ARS")

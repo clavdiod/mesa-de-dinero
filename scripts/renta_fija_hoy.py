@@ -6,9 +6,13 @@ from mesa.datos import cobros, eventos
 from mesa.nucleo.almacen import almacen_por_defecto
 a = almacen_por_defecto()
 try:
-    pan = (a.get("ui/panel") or {}).get("titulos") or {}
+    pan = dict((a.get("ui/panel") or {}).get("titulos") or {})
+    from mesa.datos import gratis
+    for t in gratis.data912("bonos"):  # hasta que la ronda los sume al panel
+        pan.setdefault(t["simbolo"], [t["ultimo"], t["variacion"], t["compra"], t["venta"], "bonos"])
+    print("::notice::bonos data912: " + ", ".join(sorted(t for t, x in pan.items() if x[4] == "bonos"))[:900])
     tks = sorted(tk for tk, x in pan.items() if x and len(x) > 4 and x[2] and x[3] and ((x[4] == "ons" and tk.endswith("D"))
-                  or (x[4] in ("ons", "letras", "soberanos") and not tk.endswith(("D", "C")) and (x[4] != "ons" or (tk[:-1] + "D") not in pan))))
+                  or (x[4] in ("ons", "letras", "soberanos", "bonos") and not tk.endswith(("D", "C")) and (x[4] != "ons" or (tk[:-1] + "D") not in pan))))
     print(f"::notice::{len(tks)} ONs en dólares con puntas")
     hoy = date.today()
     fl = cobros.asegurar_flujos(a, tks, hoy, maximo=400)

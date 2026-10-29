@@ -53,7 +53,7 @@ def cargar_paneles(iol, consumo: Consumo, almacen, simular: bool) -> dict[str, l
             break
         except Exception as e:
             print(f"[panel] {clave}: {e}")
-    for grupo in ("ons", "letras"):  # gratis, no gastan cupo de IOL
+    for grupo in ("ons", "letras", "bonos"):  # gratis, no gastan cupo de IOL (bonos: los de pesos para Renta fija, 29/10)
         if not out.get(grupo):
             out[grupo] = gratis.data912(grupo)
     return out
