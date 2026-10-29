@@ -1,7 +1,7 @@
 """Todo lo que la mesa sabe hoy de un papel (TK fijo abajo)."""
 import json, traceback
 from mesa.nucleo.almacen import almacen_por_defecto
-TK = "HOG"
+TK = "ALUA"
 a = almacen_por_defecto()
 try:
     e = a.get("ui/estado") or {}
