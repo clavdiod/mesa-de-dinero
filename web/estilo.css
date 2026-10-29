@@ -210,3 +210,6 @@ details.dia-pron[open] { padding-bottom: 8px; }
 .prio { display: inline-block; background: var(--azul-bg); color: var(--azul); border-radius: 8px; padding: 0 6px; font-size: 12px; }
 .plan-ant { font-size: 13px; margin-bottom: 4px; }
 .aviso-vol { background: rgba(245, 180, 40, .12); border-left: 3px solid var(--amar, #f5b428); padding: 8px 10px; border-radius: 8px; margin: 0 0 10px; }
+.opcion.elegida { border: 2px solid var(--azul, #3b82f6); background: rgba(59, 130, 246, .14); }
+.opcion.sug.elegida { border-color: var(--azul, #3b82f6); box-shadow: 0 0 0 2px var(--verde) inset; }
+.chip-elegida { background: var(--azul, #3b82f6); color: #fff; }

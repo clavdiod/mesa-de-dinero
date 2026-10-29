@@ -507,7 +507,12 @@ function abrirDecidir(tk) {
     <p class="tenue" style="margin-bottom:0">La mesa no opera: lo hacés en tu broker y acá anotás lo que hiciste. <button class="chico" id="decidir-cerrar">Después</button></p>`;
   $("#decidir-fondo").style.display = "";
   $("#decidir-cerrar").onclick = cerrarDecidir;
-  caja.querySelectorAll("[data-op]").forEach((b) => b.onclick = () => formDecidir(tk, g, g.opciones[+b.dataset.op]));
+  caja.querySelectorAll("[data-op]").forEach((b) => b.onclick = () => {
+    // la que elegiste queda marcada (azul); el verde sigue siendo lo que sugiere la mesa
+    caja.querySelectorAll("[data-op]").forEach((x) => { x.classList.remove("elegida"); x.querySelector(".chip-elegida")?.remove(); });
+    b.classList.add("elegida"); b.querySelector("b").insertAdjacentHTML("afterend", ' <span class="chip chip-elegida">✔ elegiste</span>');
+    formDecidir(tk, g, g.opciones[+b.dataset.op]);
+  });
 }
 function cerrarDecidir() { $("#decidir-fondo").style.display = "none"; DECIDIR_POSPUESTOS.add(HOY()); }
 const DECIDIR_POSPUESTOS = new Set();
