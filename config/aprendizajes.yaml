@@ -163,3 +163,9 @@
     semestral) y el tipo de tasa (fija, variable Badlar/TAMAR, dual). Los CER quedan afuera: el cronograma de MAE no trae el
     ajuste por inflación y la TIR saldría mal. Hoy en pesos con cuotas y cronograma publicado solo pasa BDC28 (CABA, Badlar+3,75%,
     trimestral): en pesos casi todo paga junto al vencimiento (LECAP, BONCAP, duales).
+- fecha: "2026-10-29"
+  tema: LECAP y BONCAP automáticas
+  texto: >-
+    Las LECAP/BONCAP nuevas del panel se suman solas: ficha técnica gratis de BYMA (emisión, vencimiento, tasa mensual) y
+    VF = 100 × (1+TEM)^(meses 30/360). Verificado contra IOL (S13N6, S29E7, T30A7 exactos). La S30N6, que IOL traía mal,
+    salió bien de BYMA (VF 129,89, TEM 1,95%, en línea con la curva). Si BYMA no publica la tasa, queda la lista manual.
