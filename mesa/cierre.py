@@ -258,6 +258,21 @@ def diario(simular: bool = False) -> dict:
         except Exception as ex:
             print(f"[cierre] anticipador arg: {ex}")
 
+    # Renta fija para cobrar: ONs y bonos en dólares con pagos periódicos y su cronograma (29/10)
+    if not simular:
+        try:
+            from .agentes import renta_fija as _rf
+            from .datos import cobros as _cob, eventos as _ev
+            pan_rf = (a.get("ui/panel") or {}).get("titulos") or {}
+            tks_rf = sorted(tk for tk, x in pan_rf.items() if x and len(x) > 4 and x[4] == "ons" and tk.endswith("D") and x[2] and x[3])
+            fl_rf = _cob.asegurar_flujos(a, tks_rf, hoy, maximo=60)
+            cal_rf = a.get("calificadoras/ultimo") or {}
+            malas_rf = {str(c.get("ticker") or "").upper() for c in cal_rf.get("cambios", []) if int(c.get("dir", 0)) < 0}
+            tengo_rf = {str(x.get("ticker", "")).upper() for x in (a.get("usuario/cartera") or [])}
+            a.put("renta_fija/propuestas", _rf.proponer(pan_rf, fl_rf, _ev.flujos_bonos(), hoy, malas_rf, tengo_rf))
+        except Exception as ex:
+            print(f"[cierre] renta fija: {ex}")
+
     # Anticipador: estadística propia (desde el primer precio operable hasta el cierre)
     if not simular:
         try:

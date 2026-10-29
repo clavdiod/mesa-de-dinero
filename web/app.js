@@ -137,6 +137,8 @@ const RESUMEN_PLEG = {
     return c ? `próximo ${diaTxt(c.fecha)} · ${c.ticker}${c.total != null ? " " + plataMon(c.total, c.moneda) : ""}` : ""; },
   "radar": () => { const r = radarDelDia(); const a = r.filter((x) => x.severidad === "alta");
     return `${r.length} movimiento${r.length === 1 ? "" : "s"} raro${r.length === 1 ? "" : "s"}${a.length ? ` · ${a.length} fuerte${a.length > 1 ? "s" : ""}: ${a.slice(0, 3).map((x) => x.ticker).join(", ")}` : ""}`; },
+  "renta-fija": () => { const r = ESTADO.estado?.renta_fija || {}; const l = [...(r.ons || []), ...(r.soberanos || [])];
+    return l.length ? l.slice(0, 3).map((x) => `${x.ticker} ${num(x.tir, 1)}%`).join(" · ") + (l.length > 3 ? ` · +${l.length - 3}` : "") : ""; },
   "anticipos": () => { const e = ESTADO.estado || {}; const n = (e.anticipos || []).length, m = (e.anticipo_lista?.lista || []).length;
     const ex = Object.values(e.anticipo_listas || {}).filter((l) => l.activo).reduce((a, l) => a + (l.lista || []).length, 0);
     return [n ? `${n} hoy en NY` : "", m ? `${m} para los próximos días` : "", ex ? `${ex} de ARG/Mundo` : ""].filter(Boolean).join(" · "); },
@@ -169,7 +171,7 @@ function plegar(box) {
   } finally { delete box.dataset.plegando; }
 }
 const OBS_PLEG = new MutationObserver((ms) => { for (const m of ms) if (m.target.id && !m.target.dataset.plegando && !m.target.querySelector(":scope > details.plegable, :scope > details.plegable-card")) plegar(m.target); });
-["radar-ganadores", "comite", "cobros-hoy", "licitaciones-hoy", "anticipos", "eventos-semana", "radar",
+["radar-ganadores", "comite", "renta-fija", "cobros-hoy", "licitaciones-hoy", "anticipos", "eventos-semana", "radar",
   "economista", "wallstreet", "ganadores", "profesionales", "adr", "ministro", "mae", "mundo", "cripto"].forEach((id) => {
   const b = document.getElementById(id); if (b) OBS_PLEG.observe(b, { childList: true });
 });
@@ -797,6 +799,27 @@ function pintarAnticipos() {
   const vols = [li, ...Object.values(e.anticipo_listas || {})].map((l) => l && l.volatil).filter((v) => v && v.hoy);
   const volTxt = vols.length ? `<p class="aviso-vol">⚡ <b>Día volátil</b> (${esc(vols[0].por || "")}). ${vols.some((v) => v.especialista) ? "Donde ganó el examen se usa el especialista entrenado solo con días así." : "Los modelos de siempre son los que mejor andan en días así."}</p>` : "";
   $("#anticipos").innerHTML = `<h2>⏩ Anticipos <span class="hora">· ${esc(e.hora || "")}</span></h2><div class="card eco">${volTxt}${tablaAt}${tablaLi}${extras}${est}</div>`;
+}
+
+// ---------- renta fija para cobrar: ONs y bonos con cronograma ----------
+function pintarRentaFija() {
+  const r = ESTADO.estado?.renta_fija || {}, l = [...(r.ons || []), ...(r.soberanos || [])];
+  if (!l.length) { $("#renta-fija").innerHTML = ""; return; }
+  const usd = (x) => "US$ " + num(x, 2);
+  const card = (x) => { const e = x.ejemplo || {};
+    const filas = (e.pagos || []).slice(0, 24).map((p) => `<tr><td>${esc(fecha(p.fecha))}/${esc(p.fecha.slice(2, 4))}</td><td class="n">${usd(p.renta)}</td><td class="n">${p.amortizacion ? usd(p.amortizacion) : "—"}</td><td class="n"><b>${usd(p.total)}</b></td></tr>`).join("");
+    return `<details class="dia-pron"><summary><b>${esc(x.ticker)}</b> <span class="tenue">· ${esc(x.descripcion || x.emisor)}</span><br>
+      <span class="chip ${x.tir >= 10 ? "amar" : "verde"}">TIR ${num(x.tir, 1)}%</span> <span class="tenue">paga ${x.pagos_por_anio} veces por año · vence ${esc(fecha(x.vence))}/${esc(x.vence.slice(0, 4))} · próximo pago ${esc(fecha(x.proximo.fecha))}</span></summary>
+      <p class="tenue">Precio de venta hoy <b>US$ ${num(x.precio, 2)}</b> cada 100 nominales (MEP, línea D). Riesgo ${esc(x.riesgo)}. ${x.ya_tenes ? "<b>Ya lo tenés.</b>" : ""}
+      Rinde ${num(x.renta_actual_pct, 1)}% por año solo en cupones; la TIR suma además la diferencia hasta cobrar los 100 al final.</p>
+      <p><b>Con ${usd(e.monto)}</b> comprás unos <b>${num(e.nominales, 0)} nominales</b> (${usd(e.costo)}, más ~0,6% de comisión). En los próximos 12 meses cobrás <b>${usd(e.cobras_12m)}</b>; hasta el final, <b>${usd(e.cobras_total)}</b>.</p>
+      <div class="tabla-scroll"><table><tr><th>Fecha</th><th class="n">Renta</th><th class="n">Amortización</th><th class="n">Cobrás</th></tr>${filas}</table></div></details>`; };
+  $("#renta-fija").innerHTML = `<h2>💵 Para cobrar · ONs y bonos <span class="hora">· ${esc(fecha(r.fecha))}</span></h2><div class="card eco">
+    <p class="tenue">En dólares, con pagos cada 6 meses o menos, que vencen entre 6 meses y 6 años, con buena liquidez y sin bajas de calificación. Uno por empresa.
+    El cronograma es el oficial (MAE), cada 100 nominales; abajo, lo que cobrás con US$ 1.000. ${r.aptos ? `Pasaron ${r.aptos} de ${r.analizados} con cronograma.` : ""}</p>
+    ${(r.ons || []).length ? "<h3>Obligaciones negociables (empresas)</h3>" + r.ons.map(card).join("") : ""}
+    ${(r.soberanos || []).length ? "<h3>Bonos del Tesoro</h3>" + r.soberanos.map(card).join("") : ""}
+    <p class="tenue">TIR = lo que rinde por año si lo tenés hasta el final y cobrás todo. Más TIR = más riesgo: el mercado pide más porque duda más de que pague.</p></div>`;
 }
 
 // ---------- radar del mercado ----------
@@ -1481,7 +1504,7 @@ async function cargar() {
       api("estado"), api("propuestas"), api("usuario/lista"), api("usuario/cartera"), api("usuario/ons"), api("usuario/capital")]);
     try { const [dc, op] = await Promise.all([api("usuario/decisiones_cartera"), api("usuario/operaciones")]);
       USUARIO.decisiones = Array.isArray(dc) ? {} : dc || {}; USUARIO.operaciones = Array.isArray(op) ? op : []; } catch (_) {}
-    pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes(); pintarAnticipos(); pintarRadar(); pintarAviso();
+    pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes(); pintarAnticipos(); try { pintarRentaFija(); } catch (_) {} pintarRadar(); pintarAviso();
     setTimeout(abrirDecisionPendiente, 600);
     $("#login").style.display = "none"; $("#bloqueo").style.display = "none"; document.querySelector("main").style.display = "";
   } catch (e) {

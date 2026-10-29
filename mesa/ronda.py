@@ -1079,6 +1079,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "flujos_bonos": flujos_cartera or {k: v for k, v in eventos_mod.flujos_bonos().items()
                                            if k in {c.get("ticker", "").upper() for c in cartera}},
         "cobros": mis_cobros,
+        "renta_fija": None if simular else almacen.get("renta_fija/propuestas"),
     }
     almacen.put("ui/estado", {**estado_ui, **resumen, "dia": dia})
     # foto compacta de TODOS los paneles para el Asistente (sin gastar consultas extra)

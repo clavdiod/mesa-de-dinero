@@ -89,13 +89,14 @@ def analizar(tk: str, precio: float, flujo: dict, liq: date) -> dict | None:
             "proximo": fl[0], "cronograma": fl, "fuente": flujo.get("fuente") or "flujos de la mesa"}
 
 
-def ejemplo(x: dict, monto: float = 1000.0) -> dict:
+def ejemplo(x: dict, monto: float = 1000.0, liq: date | None = None) -> dict:
     """Con US$ monto: cuántos nominales comprás y cuánto cobrás en cada fecha."""
     vn = int(monto / (x["precio"] / 100))
     pagos = [{"fecha": f["fecha"], "renta": round(vn * f["renta"] / 100, 2), "amortizacion": round(vn * f["amortizacion"] / 100, 2),
               "total": round(vn * f["total"] / 100, 2)} for f in x["cronograma"]]
     return {"monto": monto, "nominales": vn, "pagos": pagos, "cobras_total": round(sum(p["total"] for p in pagos), 2),
-            "cobras_12m": round(sum(p["total"] for p in pagos if p["fecha"] <= (date.fromisoformat(x["cronograma"][0]["fecha"]) + timedelta(days=365)).isoformat()), 2)}
+            "cobras_12m": round(sum(p["total"] for p in pagos if p["fecha"] <= ((liq or date.today()) + timedelta(days=365)).isoformat()), 2),
+            "costo": round(vn * x["precio"] / 100, 2)}
 
 
 def _riesgo(t: float) -> str:
@@ -151,7 +152,7 @@ def proponer(panel: dict, flujos: dict, soberanos: dict, hoy: date, malas: set[s
             if x["emisor"] in vistos:
                 continue
             vistos.add(x["emisor"])
-            out.append({**x, "ejemplo": ejemplo(x)})
+            out.append({**x, "ejemplo": ejemplo(x, liq=liq)})
             if len(out) >= n:
                 break
         return out
