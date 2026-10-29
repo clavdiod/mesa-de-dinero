@@ -1,6 +1,6 @@
 # LECAP y BONCAP (tasa fija en pesos, pagan todo junto al vencimiento): cuánto pagan al final cada 100 nominales.
 # Datos de IOL (análisis de renta fija), cargados el 29/10/2026. S30N6 queda afuera: IOL trae su valor final mal.
-# Cuando el Tesoro emite una nueva, se agrega acá (vencimiento y valor final).
+# Las nuevas se suman solas desde la ficha de BYMA (mesa/datos/byma.py). Esta lista manda y sirve para las que BYMA no publica la tasa.
 S13N6: {vence: "2026-11-13", valor_final: 109.651385, tipo: LECAP}
 S29E7: {vence: "2027-01-29", valor_final: 111.684903, tipo: LECAP}
 T15E7: {vence: "2027-01-15", valor_final: 161.103773, tipo: BONCAP}

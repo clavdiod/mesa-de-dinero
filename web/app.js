@@ -825,7 +825,8 @@ function pintarRentaFija() {
       <div class="tabla-scroll"><table><tr><th>Letra</th><th>Vence</th><th class="n">Precio</th><th class="n">TEM</th><th class="n">TIR</th><th class="n">Con $ 1.000.000 cobrás</th></tr>
       ${r.lecaps.map((x) => `<tr><td><b>${esc(x.ticker)}</b><br><span class="tenue">${esc(x.tipo)}</span></td><td>${esc(fecha(x.vence))}/${esc(x.vence.slice(2, 4))}<br><span class="tenue">${x.dias} días</span></td>
         <td class="n">${num(x.precio, 2)}</td><td class="n"><b>${num(x.tem, 2)}%</b>${x.le_gana != null ? `<br><span class="chip ${x.le_gana >= 0 ? "verde" : "rojo"}">${x.le_gana >= 0 ? "le gana" : "pierde"} ${num(Math.abs(x.le_gana), 2)}</span>` : ""}</td>
-        <td class="n">${num(x.tir, 1)}%</td><td class="n">$ ${num(x.ejemplo.cobras, 0)}<br><span class="tenue">ganás $ ${num(x.ejemplo.ganas, 0)}</span></td></tr>`).join("")}</table></div>` : ""}
+        <td class="n">${num(x.tir, 1)}%</td><td class="n">$ ${num(x.ejemplo.cobras, 0)}<br><span class="tenue">ganás $ ${num(x.ejemplo.ganas, 0)}</span></td></tr>`).join("")}</table></div>
+      ${(r.lecaps_sin_tasa || []).length ? `<p class="tenue">Sin calcular (BYMA no publica su tasa): ${esc(r.lecaps_sin_tasa.join(", "))}.</p>` : ""}` : ""}
     ${(r.pesos || []).length ? `<h3>En pesos</h3><p class="tenue">Rinden en pesos: para que te convenga, la TIR tiene que ganarle a la inflación esperada. Ejemplo con $ 1.000.000.</p>` + r.pesos.map(card).join("") : ""}
     <p class="tenue">TIR = lo que rinde por año si lo tenés hasta el final y cobrás todo. Más TIR = más riesgo: el mercado pide más porque duda más de que pague.</p></div>`;
 }

@@ -248,3 +248,22 @@ def lecaps(panel: dict, tabla: dict, hoy: date, inflacion_12m: float | None = No
                         "ganas": round(vn * (vf - venta) / 100)}
         out.append(x)
     return sorted(out, key=lambda y: y["vence"])
+
+
+def actualizar_letras(almacen, panel: dict, hoy: date, base: dict, maximo: int = 15) -> tuple[dict, list[str]]:
+    """Suma solas las LECAP/BONCAP nuevas que aparecen en el panel, con su ficha de BYMA (emisión, vencimiento, tasa).
+    base: config/lecaps.yaml (manual, manda). Devuelve (tabla vigente, letras sin tasa publicada)."""
+    from ..datos import byma
+    guard = almacen.get("renta_fija/letras") or {}
+    hoy_s = hoy.isoformat()
+    guard = {k: v for k, v in guard.items() if str(v.get("vence", "9999")) >= hoy_s}  # las vencidas se borran
+    nuevas = [tk for tk, p in panel.items() if byma.LETRA.match(tk) and p and p[3] and tk not in base
+              and (tk not in guard or (not guard[tk].get("valor_final") and guard[tk].get("revisado", "") < (hoy - timedelta(days=7)).isoformat()))]
+    for tk in nuevas[:maximo]:
+        d = byma.letra(tk)
+        if d:
+            guard[tk] = {**d, "revisado": hoy_s}
+    almacen.put("renta_fija/letras", guard)
+    tabla = {**{k: v for k, v in guard.items() if v.get("valor_final")}, **{k: v for k, v in (base or {}).items() if str(v.get("vence")) >= hoy_s}}
+    sin_tasa = sorted(k for k, v in guard.items() if not v.get("valor_final") and k not in tabla)
+    return tabla, sin_tasa

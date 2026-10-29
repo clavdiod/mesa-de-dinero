@@ -275,8 +275,9 @@ def diario(simular: bool = False) -> dict:
                 import yaml as _y
                 from .nucleo.config import RAIZ as _R
                 exp = ((a.get("ministro/series") or {}).get("series") or {}).get("expectativa") or {}
-                prop_rf["lecaps"] = _rf.lecaps(pan_rf, _y.safe_load((_R / "config" / "lecaps.yaml").read_text(encoding="utf-8")) or {}, hoy,
-                                               exp[max(exp)] if exp else None)
+                tabla_l, sin_tasa_l = _rf.actualizar_letras(a, pan_rf, hoy, _y.safe_load((_R / "config" / "lecaps.yaml").read_text(encoding="utf-8")) or {})
+                prop_rf["lecaps"] = _rf.lecaps(pan_rf, tabla_l, hoy, exp[max(exp)] if exp else None)
+                prop_rf["lecaps_sin_tasa"] = sin_tasa_l
             except Exception as ex2:
                 print(f"[cierre] lecaps: {ex2}")
             a.put("renta_fija/propuestas", prop_rf)
