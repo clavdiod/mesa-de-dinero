@@ -156,3 +156,10 @@
     ONs y soberanos en dólares (línea D), cronograma oficial de MAE, TIR con el precio de venta, uno por emisor, vencimiento
     6 meses a 6 años, pagos cada 6 meses o menos, TIR 3-16%, diferencia de puntas hasta 2%, sin baja de calificación.
     MAE publica el cronograma de 46 de las 232 ONs en dólares con puntas (las principales).
+- fecha: "2026-10-29"
+  tema: Renta fija en pesos
+  texto: >-
+    Se suman los bonos de data912 (gratis) y las ONs/bonos que pagan pesos, con la frecuencia de pago (mensual, trimestral,
+    semestral) y el tipo de tasa (fija, variable Badlar/TAMAR, dual). Los CER quedan afuera: el cronograma de MAE no trae el
+    ajuste por inflación y la TIR saldría mal. Hoy en pesos con cuotas y cronograma publicado solo pasa BDC28 (CABA, Badlar+3,75%,
+    trimestral): en pesos casi todo paga junto al vencimiento (LECAP, BONCAP, duales).

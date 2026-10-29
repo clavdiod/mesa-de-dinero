@@ -83,7 +83,7 @@ def frecuencia(flujos: list[dict]) -> str:
 
 def tipo_tasa(desc: str) -> str:
     d = (desc or "").upper()
-    if any(k in d for k in ("TAMAR", "BADLAR", "VARIABLE", "TASA VAR")):
+    if any(k in d for k in ("TAMAR", "BADLAR", "BAD+", "BAD ", "VARIABLE", "TASA VAR")):
         return "variable"
     if "DUAL" in d:
         return "dual"
@@ -111,6 +111,8 @@ def analizar(tk: str, precio: float, flujo: dict, liq: date) -> dict | None:
             var_txt = f"tasa variable: el próximo cupón, llevado a un año, rinde ~{r:.1f}%; los siguientes cambian con la tasa"
     if r is None:
         return None
+    if tt in ("variable", "dual") and not var_txt:
+        var_txt = "tasa variable: la TIR usa la tasa de hoy; si la tasa baja, los próximos cupones van a ser más chicos"
     ultimo = fl[-1]["fecha"]
     anio = (liq + timedelta(days=365)).isoformat()
     pagos_anio = sum(1 for f in fl if f["fecha"] <= anio and (f["renta"] > 0 or f.get("a_definir")))
