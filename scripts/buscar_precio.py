@@ -10,7 +10,7 @@ try:
     for k in ("ganadores/lista", "profesionales/lista"):
         fuentes[k] = a.get(k) or {}
     for ag, l in fuentes.items():
-        for x in l.get("lista") or []:
+        for x in [y for y in (l.get("lista") or []) if isinstance(y, dict)]:
             pr = (x.get("plan") or {}).get("precio") or x.get("precio") or ((x.get("precios_usd") or {}) if False else None)
             print(f"::notice::{ag} {x.get('ticker')} precio {pr} prob {x.get('prob')} prio {x.get('prioridad')}") if pr and 0.85 * P <= float(pr) <= 1.15 * P else None
     panel = (a.get("ui/panel") or {}).get("titulos") or {}
