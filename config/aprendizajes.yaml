@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-10-30'
+  caso: 'Mínimos anuales nuevos: en Argentina esperar, en CEDEARs no es mala señal'
+  que_paso: 'Análisis del oro (GLD) en X: perforó los mínimos de julio, ''nada que hacer hasta ver dónde se acomoda''. Se midió en 10 años: acciones argentinas (911 rupturas) rindieron +0,6% a 20 ruedas, contra +1,3% de cualquier día, y 44 de cada 100 cayeron 5% más; si en 10 ruedas volvían arriba del piso (ruptura falsa), desde ahí +2,1%. CEDEARs y ETFs (885 rupturas): +1,9% contra +1,4%; si seguían abajo 10 ruedas, desde ahí +3,8% (45 de cada 100 subieron 5%). Metales y ETFs solos: pocos casos (23 a 61), misma dirección.'
+  leccion: 'La misma señal funciona distinto según el mercado: en acciones argentinas la ruptura de un piso sigue de largo y conviene esperar; en EE.UU. las caídas a mínimos suelen rebotar.'
+  cambio: La lectura 'Gráfico' avisa cuando un papel marca un mínimo anual nuevo o hace una ruptura falsa, con lo que pasó en la historia según sea acción argentina o CEDEAR. Sin voto propio.
+- fecha: '2026-10-30'
   caso: La estructura del gráfico sola no alcanza para decidir
   que_paso: 'Se probó la lectura clásica (máximos y mínimos descendentes, debajo de un promedio de 20 que baja) en 46.000 casos de acciones argentinas (10 años) y 33.000 de CEDEARs (5 años), mirando las 20 ruedas siguientes. Acciones ''cayendo'': +2,1% (todas: +1,2%). CEDEARs ''cayendo'': +3,1% (todos: +1,7%), muchas veces rebotan. ''Dejó de caer'' y ''alcista'' no rindieron más que el resto.'
   leccion: 'La forma del gráfico sola no predice: un papel que cae no rinde peor que el resto. Sí sirvió en un contexto puntual: después de un susto argentino, esperar que el líder deje de caer.'

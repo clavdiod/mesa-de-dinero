@@ -95,7 +95,7 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
         rg = _rango(velas, precio)
         try:
             from .estructura import frase as _fr, leer as _leer
-            est_ = _leer(velas, precio)
+            est_ = _leer(velas, precio, grupo)
             if est_:
                 x["estructura"] = {**est_, "frase": _fr(est_)}
         except Exception as ex:

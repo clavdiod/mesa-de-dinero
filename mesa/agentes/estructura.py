@@ -18,7 +18,8 @@ def _pivotes(c: list[float], n: int = 5) -> tuple[list[int], list[int]]:
     return hi, lo
 
 
-def leer(velas: list[dict], precio: float | None = None) -> dict | None:
+def leer(velas: list[dict], precio: float | None = None, grupo: str | None = None) -> dict | None:
+    todo = [v["cierre"] for v in velas[-271:] if v.get("cierre")] + ([float(precio)] if precio else [])
     c = [v["cierre"] for v in velas[-130:] if v.get("cierre")]
     if precio:
         c = c + [float(precio)]
@@ -49,6 +50,25 @@ def leer(velas: list[dict], precio: float | None = None) -> dict | None:
     if abajo:
         out["soporte"] = round(abajo[0], 2)
         out["a_soporte_pct"] = round((abajo[0] / p - 1) * 100, 1)
+    # mínimo anual nuevo (perforó el piso del último año), probado el 30/10 con 10 años:
+    # acciones argentinas: +0,6% a 20 ruedas (cualquier día +1,3%; 44 de cada 100 caen 5% más) → esperar;
+    #   si en 10 ruedas vuelve arriba del piso (ruptura falsa), desde ahí +2,1%.
+    # CEDEARs y ETFs: +1,9% (cualquier día +1,4%); si sigue abajo 10 ruedas, desde ahí +3,8% (45 de cada 100 suben 5%).
+    if len(todo) >= 230:
+        piso = min(todo[-251:-11]) if len(todo) > 251 else min(todo[:-11])
+        rec = todo[-11:]
+        if min(rec) < piso:
+            local = grupo == "acciones"
+            if rec[-1] > piso:
+                out["minimo_anual"] = "ruptura_falsa"
+                out["minimo_txt"] = (f"Perforó su piso del último año ({_n(piso)}) y ya volvió arriba: ruptura falsa. "
+                                     + ("En acciones argentinas, desde ahí rindió +2,1% a 20 ruedas (en promedio +1,3%)." if local else
+                                        "En CEDEARs, desde ahí rindió +2,5% a 20 ruedas (en promedio +1,4%)."))
+            else:
+                out["minimo_anual"] = "perforado"
+                out["minimo_txt"] = (f"Marcó un mínimo anual nuevo (perforó {_n(piso)}). "
+                                     + ("En acciones argentinas eso rindió peor que el promedio (+0,6% contra +1,3% a 20 ruedas): esperar a que vuelva arriba del piso."
+                                        if local else "En CEDEARs y ETFs no fue mala señal: si sigue abajo 10 ruedas, desde ahí rindió +3,8% a 20 ruedas (en promedio +1,4%)."))
     return out
 
 
@@ -64,4 +84,7 @@ def frase(e: dict | None) -> str:
         t += f". Línea bajista en {_n(e['linea_bajista'])}" + (" (ya la rompió)" if e.get("rompe_linea") else " (si la supera, se corta la baja)")
     if e.get("soporte"):
         t += f". Soporte en {_n(e['soporte'])} ({e['a_soporte_pct']:+.1f}%)".replace(f"{e['a_soporte_pct']:+.1f}", f"{e['a_soporte_pct']:+.1f}".replace('.', ','))
-    return t + "."
+    t += "."
+    if e.get("minimo_txt"):
+        t += " " + e["minimo_txt"]
+    return t
