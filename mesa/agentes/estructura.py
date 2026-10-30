@@ -52,12 +52,16 @@ def leer(velas: list[dict], precio: float | None = None) -> dict | None:
     return out
 
 
+def _n(x: float) -> str:
+    return f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
 def frase(e: dict | None) -> str:
     if not e:
         return ""
     t = {"cayendo": "📉 Cayendo", "confirmado": "✅ Dejó de caer", "alcista": "📈 Alcista", "lateral": "↔️ Lateral"}[e["estado"]] + ": " + e["texto"]
     if e.get("linea_bajista"):
-        t += f". Línea bajista en {e['linea_bajista']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + (" (ya la rompió)" if e.get("rompe_linea") else " (si la supera, se corta la baja)")
+        t += f". Línea bajista en {_n(e['linea_bajista'])}" + (" (ya la rompió)" if e.get("rompe_linea") else " (si la supera, se corta la baja)")
     if e.get("soporte"):
-        t += f". Soporte en {e['soporte']:,.2f} ({e['a_soporte_pct']:+.1f}%)".replace(",", "X").replace(".", ",").replace("X", ".")
+        t += f". Soporte en {_n(e['soporte'])} ({e['a_soporte_pct']:+.1f}%)".replace(".", ",", 0)
     return t + "."
