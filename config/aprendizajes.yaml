@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-10-30'
+  caso: Ruptura de una corrección (setup del platino del 19/10)
+  que_paso: 'El 19/10 se planteó en X que el platino (PPLT, US$ 14,82) armaba una corrección y que, si rompía hacia arriba, podía ir al máximo de US$ 26. No rompió: el 30/10 cerró en US$ 12,91 (-13%). En 10 años se midió el setup (venía en tendencia alcista, corrigió 8-20% desde su máximo de 60 ruedas y cierra arriba de su máximo de 10 ruedas): CEDEARs y ETFs +1,4% a 20 ruedas (cualquier día +1,4%); metales -0,1% (cualquier día +1,2%); acciones argentinas +1,1% (cualquier día +1,4%).'
+  leccion: 'La ''ruptura de la corrección'' no rinde más que comprar cualquier día: sola no da ventaja. Y el ''de confirmarse'' importa: el platino nunca confirmó y siguió bajando.'
+  cambio: 'No se agrega. Se suma a lo ya visto: las lecturas de gráfico solas no predicen; sirven para ubicar el stop y el objetivo, no para decidir la compra.'
+- fecha: '2026-10-30'
   caso: Desplomes de un día (StoneCo -39% el 26/10)
   que_paso: 'STNE abrió en US$ 7,14 desde 11,48 (perforó el piso de 2022 y 2025), cerró ese día en 8,33 y después fue bajando hasta 7,72 (30/10). En 10 años de CEDEARs, 217 desplomes de 15% o más en un día: comprando al día siguiente, a 20 ruedas +3,3% (mediana -0,9%; 29 de cada 100 suben 10%, 26 caen 10%); si además perforó el mínimo anual, +5,6% (129 casos); si no, 0,0%. A 3 meses, +25,5% (mediana +13,4%). El día siguiente rebota +2,3% y a 5 ruedas ya va -0,7%.'
   leccion: 'Después de un desplome que perfora el piso del año, la historia muestra rebote a 1-3 meses, pero con mucha dispersión (1 de cada 4 cae 10% más) y entrar el día siguiente al rebote suele salir caro. Ojo: la prueba solo incluye empresas que siguen cotizando hoy (las que quebraron no están), así que el resultado real es peor.'
