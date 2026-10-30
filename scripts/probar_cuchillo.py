@@ -16,7 +16,7 @@ try:
     sustos = []
     ult = "0000"
     for i in range(10, len(fr)):
-        if rp[fr[i]] - rp[fr[i - 10]] >= 80 and fr[i] > ult:
+        if rp[fr[i]] / rp[fr[i - 10]] - 1 >= 0.12 and fr[i] > ult:  # relativo: +80 pb a 700 es +12%
             sustos.append(fr[i]); 
             ult = fr[min(len(fr) - 1, i + 20)]  # un susto por mes como mucho
     print(f"::notice::{len(sustos)} sustos en 10 años: " + ", ".join(sustos))
@@ -73,8 +73,13 @@ try:
         if k != "A":
             extra = f" | sin señal en 40 ruedas: {perdidas[k]} | pagaste {np.mean([x[3] for x in res[k]]) * 100:+.1f}% más que en el susto"
         print(f"::notice::{nom}: {r(res[k])}{extra}")
-    # por susto (A vs B1)
-    for s in sustos:
+    for k in ("A", "B2"):
+        for desde, hasta in (("2000", "2021-12-31"), ("2022-01-01", "2099")):
+            v = np.array([x[2] for x in res[k] if desde <= x[0] <= hasta]) * 100
+            if len(v):
+                print(f"::notice::{k} {desde[:4]}-{hasta[:4]}: {len(v)} compras, promedio {v.mean():+.2f}%, ganan {np.mean(v > 1.2) * 100:.0f}%")
+    sustos_ = []
+    for s in sustos_:
         va = [x[2] for x in res["A"] if x[0] == s]; vb = [x[2] for x in res["B1"] if x[0] == s]
         if va:
             print(f"::notice::susto {s} (rp {rp[s]:.0f}): A {np.mean(va) * 100:+.1f}% | B1 {np.mean(vb) * 100 if vb else float('nan'):+.1f}% ({len(vb)}/{len(va)})")
