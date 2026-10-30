@@ -943,6 +943,10 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         radar_inv, avisos_radar = [], []
     try:  # seguimiento activo: mantener / subir stop / salir, con aviso si cambia
         alertas_seg = seguimiento.revisar(reg, ctx, por_ticker, lambda ss: puntaje_ticker(ss, reg, ctx))
+        # 30/10: lo que tenés en tu cartera lo avisa SOLO el seguimiento de tu cartera (que revisa todo antes de decir
+        # "vendé" y respeta tu stop). Antes llegaban dos avisos distintos del mismo papel (YPFD: "salir" con stop en 7.470).
+        mios_ = {str(c.get("ticker", "")).upper() for c in cartera}
+        alertas_seg = [a_ for a_ in alertas_seg if a_["ticker"].split(" ")[0] not in mios_]
         opinion_cartera = seguimiento.opinion_cartera(ctx, cartera, por_ticker, lambda ss: puntaje_ticker(ss, reg, ctx))
     except Exception as ex:
         print(f"[seguimiento] {ex}")
