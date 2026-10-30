@@ -1,5 +1,10 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
+- fecha: '2026-10-30'
+  caso: ¿Se pueden anticipar saltos de un día (comprar en CI y vender mañana)?
+  que_paso: 'DOME (Domec) subió 11% el 30/10. Se probó con la historia: comprar al cierre y vender en 1, 2 o 3 ruedas buscando +5% a +10%, en las 30 acciones argentinas con volumen (10 años) y en los CEDEARs (5 años). Al día siguiente: acciones 9 de cada 100 marcadas suben 8% (al azar 2), pero en promedio +0,85%: después de 1,2% de comisión se pierde. CEDEARs igual o peor. A 2-3 ruedas en acciones: 16-24 de cada 100 suben 8-10% (al azar 5-8), +2,3% a +2,6% promedio: +1,1% a +1,4% neto, con 1 de cada 10 que cae lo mismo.'
+  leccion: 'Los saltos de un día se pueden ''oler'' (aparecen 3 a 4 veces más que al azar) pero no alcanza para ganar plata: la mayoría de los marcados no salta y la comisión se come todo. A 20 ruedas el mismo método deja +11,7% neto por idea: rinde 10 veces más esperar.'
+  cambio: 'No se agrega un cazador de saltos de un día. Se mantiene el foco en ideas de 2 a 4 semanas con objetivo grande (+12% o más). DOME además opera muy poco (comprador a $70 con vendedores a $86): aunque salte, no se puede salir sin regalar la ganancia.'
 - fecha: '2026-10-29'
   caso: 'LECAP y BONCAP: se suman solas'
   que_paso: Para calcular cuánto rinde una LECAP o BONCAP hace falta saber cuánto paga al final, y ese dato se cargaba a mano. IOL traía mal el de la S30N6.
