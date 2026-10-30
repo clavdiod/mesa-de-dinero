@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-10-30'
+  caso: Desplomes de un día (StoneCo -39% el 26/10)
+  que_paso: 'STNE abrió en US$ 7,14 desde 11,48 (perforó el piso de 2022 y 2025), cerró ese día en 8,33 y después fue bajando hasta 7,72 (30/10). En 10 años de CEDEARs, 217 desplomes de 15% o más en un día: comprando al día siguiente, a 20 ruedas +3,3% (mediana -0,9%; 29 de cada 100 suben 10%, 26 caen 10%); si además perforó el mínimo anual, +5,6% (129 casos); si no, 0,0%. A 3 meses, +25,5% (mediana +13,4%). El día siguiente rebota +2,3% y a 5 ruedas ya va -0,7%.'
+  leccion: 'Después de un desplome que perfora el piso del año, la historia muestra rebote a 1-3 meses, pero con mucha dispersión (1 de cada 4 cae 10% más) y entrar el día siguiente al rebote suele salir caro. Ojo: la prueba solo incluye empresas que siguen cotizando hoy (las que quebraron no están), así que el resultado real es peor.'
+  cambio: 'Se registra como dato, sin voto: la muestra tiene sesgo de sobrevivientes y la dispersión es enorme. La lectura ''Gráfico'' ya avisa los mínimos anuales.'
+- fecha: '2026-10-30'
   caso: 'Mínimos anuales nuevos: en Argentina esperar, en CEDEARs no es mala señal'
   que_paso: 'Análisis del oro (GLD) en X: perforó los mínimos de julio, ''nada que hacer hasta ver dónde se acomoda''. Se midió en 10 años: acciones argentinas (911 rupturas) rindieron +0,6% a 20 ruedas, contra +1,3% de cualquier día, y 44 de cada 100 cayeron 5% más; si en 10 ruedas volvían arriba del piso (ruptura falsa), desde ahí +2,1%. CEDEARs y ETFs (885 rupturas): +1,9% contra +1,4%; si seguían abajo 10 ruedas, desde ahí +3,8% (45 de cada 100 subieron 5%). Metales y ETFs solos: pocos casos (23 a 61), misma dirección.'
   leccion: 'La misma señal funciona distinto según el mercado: en acciones argentinas la ruptura de un piso sigue de largo y conviene esperar; en EE.UU. las caídas a mínimos suelen rebotar.'
