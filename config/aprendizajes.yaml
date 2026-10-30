@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-10-30'
+  caso: Patrones parecidos (gráficos que se repiten) con todos los gráficos
+  que_paso: 'Se armó una biblioteca con la forma de 4 semanas de todos los gráficos (29.000 de acciones argentinas en 10 años, en dólares, y 22.000 de CEDEARs en 5 años). Para cada caso del examen se buscaron los 30 gráficos más parecidos (parecido promedio 0,88) que ya habían terminado, y se usó lo que hicieron después para predecir las 4 semanas siguientes. Acciones: los que mejor pintaban rindieron +2,8%, peor que el promedio de todos (+3,6%). CEDEARs: +4,2% contra +2,4%, pero los que peor pintaban también rindieron +2,3%. Correlación entre lo que predijeron y lo que pasó: 0,00.'
+  leccion: 'Que un gráfico se parezca a otros del pasado no dice nada de lo que va a hacer: la forma del precio sola no predice. Lo que sí funciona son combinaciones medidas (tendencia, volumen, distancia al máximo, contexto), que es lo que usan los anticipadores.'
+  cambio: No se agrega. El Historiador sigue como dato (muestra cuándo hubo gráficos parecidos), y su voto pesa según lo que acierte en vivo.
+- fecha: '2026-10-30'
   caso: ¿Se pueden anticipar saltos de un día (comprar en CI y vender mañana)?
   que_paso: 'DOME (Domec) subió 11% el 30/10. Se probó con la historia: comprar al cierre y vender en 1, 2 o 3 ruedas buscando +5% a +10%, en las 30 acciones argentinas con volumen (10 años) y en los CEDEARs (5 años). Al día siguiente: acciones 9 de cada 100 marcadas suben 8% (al azar 2), pero en promedio +0,85%: después de 1,2% de comisión se pierde. CEDEARs igual o peor. A 2-3 ruedas en acciones: 16-24 de cada 100 suben 8-10% (al azar 5-8), +2,3% a +2,6% promedio: +1,1% a +1,4% neto, con 1 de cada 10 que cae lo mismo.'
   leccion: 'Los saltos de un día se pueden ''oler'' (aparecen 3 a 4 veces más que al azar) pero no alcanza para ganar plata: la mayoría de los marcados no salta y la comisión se come todo. A 20 ruedas el mismo método deja +11,7% neto por idea: rinde 10 veces más esperar.'
