@@ -39,14 +39,11 @@ def probar(nombre, series):
                 res.setdefault(k, []).append(r)
     todos = np.concatenate([np.array(v) for k, v in res.items() if " " not in k]) * 100
     print(f"::notice::{nombre} todos: {len(todos)} casos, {todos.mean():+.2f}% a 20 ruedas, suben 5%+: {np.mean(todos >= 5) * 100:.0f}%, caen 10%+: {np.mean(todos <= -10) * 100:.0f}%")
-    for k in sorted(res):
-        v = np.array(res[k]) * 100
-        print(f"::notice::{nombre} {k}: {len(v)} casos, {v.mean():+.2f}% (mediana {np.median(v):+.2f}%), suben 5%+: {np.mean(v >= 5) * 100:.0f}%, caen 10%+: {np.mean(v <= -10) * 100:.0f}%")
+    print(f"::notice::{nombre} | " + " | ".join(f"{k}: {len(res[k])} {np.mean(res[k]) * 100:+.2f}% s5 {np.mean(np.array(res[k]) >= .05) * 100:.0f}% c10 {np.mean(np.array(res[k]) <= -.10) * 100:.0f}%" for k in sorted(res)))
 try:
     panel = (a.get("ui/panel") or {}).get("titulos") or {}
     tks = sorted(tk for tk, x in panel.items() if x and x[4] == "acciones")
-    acc, mer, rp, ccl = A.datos_arg(tks, 10)
-    probar("ARG", acc)
+    pass
 except Exception:
     print("::notice::ARG ERR " + traceback.format_exc().replace(chr(10), " | ")[-400:])
 try:
