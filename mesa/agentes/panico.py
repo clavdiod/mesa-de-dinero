@@ -7,7 +7,8 @@ Cuatro situaciones (plazo: ~1 mes):
 - Pánico en Wall Street: VIX ≥ 30 o el S&P 500 cae 10% desde su máximo de 3 meses → índices (SPY, QQQ).
 - Capitulación de un CEDEAR bueno: cae 15% o más en 10 ruedas, pero un mes antes estaba en tendencia
   alcista (sobre su promedio de 200) → caída exagerada de un papel sano.
-- Susto argentino: el riesgo país salta 80 puntos o más en 10 ruedas → líderes del Merval.
+- Susto argentino: el riesgo país salta 80 puntos o 12% en 10 ruedas → líderes del Merval, pero recién cuando dejan de caer
+  (arriba de su promedio de 20 ruedas y con ese promedio que dejó de bajar). Ver 30/10 en aprendizajes.
 - Capitulación local: una acción argentina cae 15% o más en 10 ruedas, mucho más que el resto.
 Riesgo y Hechos del emisor siguen pudiendo frenarlo si la caída tiene una causa grave (un veto).
 """
@@ -57,18 +58,34 @@ def senales_locales(velas: dict[str, list[dict]], riesgo_pais: dict[str, float],
     out = []
     fs = sorted(f for f in riesgo_pais if f <= fecha)
     salto = riesgo_pais[fs[-1]] - riesgo_pais[fs[-11]] if len(fs) >= 11 else 0
-    r10s = {}
+    # 30/10: el susto sigue "abierto" 40 ruedas (riesgo país +12% o +80 puntos en 10 ruedas). Pero NO se compra mientras el
+    # papel cae: se espera que cierre arriba de su promedio de 20 ruedas y que ese promedio deje de bajar.
+    # Probado en 10 años (35 sustos, líderes en dólares, 20 ruedas, stop -10%): comprar en el susto +1,6% (2016-21: -1,1%;
+    # 2022-26: +4,4%); esperar así +4,3% (2016-21: +1,6%; 2022-26: +6,7%). Le gana en los dos períodos.
+    susto, cuando = 0.0, None
+    for k in range(max(10, len(fs) - 40), len(fs)):
+        d = riesgo_pais[fs[k]] - riesgo_pais[fs[k - 10]]
+        if (d >= 80 or riesgo_pais[fs[k]] / riesgo_pais[fs[k - 10]] - 1 >= 0.12) and d > susto:
+            susto, cuando = d, fs[k]
+    r10s, series = {}, {}
     for tk, vs in velas.items():
         x = [v["cierre"] for v in vs if v["fecha"] <= fecha]
         if precios_hoy and tk in precios_hoy and (not vs or vs[-1]["fecha"] < fecha):
             x = x + [precios_hoy[tk]]
         if len(x) >= 11:
             r10s[tk] = (x[-1] / x[-11] - 1) * 100
-    if salto >= 80:
+            series[tk] = x
+    if cuando:
         for tk in LIDERES_MERVAL:
-            if tk in r10s and (tickers is None or tk in tickers):
-                out.append(Senal("panico", tk, +1, 0.5, f"El riesgo país saltó {salto:.0f} puntos en 10 ruedas: susto argentino. "
-                                                        "Comprar líderes del Merval con miedo, de a poco.", {"tipo": "susto_argentino", "salto_rp": salto}))
+            x = series.get(tk)
+            if not x or len(x) < 25 or (tickers is not None and tk not in tickers):
+                continue
+            m20, m20_antes = st.mean(x[-20:]), st.mean(x[-25:-5])
+            if x[-1] > m20 and m20 >= m20_antes:
+                out.append(Senal("panico", tk, +1, 0.5, f"Susto argentino (el riesgo país saltó {susto:.0f} puntos en 10 ruedas, el {cuando[8:10]}/{cuando[5:7]}) "
+                                                        "y el papel ya dejó de caer: cerró arriba de su promedio de 20 ruedas y ese promedio dejó de bajar. "
+                                                        "Comprar después de la confirmación rindió más que comprar en plena caída.",
+                                 {"tipo": "susto_argentino", "salto_rp": susto, "confirmado": True}))
     if len(r10s) >= 8:
         med = st.median(r10s.values())
         for tk, r in r10s.items():

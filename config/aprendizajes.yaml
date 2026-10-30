@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-10-30'
+  caso: 'Comprador de pánico: no atajar el cuchillo que cae'
+  que_paso: 'Un análisis de GGAL en X (máximos y mínimos descendentes, ''cuando el flujo está en contra, toca esperar'') llevó a probar dos formas de comprar líderes del Merval en un susto del riesgo país (+12% en 10 ruedas; 35 sustos en 10 años, en dólares, 20 ruedas, stop -10%). Comprar en el susto: +1,6% promedio (2016-2021: -1,1%; 2022-2026: +4,4%). Esperar a que cierre arriba de su promedio de 20 ruedas y que el promedio deje de bajar: +4,3% (2016-2021: +1,6%; 2022-2026: +6,7%), pagando en promedio 5% más caro. Esperar un máximo de 10 ruedas o que baje el riesgo país no mejoró.'
+  leccion: 'Pagar un poco más caro pero con la caída confirmada terminada rinde más que comprar en plena caída: le ganó en los dos períodos.'
+  cambio: El Comprador de pánico, en un susto argentino, solo vota por un líder del Merval cuando cerró arriba de su promedio de 20 ruedas y ese promedio dejó de bajar (el susto queda abierto 40 ruedas). Lo ya comprado (YPFD, ALUA, CEPU) sigue con su plan y su stop.
+- fecha: '2026-10-30'
   caso: Patrones parecidos (gráficos que se repiten) con todos los gráficos
   que_paso: 'Se armó una biblioteca con la forma de 4 semanas de todos los gráficos (29.000 de acciones argentinas en 10 años, en dólares, y 22.000 de CEDEARs en 5 años). Para cada caso del examen se buscaron los 30 gráficos más parecidos (parecido promedio 0,88) que ya habían terminado, y se usó lo que hicieron después para predecir las 4 semanas siguientes. Acciones: los que mejor pintaban rindieron +2,8%, peor que el promedio de todos (+3,6%). CEDEARs: +4,2% contra +2,4%, pero los que peor pintaban también rindieron +2,3%. Correlación entre lo que predijeron y lo que pasó: 0,00.'
   leccion: 'Que un gráfico se parezca a otros del pasado no dice nada de lo que va a hacer: la forma del precio sola no predice. Lo que sí funciona son combinaciones medidas (tendencia, volumen, distancia al máximo, contexto), que es lo que usan los anticipadores.'
