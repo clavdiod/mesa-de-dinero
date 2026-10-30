@@ -63,5 +63,5 @@ def frase(e: dict | None) -> str:
     if e.get("linea_bajista"):
         t += f". Línea bajista en {_n(e['linea_bajista'])}" + (" (ya la rompió)" if e.get("rompe_linea") else " (si la supera, se corta la baja)")
     if e.get("soporte"):
-        t += f". Soporte en {_n(e['soporte'])} ({e['a_soporte_pct']:+.1f}%)".replace(".", ",", 0)
+        t += f". Soporte en {_n(e['soporte'])} ({e['a_soporte_pct']:+.1f}%)".replace(f"{e['a_soporte_pct']:+.1f}", f"{e['a_soporte_pct']:+.1f}".replace('.', ','))
     return t + "."
