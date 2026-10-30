@@ -213,3 +213,7 @@ details.dia-pron[open] { padding-bottom: 8px; }
 .opcion.elegida { border: 2px solid var(--azul, #3b82f6); background: var(--azul-bg); }
 .opcion.sug.elegida { border-color: var(--azul, #3b82f6); box-shadow: 0 0 0 2px var(--verde) inset; }
 .chip-elegida { background: var(--azul); color: var(--bg); }
+details.corto-plazo { margin-top: 12px; border-top: 1px solid var(--borde); padding-top: 8px; }
+details.corto-plazo > summary { cursor: pointer; list-style: none; }
+details.mas-mercado { margin: 14px 0; border: 1px solid var(--borde); border-radius: var(--r); padding: 10px 12px; }
+details.mas-mercado > summary { cursor: pointer; font-size: 17px; }

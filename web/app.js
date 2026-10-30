@@ -141,7 +141,7 @@ const RESUMEN_PLEG = {
     return l.length ? l.slice(0, 3).map((x) => `${x.ticker} ${num(x.tir, 1)}%`).join(" · ") + (l.length > 3 ? ` · +${l.length - 3}` : "") : ""; },
   "anticipos": () => { const e = ESTADO.estado || {}; const n = (e.anticipos || []).length, m = (e.anticipo_lista?.lista || []).length;
     const ex = Object.values(e.anticipo_listas || {}).filter((l) => l.activo).reduce((a, l) => a + (l.lista || []).length, 0);
-    return [n ? `${n} hoy en NY` : "", m ? `${m} para los próximos días` : "", ex ? `${ex} de ARG/Mundo` : ""].filter(Boolean).join(" · "); },
+    return [ex ? `${ex} a 2-4 semanas` : "ninguno a 2-4 semanas", m ? `${m} de corto plazo` : "", n ? `${n} en el día (NY)` : ""].filter(Boolean).join(" · "); },
 };
 function plegar(box) {
   if (box.dataset.plegando) return;
@@ -181,6 +181,7 @@ document.addEventListener("click", (ev) => {
   const sel = b.dataset.ir.split("|")[1], el = sel && $(sel);
   const d = el && (el.querySelector(":scope > details") || el.closest("details"));
   if (d && !d.open) d.open = true;
+  for (let p = el && el.parentElement; p; p = p.parentElement) if (p.tagName === "DETAILS") p.open = true;  // también "Más del mercado"
 }, true);
 
 function pintarEstado() {
@@ -782,16 +783,18 @@ function pintarAnticipos() {
   const dias = [];
   if ((li.lista || []).length) {
     const l = li.lista.slice(0, 10), prs = l.map((x) => prons.find((y) => y.ticker === x.ticker && y.fecha === li.fecha)).filter(Boolean);
-    dias.push([li.fecha, (li.fecha === HOY() ? "📌 Para mañana · lista de hoy al cierre" : `📌 Para hoy · lista del ${esc(tituloDia(li.fecha).toLowerCase())}`), resumenDia(prs.length ? prs : l),
+    const tarde = new Date().getHours() >= 17;
+    dias.push([li.fecha, (li.fecha === HOY() ? "📌 Para la próxima rueda · lista de hoy al cierre"
+      : `📌 Vigente · lista armada el ${esc(tituloDia(li.fecha).toLowerCase())} al cierre${tarde ? " (la de hoy se arma ~17:45)" : ""}`), resumenDia(prs.length ? prs : l),
       l.slice().sort((a, b) => (a.prioridad || 99) - (b.prioridad || 99)).map((x) => filaAnt(x.ticker, prons.find((y) => y.ticker === x.ticker && y.fecha === li.fecha), { prob: x.prob, txt: (x.razones || []).join(" · ") || "combinación de precursores", fr: x.fr_contra, plan: x.plan, vence: x.vence, prioridad: x.prioridad, corto: x.corto })).join("")]);
   }
   const otras = {}; prons.filter((x) => x.fecha !== li.fecha).forEach((x) => (otras[x.fecha] ||= []).push(x));
   Object.keys(otras).sort().reverse().slice(0, 6).forEach((f) => { const l = otras[f].sort((a, b) => (b.mejor || 0) - (a.mejor || 0));
     dias.push([f, `Sugeridos el ${esc(tituloDia(f).toLowerCase())}`, resumenDia(l), l.map((x) => filaAnt(x.ticker, x, { prob: x.prob })).join("")]); });
-  const tablaLi = dias.length ? `<p class="tenue" style="margin-top:10px"><b>Para los próximos días:</b> papeles con las señales que suelen aparecer antes de una suba de 5% o más en la semana.
+  const tablaLi = dias.length ? `<details class="corto-plazo"><summary><b>⚡ Anticipador de CEDEARs · corto plazo (1 semana)</b> <span class="tenue">· solo confirma otras ideas, no es para comprar sola</span></summary><p class="tenue" style="margin-top:10px"><b>Para los próximos días:</b> papeles con las señales que suelen aparecer antes de una suba de 5% o más en la semana.
       ${p.base_pct ? `En la prueba con datos que no vio, de cada 100 marcados subieron así ${num(p.top10_pct, 0)}, contra ${num(p.base_pct, 0)} al azar.` : ""}${li.activo ? "" : " (todavía no supera la prueba: solo informativo)"}</p>
     ${dias.map(([f, tit, res, filas], k) => `<details class="dia-pron" ${k === 0 ? "open" : ""}><summary><b>${tit}</b> <span class="tenue">· ${res}</span></summary>${filas}</details>`).join("")}
-    <p><button class="chico" data-ir-pron="anticipador">📋 Ver todos los pronósticos del Anticipador</button></p>` : "";
+    <p><button class="chico" data-ir-pron="anticipador">📋 Ver todos los pronósticos del Anticipador</button></p></details>` : "";
   const pl = es?.plazos?.al_cierre;
   const est = pl?.casos ? `<p class="tenue" style="margin-top:8px">Estadística propia de los anticipos (desde ${esc(fecha(es.desde))}): acertaron ${num(pl.aciertos / pl.casos * 100, 0)}% de ${pl.casos}, ${pct(pl.suma_ret / pl.casos, 2)} promedio hasta el cierre.</p>` : "";
   // Anticipador ARG y Mundo: solo si pasaron su examen con la historia
@@ -800,12 +803,12 @@ function pintarAnticipos() {
     const pr2 = (e.pronosticos || []).filter((x) => x.origen === ag);
     const filas = l.lista.slice(0, 10).sort((a, b) => (a.prioridad || 99) - (b.prioridad || 99)).map((x) => filaAnt(x.ticker, pr2.find((y) => y.ticker === x.ticker && y.fecha === l.fecha), { prob: x.prob, txt: (x.razones || []).join(" · "), fr: x.fr_contra, plan: x.plan, vence: x.vence, prioridad: x.prioridad, corto: x.corto })).join("");
     const pp = l.prueba || {};
-    return `<details class="dia-pron" open><summary><b>${NOM_EXTRA[ag] || ag}</b> <span class="tenue">· ${l.lista.length} ${(l.horizonte || 5) > 5 ? `a ${l.horizonte} ruedas` : "para los próximos días"}${pp.top10_pct ? ` · en el examen ${num(pp.top10_pct, 0)} de cada 100 subieron ${num(l.meta || 5, 0)}% (al azar ${num(pp.base_pct, 0)})` : ""}</span></summary>${filas}
+    return `<details class="dia-pron" open><summary><b>${NOM_EXTRA[ag] || ag}</b> <span class="tenue">· lista del ${esc(tituloDia(l.fecha || "").toLowerCase())} · ${l.lista.length} ${(l.horizonte || 5) > 5 ? `a ${l.horizonte} ruedas` : "para los próximos días"}${pp.top10_pct ? ` · en el examen ${num(pp.top10_pct, 0)} de cada 100 subieron ${num(l.meta || 5, 0)}% (al azar ${num(pp.base_pct, 0)})` : ""}</span></summary>${filas}
       <p><button class="chico" data-ir-pron="${ag}">📋 Ver sus pronósticos</button></p></details>`; }).join("");
   // día volátil: qué modelo se usó (capacitación para tiempos volátiles)
   const vols = [li, ...Object.values(e.anticipo_listas || {})].map((l) => l && l.volatil).filter((v) => v && v.hoy);
   const volTxt = vols.length ? `<p class="aviso-vol">⚡ <b>Día volátil</b> (${esc(vols[0].por || "")}). ${vols.some((v) => v.especialista) ? "Donde ganó el examen se usa el especialista entrenado solo con días así." : "Los modelos de siempre son los que mejor andan en días así."}</p>` : "";
-  $("#anticipos").innerHTML = `<h2>⏩ Anticipos <span class="hora">· ${esc(e.hora || "")}</span></h2><div class="card eco">${volTxt}${tablaAt}${tablaLi}${extras}${est}</div>`;
+  $("#anticipos").innerHTML = `<h2>⏩ Anticipos <span class="hora">· ${esc(e.hora || "")}</span></h2><div class="card eco">${volTxt}${extras || '<p class="tenue">Hoy los anticipadores de 2 a 4 semanas no marcan nada nuevo.</p>'}${tablaLi}${tablaAt ? `<details class="corto-plazo"><summary><b>🌙 Anticipo NY · en el día</b> <span class="tenue">· CEDEARs que todavía no copiaron a Nueva York</span></summary>${tablaAt}</details>` : ""}${est}</div>`;
 }
 
 // ---------- renta fija para cobrar: ONs y bonos con cronograma ----------

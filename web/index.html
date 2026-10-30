@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icono.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icono-192.png">
-<link rel="stylesheet" href="estilo.css?v=20261029a">
+<link rel="stylesheet" href="estilo.css?v=20261030a">
 </head>
 <body>
 <header class="barra">
@@ -49,14 +49,16 @@
   <section id="v-propuestas" class="vista activa">
     <div id="resumen-hoy"></div>
     <div id="cartera-hoy"></div>
-    <div id="radar-ganadores"></div>
+    <div id="comite"></div>
+    <div id="anticipos"></div>
     <div id="renta-fija"></div>
     <div id="cobros-hoy"></div>
-    <div id="licitaciones-hoy"></div>
-    <div id="anticipos"></div>
-    <div id="eventos-semana"></div>
-    <div id="radar"></div>
-    <div id="comite"></div>
+    <details class="mas-mercado"><summary><b>📊 Más del mercado</b> <span class="tenue">· radar, ganadores, licitaciones y la semana</span></summary>
+      <div id="radar"></div>
+      <div id="radar-ganadores"></div>
+      <div id="eventos-semana"></div>
+      <div id="licitaciones-hoy"></div>
+    </details>
     <h2 id="titulo-decidir">Para decidir</h2>
     <div id="lista-propuestas"></div>
     <h2 id="titulo-ops">Oportunidades confirmadas</h2>
@@ -243,6 +245,6 @@
 </nav>
 
 <div id="toast" role="status"></div>
-<script src="app.js?v=20261030a"></script>
+<script src="app.js?v=20261030b"></script>
 </body>
 </html>

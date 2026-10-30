@@ -86,14 +86,17 @@ def replantear_plazo(tk: str, vence: str | None, compra: date | None, hoy: date,
     if mala and sumar_ruedas(hoy, 1) < v:
         v = sumar_ruedas(hoy, 1)
         motivos.append(f"Noticia en contra: «{(mala.get('texto') or '')[:110]}». Plazo acortado al {fv(v)}.")
-    # 3) la mesa se dio vuelta: 2 ruedas para salir con calma
+    # 3) la mesa se dio vuelta: 2 ruedas para salir con calma. 30/10: solo para ideas cortas (menos de 10 ruedas).
+    # En una idea de 2-4 semanas con stop, que los analistas de corto plazo se pongan en contra un día no la rompe:
+    # la protege el stop (YPFD y CEPU pasaban de "hasta el 26/11" a "salir mañana" por eso).
+    larga = bool(compra and ruedas_entre(compra, date.fromisoformat(vence)) >= 10)
     contra, favor = len(op.get("en_contra") or []), len(op.get("a_favor") or [])
-    if (x.get("mesa") == "en contra" or contra >= favor + 2) and sumar_ruedas(hoy, 2) < v:
+    if not larga and (x.get("mesa") == "en contra" or contra >= favor + 2) and sumar_ruedas(hoy, 2) < v:
         v = sumar_ruedas(hoy, 2)
         motivos.append(f"La mesa se puso en contra ({contra} en contra, {favor} a favor): plazo acortado al {fv(v)}.")
     # 4) casi en el objetivo: no hace falta esperar
     pot = x.get("potencial_pct")
-    if pot is not None and pot <= 5 and sumar_ruedas(hoy, 2) < v:
+    if not larga and pot is not None and pot <= 5 and sumar_ruedas(hoy, 2) < v:
         v = sumar_ruedas(hoy, 2)
         motivos.append(f"Le queda solo {str(round(pot, 1)).replace('.', ',')}% hasta el objetivo: plazo acortado al {fv(v)}.")
     # 5) todo a favor y con recorrido, cerca del final: se estira (nunca más de 60 ruedas desde la compra)
