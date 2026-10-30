@@ -285,5 +285,5 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         out[tk] = {"ticker": tk, "titular": titular, "color": color, "fecha_compra": f_compra, "vence": vence, "plazo_motivo": plazo_motivo, "dias": dias, "total": total,
                    "plazo_cumplido": plazo_cumplido, "cantidad": cant, "precio": precio, "compra": compra_p, "resultado_pct": res,
                    "sugerida": sug, "por_que": por_que, "opciones": ops, "cambios": cambios, "techo5": techo5, "piso": piso, "objetivo": obj,
-                   "compra_punta": x.get("aviso_spread"), "ahora": ahora, "revision": revision, "vence_base": vence_base, "cambios_plazo": cambios_plazo}
+                   "compra_punta": x.get("aviso_spread"), "estructura": (x.get("estructura") or {}).get("frase"), "ahora": ahora, "revision": revision, "vence_base": vence_base, "cambios_plazo": cambios_plazo}
     return out, avisos

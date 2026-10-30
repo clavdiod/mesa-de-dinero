@@ -93,6 +93,13 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
             continue
         velas = velas_de(tk) or []
         rg = _rango(velas, precio)
+        try:
+            from .estructura import frase as _fr, leer as _leer
+            est_ = _leer(velas, precio)
+            if est_:
+                x["estructura"] = {**est_, "frase": _fr(est_)}
+        except Exception as ex:
+            print(f"[proyección] estructura {tk}: {ex}")
         # el máximo desde que lo compraste (para no devolver la ganancia)
         if pos.get("fecha"):
             # el día de la compra no cuenta su máximo (pudo ser ANTES de que compraras): se toma desde el día siguiente

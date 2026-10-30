@@ -490,6 +490,7 @@ function segCartera(tk) {
     ${(g.cambios_plazo || []).length ? `<div class="item-det">⏱️ <b>Plazo recalculado hoy:</b> ${g.cambios_plazo.map(esc).join(" ")}${g.vence_base && g.vence_base !== g.vence ? ` <span class="tenue">(el plazo original era hasta el ${esc(fecha(g.vence_base))})</span>` : ""}</div>` : ""}
     <div class="item-det"><b>Hoy:</b> ${g.cambios.map(esc).join(" ")}</div>
     <div class="item-det">Sugerido: <span class="chip ${g.sugerida === "vender_todo" ? "rojo" : g.sugerida === "mantener" ? "verde" : "amar"}"><b>${NOM_ACC[g.sugerida]}</b></span> ${esc(g.por_que || "")}</div>
+    ${g.estructura ? `<div class="item-det tenue"><b>Gráfico:</b> ${esc(g.estructura)}</div>` : ""}
     ${(g.revision || []).length ? `<details class="item-det"><summary>🔎 Lo que miré antes de sugerir</summary>${g.revision.map(r => `<div>${esc(r)}</div>`).join("")}<div class="tenue">✔ = dice vender · ✖ = dice mantener</div></details>` : ""}
     ${hoyDec ? `<div class="item-det">✔ Hoy decidiste: <b>${esc(NOM_ACC[d.accion] || d.accion)}</b>${d.detalle ? ` (${esc(d.detalle)})` : ""}</div>` : ""}
     ${alts.length ? `<div class="item-det">${alts.map((a) => `🔔 ${a.tipo === "baja" ? "baja de" : "sube de"} <b>$${num(a.nivel)}</b> <span class="tenue">${esc(a.nota || "")}${disp[a.id] ? " · ya avisó" : ""}</span>`).join("<br>")}</div>` : ""}
@@ -502,6 +503,7 @@ function abrirDecidir(tk) {
     ${g.total ? `<p class="tenue" style="margin:4px 0">Día ${g.dias} de ${g.total} (hasta el ${esc(fecha(g.vence))}).</p>` : ""}
     <p style="margin:6px 0"><b>Hoy:</b> ${g.cambios.map(esc).join(" ")}</p>
     ${g.compra_punta ? `<p class="tenue">⚠️ ${esc(g.compra_punta)}</p>` : ""}
+    ${g.estructura ? `<p class="tenue"><b>Gráfico:</b> ${esc(g.estructura)}</p>` : ""}
     <div id="decidir-ops">${g.opciones.map((o, i) => `<button class="opcion ${o.sugerida ? "sug" : ""}" data-op="${i}"><b>${esc(NOM_ACC[o.accion])}</b>${o.sugerida ? ' <span class="chip verde">sugerido</span>' : ""}<small>${esc(o.texto)}</small></button>`).join("")}</div>
     <div id="decidir-form"></div>
     <p class="tenue" style="margin-bottom:0">La mesa no opera: lo hacés en tu broker y acá anotás lo que hiciste. <button class="chico" id="decidir-cerrar">Después</button></p>`;

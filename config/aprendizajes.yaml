@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-10-30'
+  caso: La estructura del gráfico sola no alcanza para decidir
+  que_paso: 'Se probó la lectura clásica (máximos y mínimos descendentes, debajo de un promedio de 20 que baja) en 46.000 casos de acciones argentinas (10 años) y 33.000 de CEDEARs (5 años), mirando las 20 ruedas siguientes. Acciones ''cayendo'': +2,1% (todas: +1,2%). CEDEARs ''cayendo'': +3,1% (todos: +1,7%), muchas veces rebotan. ''Dejó de caer'' y ''alcista'' no rindieron más que el resto.'
+  leccion: 'La forma del gráfico sola no predice: un papel que cae no rinde peor que el resto. Sí sirvió en un contexto puntual: después de un susto argentino, esperar que el líder deje de caer.'
+  cambio: Nueva lectura 'Gráfico' en Mi cartera y al decidir (cayendo / dejó de caer / alcista, línea bajista y soporte), como dato para evaluar, sin voto. La regla que sí ganó quedó en el Comprador de pánico.
+- fecha: '2026-10-30'
   caso: 'Comprador de pánico: no atajar el cuchillo que cae'
   que_paso: 'Un análisis de GGAL en X (máximos y mínimos descendentes, ''cuando el flujo está en contra, toca esperar'') llevó a probar dos formas de comprar líderes del Merval en un susto del riesgo país (+12% en 10 ruedas; 35 sustos en 10 años, en dólares, 20 ruedas, stop -10%). Comprar en el susto: +1,6% promedio (2016-2021: -1,1%; 2022-2026: +4,4%). Esperar a que cierre arriba de su promedio de 20 ruedas y que el promedio deje de bajar: +4,3% (2016-2021: +1,6%; 2022-2026: +6,7%), pagando en promedio 5% más caro. Esperar un máximo de 10 ruedas o que baje el riesgo país no mejoró.'
   leccion: 'Pagar un poco más caro pero con la caída confirmada terminada rinde más que comprar en plena caída: le ganó en los dos períodos.'
