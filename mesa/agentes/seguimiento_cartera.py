@@ -81,15 +81,17 @@ def replantear_plazo(tk: str, vence: str | None, compra: date | None, hoy: date,
         if b < v:
             v = max(b, hoy)
             motivos.append(f"Presenta balance el {bal['fecha'][8:10]}/{bal['fecha'][5:7]}: el plazo termina el {fv(v)} (decidí antes si te quedás para el balance).")
-    # 2) noticia fuerte en contra: se acorta a 1 rueda
-    mala = next((n for n in noticias or [] if n.get("dir", 0) < 0 and (n.get("fuerza") or 0) >= 0.4), None)
+    larga = bool(compra and ruedas_entre(compra, date.fromisoformat(vence)) >= 10)
+    # 2) noticia fuerte en contra: se acorta a 1 rueda. 30/10: en una idea larga, solo una noticia DE LA EMPRESA
+    # (no un tema general como "la Fed sube tasas", que le pega a todo el mercado y ya lo cubre el stop).
+    especifica = lambda n: not larga or str(n.get("texto") or "").startswith(("Noticias de", "Hecho relevante", "Hechos del emisor")) or n.get("agente") in ("hechos_emisor",)
+    mala = next((n for n in noticias or [] if n.get("dir", 0) < 0 and (n.get("fuerza") or 0) >= 0.4 and especifica(n)), None)
     if mala and sumar_ruedas(hoy, 1) < v:
         v = sumar_ruedas(hoy, 1)
         motivos.append(f"Noticia en contra: «{(mala.get('texto') or '')[:110]}». Plazo acortado al {fv(v)}.")
     # 3) la mesa se dio vuelta: 2 ruedas para salir con calma. 30/10: solo para ideas cortas (menos de 10 ruedas).
     # En una idea de 2-4 semanas con stop, que los analistas de corto plazo se pongan en contra un día no la rompe:
     # la protege el stop (YPFD y CEPU pasaban de "hasta el 26/11" a "salir mañana" por eso).
-    larga = bool(compra and ruedas_entre(compra, date.fromisoformat(vence)) >= 10)
     contra, favor = len(op.get("en_contra") or []), len(op.get("a_favor") or [])
     if not larga and (x.get("mesa") == "en contra" or contra >= favor + 2) and sumar_ruedas(hoy, 2) < v:
         v = sumar_ruedas(hoy, 2)
