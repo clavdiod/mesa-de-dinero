@@ -23,10 +23,13 @@ def test_capitulacion_de_cedear_sano():
 
 
 def test_susto_argentino_y_entrenar():
-    velas = {tk: [{"fecha": f, "cierre": 100.0 - (k % 3)} for k, (f, _) in enumerate(_serie(80, lambda i: 0))] for tk in panico.LIDERES_MERVAL}
+    # cae hasta la rueda 40 (susto) y después rebota: recién con el rebote confirmado se compra
+    precio = lambda k: 100.0 - k * 0.5 if k <= 40 else 80.0 + (k - 40) * 1.0
+    velas = {tk: [{"fecha": f, "cierre": precio(k)} for k, (f, _) in enumerate(_serie(80, lambda i: 0))] for tk in panico.LIDERES_MERVAL}
     fechas = [v["fecha"] for v in velas["GGAL"]]
     rp = {f: (600.0 if k < 40 else 700.0) for k, f in enumerate(fechas)}
-    s = panico.senales_locales(velas, rp, fechas[45])
+    assert not any(x.datos["tipo"] == "susto_argentino" for x in panico.senales_locales(velas, rp, fechas[41]))  # todavía cayendo
+    s = panico.senales_locales(velas, rp, fechas[55])
     assert any(x.datos["tipo"] == "susto_argentino" for x in s)
     st = panico.entrenar({}, {"SPY": []}, velas, rp)
     assert st["por_tipo"].get("susto_argentino", {}).get("casos", 0) > 0
