@@ -682,6 +682,15 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                 base_f = date.fromisoformat(l_.get("fecha") or hoy.isoformat())
                 x["vence"] = _sr(base_f, int(l_.get("horizonte") or 5)).isoformat()  # el plazo que se probó
                 x["corto"] = int(l_.get("horizonte") or 5) < riesgo.MIN_RUEDAS_PROPUESTA
+                # Reglas de la mesa (02/11): el plan de un anticipador también pasa la revisión de entrada
+                if x.get("plan") and precio_:
+                    from .agentes import ficha_frio as _ff2
+                    f_ = _ff2.ficha(vs_, precio_, x["plan"], None, [])
+                    if f_:
+                        x["ficha_txt"] = _ff2.texto(f_)
+                        if f_.get("veredicto") == "cara":
+                            x["entrada_cara"] = True
+                            x["plan"]["entrada_razonable"] = f_.get("entrada_mejor")
             except Exception as ex:
                 print(f"[plan anticipador] {x.get('ticker')}: {ex}")
         orden = sorted(items, key=lambda y: -(y.get("prob") or 0) * (0.5 if y.get("fr_contra") else 1))
@@ -1107,6 +1116,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                                            if k in {c.get("ticker", "").upper() for c in cartera}},
         "cobros": mis_cobros,
         "renta_fija": None if simular else almacen.get("renta_fija/propuestas"),
+        "reglas": yaml.safe_load((RAIZ / "config" / "reglas.yaml").read_text(encoding="utf-8")) if (RAIZ / "config" / "reglas.yaml").exists() else [],
     }
     almacen.put("ui/estado", {**estado_ui, **resumen, "dia": dia})
     # foto compacta de TODOS los paneles para el Asistente (sin gastar consultas extra)

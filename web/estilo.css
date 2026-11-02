@@ -221,3 +221,5 @@ details.mas-mercado > summary { cursor: pointer; font-size: 17px; }
 .ficha-frio.ok { border-left-color: var(--verde); }
 .ficha-frio.duda { border-left-color: var(--amar); }
 .ficha-frio.mal { border-left-color: var(--rojo); }
+details.reglas ol { margin: 8px 0 0; padding-left: 20px; }
+details.reglas li { margin: 6px 0; }

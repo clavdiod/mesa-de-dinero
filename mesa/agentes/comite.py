@@ -35,6 +35,8 @@ def pesos_vivos(libreta: list[dict], stats: dict) -> dict[str, dict]:
         if len(xs) >= 10:
             hit = sum(1 for x in xs if x["estado"] == "se_dio") / len(xs)
             out[o] = {"peso": _peso(hit), "acierto": round(hit * 100), "casos": len(xs), "fuente": "pronósticos en vivo"}
+            if hit < 0.35:  # Reglas de la mesa: dado de baja hasta que vuelva a aprobar
+                out[o].update(peso=0.0, baja=True)
     for ag, d in (stats or {}).items():
         if ag in out or not isinstance(d, dict):
             continue
@@ -42,6 +44,8 @@ def pesos_vivos(libreta: list[dict], stats: dict) -> dict[str, dict]:
         if h.get("casos", 0) >= 30:
             hit = h["aciertos"] / h["casos"]
             out[ag] = {"peso": _peso(hit), "acierto": round(hit * 100), "casos": h["casos"], "fuente": "señales en vivo a 10 ruedas"}
+            if hit < 0.35:
+                out[ag].update(peso=0.0, baja=True)
     return out
 
 

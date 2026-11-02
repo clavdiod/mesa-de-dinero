@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-02'
+  caso: 'Revisión de las 5 compras: dónde estaba la entrada'
+  que_paso: 'IBB se compró en el 2% más alto del año (+2% hasta su máximo). YPFD en el 19% más alto, con +13% hasta su máximo arriesgando 8%, y un objetivo ($10.130) arriba del máximo del año ($9.220). CEPU y TRAN en el piso del año pero en plena caída (-10% y -19% bajo su promedio). Solo ALUA entró bien: parte baja del año, sin caer, +37% hasta su techo.'
+  leccion: 'Errores de novato: comprar cerca del techo con poco margen, objetivos imposibles y atajar cuchillos. Clau: ''no es un regaño, es una oportunidad única de aprender''.'
+  cambio: 'Nacen las Reglas de la mesa (config/reglas.yaml), obligatorias para todos los agentes: se aplican en el Comité y en cada plan de los Anticipadores. El agente que con 10+ ideas cerradas acierta menos de 35 de cada 100 es dado de baja (no vota) hasta volver a aprobar.'
+- fecha: '2026-11-02'
   caso: 'Regla general: revisar el precio de entrada antes de comprar'
   que_paso: 'Clau: ''cualquiera propone, pero tenés la obligación de fijarte si el precio de entrada es razonable y, según datos históricos, cuánto podría subir para maximizar la ganancia; si son altos, no se compra y se descarta''.'
   leccion: Una buena idea a un mal precio es una mala compra. El precio de entrada se revisa siempre, con datos, antes de que la propuesta llegue.
