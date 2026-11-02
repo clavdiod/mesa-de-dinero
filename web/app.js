@@ -731,9 +731,12 @@ function pintarAviso() {
   const precios = ESTADO.estado?.precios || {};
   // 1) propuestas nuevas del Jefe para decidir  2) consejos de seguimiento importantes de hoy
   const nuevas = PROPS.filter((p) => p.decision === "pendiente" && p.fecha === HOY() && !VISTOS.has(p.id));
-  const consejos = PROPS.filter((p) => p.decision === "aprobada" && ["salir", "subir_stop", "antes_balance", "cancelar"].includes(p.seguimiento?.consejo?.accion)
-    && !VISTOS.has(p.id + "|" + p.seguimiento.consejo.accion));
-  const radarAltas = radarDelDia().filter((r) => r.severidad === "alta" && !VISTOS.has("radar|" + HOY() + "|" + r.ticker));
+  // 02/11: solo lo tuyo. Las posiciones en papel del Comité y el radar del resto del mercado no te avisan (los usan los agentes).
+  const tuyos = new Set([...(USUARIO.cartera || []), ...(USUARIO.lista || [])].map((x) => String(x.ticker || x).toUpperCase()));
+  const esTuyo = (tk) => tuyos.has(String(tk).toUpperCase()) || tuyos.has(String(tk).toUpperCase() + "D");
+  const consejos = PROPS.filter((p) => p.decision === "aprobada" && esTuyo(p.ticker) && ["salir", "subir_stop", "antes_balance", "cancelar"].includes(p.seguimiento?.consejo?.accion)
+    && !VISTOS.has(p.id + "|" + p.seguimiento.consejo.accion)).filter(() => false);  // tu cartera ya tiene su propio cartel
+  const radarAltas = radarDelDia().filter((r) => r.severidad === "alta" && esTuyo(r.ticker) && !VISTOS.has("radar|" + HOY() + "|" + r.ticker));
   const box = $("#aviso-global");
   if (!nuevas.length && !consejos.length && !radarAltas.length) { box.style.display = "none"; document.title = "Mesa de dinero"; return; }
   const items = nuevas.map((p) => {

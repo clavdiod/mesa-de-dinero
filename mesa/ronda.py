@@ -1099,6 +1099,11 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     except Exception as ex:
         print(f"[alertas de nivel] {ex}")
         alertas_niv = []
+    # 02/11: a vos solo te llega lo que es tuyo (cartera y Mi lista), tus cobros y las compras que aprueba el Comité.
+    # El radar del resto del mercado lo usan los agentes por dentro y se ve en Hoy › Más del mercado, sin aviso.
+    tuyos_ = {str(c.get("ticker", "")).upper() for c in cartera} | {str((x.get("ticker") if isinstance(x, dict) else x) or "").upper() for x in lista or []}
+    base_ = lambda t: t.split(" ")[0].replace("📡", "").strip().upper()
+    avisos_radar = [a_ for a_ in avisos_radar if base_(a_["ticker"]) in tuyos_ or base_(a_["ticker"])[:-1] in tuyos_]
     alertas_lista = [a for a in alertas_seg + avisos_radar + _alertas_lista(ctx, lista) if (a["fecha"], a["ticker"]) not in ya_avisadas]
     alertas_lista += alertas_niv  # las de nivel avisan siempre (cada una una sola vez)
     alertas_lista += avisos_cobro  # cobros de hoy / mañana / la semana (una vez por día)
