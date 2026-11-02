@@ -62,7 +62,7 @@ def lecturas(c: list[float], grupo: str | None) -> dict:
 
 
 def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None, votos: list[dict], grupo: str | None = None,
-          contexto: str | None = None) -> dict | None:
+          contexto: str | None = None, noticias: list[dict] | None = None, variacion: float | None = None) -> dict | None:
     c = [v["cierre"] for v in velas if v.get("cierre")] + [float(precio)]
     if len(c) < 80:
         return None
@@ -145,6 +145,16 @@ def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None,
     except Exception:
         pass
     out["contexto"] = contexto
+    # noticias de la empresa (Corresponsal, Hechos del emisor, Calificadoras): explican movimientos raros de los indicadores
+    nots = [n for n in noticias or [] if n.get("texto")]
+    out["noticias"] = [{"dir": n.get("dir") or 0, "texto": str(n["texto"])[:220]} for n in nots[:3]]
+    raro = abs(variacion or 0) >= 3 or (out.get("volumen_rel") or 0) >= 2
+    if raro and nots:
+        out["explica"] = str(max(nots, key=lambda n: abs(n.get("dir") or 0))["texto"])[:220]
+    elif raro:
+        out["explica"] = "se mueve fuerte sin una noticia de la empresa que lo explique: ojo, puede ser solo flujo de corto plazo"
+    if any((n.get("dir") or 0) < 0 for n in nots) and not any((n.get("dir") or 0) > 0 for n in nots):
+        malas.append("hay noticias de la empresa en contra")
     out["entrada_cara"] = caro
     # precio razonable: donde hasta el máximo del año hay al menos 2 veces el riesgo hasta el stop, y no estirado
     razon = min(m20 * 1.02, (mx1 + 2 * stop) / 3 if stop else m20)
@@ -192,6 +202,10 @@ def texto(f: dict | None) -> str:
                  f"arriesgás {str(u['riesgo_pct']).replace('.', ',')}% hasta el stop.")
     if f.get("contexto"):
         p.append(f"Mercado: {f['contexto']}.")
+    if f.get("noticias"):
+        p.append("Noticias de la empresa: " + " · ".join(("🟢 " if n["dir"] > 0 else "🔴 " if n["dir"] < 0 else "⚪ ") + n["texto"] for n in f["noticias"][:2]))
+    if f.get("explica"):
+        p.append(f"Por qué se mueve hoy: {f['explica']}.")
     lec = f.get("lecturas")
     if lec:
         p.append(lec["texto"] + "." + (" A favor: " + "; ".join(lec["buenas"]) + "." if lec["buenas"] else ""))

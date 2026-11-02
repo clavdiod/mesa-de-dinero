@@ -415,6 +415,20 @@ def _limpiar_nombre(n: str) -> str:
     return re.sub(r",?\s+(inc\.?|corp(oration)?\.?|ltd\.?|limited|plc|s\.a\.?|holdings?|co\.?|group|n\.v\.?|class [a-c])\b.*$", "", n, flags=re.I).strip() or n
 
 
+_BASURA = re.compile(r"\b(call|put)\s*\(|\b[A-Z]{1,5}\d{6}[CP]\d{5,}\b|cotizaci[oó]n e historial|stock price, news, quote|historical prices|option chain", re.I)
+
+
+def titular_valido(titulo: str, clave: str, ticker: str) -> bool:
+    """02/11: el titular tiene que ser DE la empresa. Antes 'DOME' tomaba 'Pioneer Dome' (una mina australiana) y VXX una
+    página de opciones de Yahoo. Ahora: nombre como palabra entera, o el ticker en mayúsculas como palabra; sin páginas de
+    cotización u opciones."""
+    if _BASURA.search(titulo):
+        return False
+    nombre_ok = bool(clave) and len(clave) >= 4 and re.search(rf"(?<![\w]){re.escape(clave)}(?![\w])", titulo.lower())
+    ticker_ok = re.search(rf"(?<![\w$]){re.escape(ticker.upper())}(?![\w])|\${re.escape(ticker.upper())}\b", titulo) is not None
+    return bool(nombre_ok or ticker_ok)
+
+
 def noticias_papel(ticker: str, nombre: str | None, local: bool) -> dict:
     """Busca titulares de los últimos 3 días del papel y los clasifica (buenos / malos / sin impacto claro)."""
     from ..datos import gratis
@@ -426,7 +440,7 @@ def noticias_papel(ticker: str, nombre: str | None, local: bool) -> dict:
                 url_google(f'"{base}"', "es").replace("when:1d", "when:3d")]
     tit = gratis.noticias(urls, horas=72, max_items=25)
     clave = base.lower().split()[0] if base else ticker.lower()
-    tit = [n for n in tit if clave in n["titulo"].lower() or ticker.lower() in n["titulo"].lower()]
+    tit = [n for n in tit if titular_valido(n["titulo"], clave, ticker)]
     clas = []
     for n in tit[:12]:
         t = n["titulo"]

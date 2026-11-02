@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-02'
+  caso: Las noticias de la empresa explican los indicadores
+  que_paso: 'Clau pidió que las noticias participen de cada evaluación, para explicar un indicador. Además el Corresponsal y el radar tomaban titulares que no eran de la empresa: ''Pioneer Dome'' (mina australiana) para Domec y una página de opciones de Yahoo para VXX.'
+  leccion: Un volumen o un salto raro con una noticia de la empresa detrás es distinto de uno sin noticia (puede ser solo flujo de corto plazo). Y una noticia mal asociada es peor que ninguna.
+  cambio: Cada ficha en frío muestra las noticias de la empresa (🟢 buenas, 🔴 malas) y, si el precio se mueve 3% o más o el volumen se duplica, 'por qué se mueve hoy'. Noticias solo en contra cuentan como alerta. Los titulares se aceptan solo si nombran a la empresa o su ticker como palabra entera, y nunca páginas de cotización u opciones.
+- fecha: '2026-11-02'
   caso: 'RSI, MACD, tendencia y estructura correctiva: qué dice cada una'
   que_paso: '10 años, 20 ruedas (44.500 casos en acciones argentinas, 65.900 en CEDEARs). Acciones argentinas: MACD positivo +2,2% contra negativo +0,2%; MACD que cruza hacia abajo -0,4%, hacia arriba +1,6%; RSI arriba de 70 +2,6% (el mejor); corrección dentro de tendencia alcista con RSI bajo 40: +7,4% promedio, pero suben solo 41 de cada 100. CEDEARs: RSI bajo 30 +2,0%, arriba de 70 +1,0%; tendencia bajista +2,3% contra alcista +1,0% (rebotan; ojo, la muestra solo tiene empresas que siguen cotizando).'
   leccion: Cada indicador dice algo distinto según el mercado. En Argentina manda el impulso (MACD positivo, RSI alto); en EE.UU. los excesos se corrigen (RSI bajo es oportunidad, RSI alto rinde menos).

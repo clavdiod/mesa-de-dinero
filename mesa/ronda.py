@@ -230,11 +230,13 @@ def _radar_investigar(ctx, almacen, hoy, alertas: list[dict], por_ticker: dict) 
         tk = a["ticker"]
         em = emisores().get(tk[:-1] if tk.endswith("D") and tk[:-1] in emisores() else tk) or {}
         clave = (em.get("clave") or em.get("nombre") or "").lower()
-        notis = [n for n in ctx.noticias if clave and clave in n.get("titulo", "").lower()]
+        from .agentes.mundo import titular_valido as _tv
+        notis = [n for n in ctx.noticias if clave and _tv(n.get("titulo", ""), clave, tk)]
         if not notis and a["grupo"] != "macro" and a["severidad"] == "alta" and busquedas < 3:
             if tk not in cache_n:
                 q = em.get("nombre") or tk
-                cache_n[tk] = [{"titulo": n["titulo"], "link": n.get("link")} for n in gratis.buscar_noticias(f'"{q}"', horas=48, max_items=5)]
+                cache_n[tk] = [{"titulo": n["titulo"], "link": n.get("link")} for n in gratis.buscar_noticias(f'"{q}"', horas=48, max_items=5)
+                               if _tv(n["titulo"], (em.get("clave") or q).lower(), tk)]
                 busquedas += 1
             notis = cache_n.get(tk) or []
         out.append(radar.investigar(a, ctx, por_ticker, notis, nombres))
@@ -913,7 +915,10 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
             e["ficha_frio"] = _ff.ficha(ctx.cache.velas(e["ticker"]) if ctx.cache else [], t_.get("ultimo") or pl["entrada"], pl,
                                         e.get("estructura"), (e.get("comite") or {}).get("votos") or [], t_.get("grupo"),
                                         f"clima {ctx.extra.get('clima_estado')}, riesgo país {ctx.riesgo_pais.get('valor')}"
-                                        + (f" (ayer {ctx.riesgo_pais_ayer})" if ctx.riesgo_pais_ayer else ""))
+                                        + (f" (ayer {ctx.riesgo_pais_ayer})" if ctx.riesgo_pais_ayer else ""),
+                                        [{"dir": s_.get("direccion"), "texto": s_.get("texto"), "agente": s_.get("agente")} for s_ in e.get("senales") or []
+                                         if s_.get("agente") in ("hechos_emisor", "calificadoras") or (s_.get("agente") == "mundo" and str(s_.get("texto", "")).startswith("Noticias de"))],
+                                        t_.get("variacion"))
             e["ficha_txt"] = _ff.texto(e["ficha_frio"])
         except Exception as ex_:
             print(f"[ficha en frío] {e['ticker']}: {ex_}")
