@@ -68,7 +68,9 @@ def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None,
         out["objetivo_irreal"] = True
         malas.append(f"el objetivo ({obj:,.0f}) está arriba del máximo del último año ({mx1:,.0f})".replace(",", "."))
     out["entrada_cara"] = caro
-    out["entrada_mejor"] = round(min(entrada, m20), 2) if caro else None
+    # precio razonable: donde hasta el máximo del año hay al menos 2 veces el riesgo hasta el stop, y no estirado
+    razon = min(m20 * 1.02, (mx1 + 2 * stop) / 3 if stop else m20)
+    out["entrada_mejor"] = round(razon, 2) if caro and razon < entrada else None
     if len(casos) >= 8:
         v = sorted(x[0] for x in casos)
         out["historia"] = {"casos": len(casos), "mediana_pct": round(v[len(v) // 2] * 100, 1),
