@@ -172,7 +172,9 @@ async function passkeyApi(req, env, url, p) {
 // Texto del aviso push (sin desbloqueo: es lo mismo que ya se ve en la pantalla bloqueada del celular)
 async function textoAviso(env) {
   const [estado, alertas, props] = await Promise.all([leer(env, "ui/estado", {}), leer(env, "ui/alertas", []), leer(env, "registro/propuestas", [])]);
-  const nuevas = estado.nuevas || [], p = props.find((x) => nuevas.includes(x.id)), a = alertas[0];
+  const nuevas = estado.nuevas || [], p = props.find((x) => nuevas.includes(x.id));
+  // 02/11: solo un aviso de ESTA ronda (antes tomaba el último guardado, aunque fuera viejo: VIST a las 10:36)
+  const a = alertas.find((x) => x.fecha === estado.fecha && x.hora === estado.hora);
   const n = (x) => Number(x).toLocaleString("es-AR", { maximumFractionDigits: 2 });
   if (p) return { importante: true, titulo: `🗳️ Comité: comprar ${p.ticker} con límite ${n(p.plan.entrada)}`,
     cuerpo: `Objetivo ${n(p.plan.objetivo)} · stop ${n(p.plan.stop)}${p.ruedas ? ` · plazo ${p.ruedas} ruedas` : ""}. ${nuevas.length > 1 ? `(+${nuevas.length - 1} más) ` : ""}Entrá para ver los votos y decidir.` };
