@@ -31,8 +31,9 @@ def probar(nombre, ser):
             add("cerca del máximo del año (10%)" if p >= mx * 0.9 else "lejos del máximo del año", r, None, None)
             if vol[i - 20:i].mean() > 0:
                 add("volumen 2x+ hoy" if vol[i] >= 2 * vol[i - 20:i].mean() else "volumen normal", r, None, None)
+            sop = [d for d in sop if d["nivel"] < p]; res = [d for d in res if d["nivel"] > p]
             if sop and res:
-                s_, t_ = max(d["nivel"] for d in sop if d["nivel"] < p), min(d["nivel"] for d in res if d["nivel"] > p)
+                s_, t_ = max(d["nivel"] for d in sop), min(d["nivel"] for d in res)
                 esp = (t_ - p) / (p - s_) if p > s_ else 99
                 llego = bool((fut >= t_).any()); perf = bool((fut < s_ * 0.98).any())
                 k = "espacio 3x+ (cerca del piso)" if esp >= 3 else "espacio 1-3x" if esp >= 1 else "espacio <1x (cerca del techo)"
@@ -54,6 +55,7 @@ try:
 except Exception:
     print("::notice::ARG ERR " + traceback.format_exc().replace(chr(10), " | ")[-400:])
 try:
+    raise SystemExit
     uni = _universo_cedears(a)
     with ThreadPoolExecutor(8) as ex:
         ced = {tk: f for tk, f in zip(uni, ex.map(lambda t: gratis.yahoo_ohlcv(t.replace(".", "-"), "10y"), uni)) if len(f) > 400}
