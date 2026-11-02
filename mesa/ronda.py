@@ -1064,6 +1064,21 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                                                   for tk, ss in por_ticker.items()},
                                                  {x_["ticker"] for l_ in [ctx.extra.get("anticipo_lista") or {}] + list((ctx.extra.get("anticipo_listas") or {}).values())
                                                   for x_ in (l_.get("lista") or [])})
+        # 02/11: si hoy decidiste MANTENER un papel, la mesa no te vuelve a pedir que lo vendas por la misma razón el
+        # mismo día. Solo vuelve a avisar si toca su alarma de venta (eso es una razón nueva).
+        dec_ = {} if simular else (almacen.get("usuario/decisiones_cartera") or {})
+        dec_ = dec_ if isinstance(dec_, dict) else {}
+        for tk_, g_ in seg_cartera.items():
+            d_ = dec_.get(tk_) or {}
+            if d_.get("fecha") == hoy.isoformat() and d_.get("accion") == "mantener" and g_.get("sugerida") in ("vender_mitad", "vender_todo") \
+                    and not (g_.get("piso") and g_.get("precio") and g_["precio"] <= g_["piso"]):
+                g_["aviso_mesa"] = g_.get("por_que")
+                g_["sugerida"] = "mantener"
+                g_["titular"], g_["color"] = f"MANTENER (tu decisión de hoy) · alarma en {g_['piso']:,.0f}".replace(",", "."), "verde"
+                g_["por_que"] = "Decidiste mantener hoy. La mesa lo respeta y te avisa solo si toca la alarma de venta. Lo que veía la mesa: " + (g_["aviso_mesa"] or "")
+                for o_ in g_.get("opciones") or []:
+                    o_["sugerida"] = o_["accion"] == "mantener"
+                avisos_cartera = [x_ for x_ in avisos_cartera if not str(x_.get("ticker", "")).startswith(tk_)]
         if avis != antes_av and not simular:
             almacen.put("cartera/avisados", avis)
     except Exception as ex:

@@ -276,7 +276,7 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
                                     + (" Lo que miré: " + " · ".join(revision) if revision else "")})
             avisados[tk] = f"{hoy_s}|{sug}"
         # el cartel: lo que hay que hacer, en una línea
-        fv = (lambda f: f"{f[8:10]}/{f[5:7]}") if vence else None
+        fv = (lambda f: f"{f[8:10]}/{f[5:7]}" + (f"/{f[2:4]}" if f[:4] != hoy_s[:4] else "")) if vence else None
         resto = (total - dias) if (total is not None and dias is not None) else None
         stop_txt = next((o for o in ops if o["accion"] == "subir_stop"), None)
         if sug == "vender_todo":
