@@ -7,7 +7,7 @@ from mesa.nucleo.almacen import almacen_por_defecto
 a = almacen_por_defecto()
 try:
     e = a.get("ui/estado") or {}
-    p = (e.get("proyeccion_cartera") or {}).get("YPFD") or {}
+    p = {} or (e.get("proyeccion_cartera") or {}).get("YPFD") or {}
     print("::notice::proyección " + json.dumps({k: p.get(k) for k in ("precio", "rango_1m", "objetivo", "piso", "mesa", "favor", "contra", "estructura")}, ensure_ascii=False)[:900])
     la = (e.get("anticipo_listas") or {}).get("anticipador_arg") or (a.get("anticipo_arg/lista") or {})
     print("::notice::anticipador ARG lista " + str(la.get("fecha")) + ": " + ", ".join(f"{x['ticker']} {x['prob']}" for x in (la.get("lista") or [])))
@@ -19,9 +19,9 @@ try:
     res = []
     for i in range(70, len(c) - 21):
         if c[i] / c[i - 4] - 1 <= -0.08 and c[i] <= c[i - 60:i].min():
-            res.append(c[i + 20] / c[i] - 1)
-    v = np.array(res) * 100
-    print(f"::notice::YPFD 10 años, casos parecidos (cae 8%+ en 4 ruedas a mínimo de 3 meses): {len(v)} | a 20 ruedas promedio {v.mean():+.1f}%, mediana {np.median(v):+.1f}%, suben 10%+ {np.mean(v >= 10)*100:.0f}%, caen 10%+ {np.mean(v <= -10)*100:.0f}%, terminan arriba {np.mean(v > 0)*100:.0f}%")
+            res.append(c[min(len(c) - 1, i + 250)] / c[i] - 1 if i + 250 < len(c) else None)
+    v = np.array([x for x in res if x is not None]) * 100
+    print(f"::notice::YPFD 10 años, casos parecidos (cae 8%+ en 4 ruedas a mínimo de 3 meses): {len(v)} | a 1 AÑO promedio {v.mean():+.1f}%, mediana {np.median(v):+.1f}%, suben 10%+ {np.mean(v >= 10)*100:.0f}%, caen 10%+ {np.mean(v <= -10)*100:.0f}%, terminan arriba {np.mean(v > 0)*100:.0f}%")
     r = [math.log(c[k] / c[k - 1]) for k in range(len(c) - 63, len(c))]
     s = st.pstdev(r) * math.sqrt(20)
     print(f"::notice::volatilidad 1 mes: ±{s*100:.1f}% → rango 2 de cada 3 veces {7430*math.exp(-s):.0f} a {7430*math.exp(s):.0f}")
