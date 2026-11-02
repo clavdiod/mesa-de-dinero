@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-02'
+  caso: 'Regla general: revisar el precio de entrada antes de comprar'
+  que_paso: 'Clau: ''cualquiera propone, pero tenés la obligación de fijarte si el precio de entrada es razonable y, según datos históricos, cuánto podría subir para maximizar la ganancia; si son altos, no se compra y se descarta''.'
+  leccion: Una buena idea a un mal precio es una mala compra. El precio de entrada se revisa siempre, con datos, antes de que la propuesta llegue.
+  cambio: 'La ficha en frío revisa la entrada: si está 6% o más arriba de su promedio de 20 ruedas, si está en el 15% más alto de su rango de 3 meses, o si lo que suele subir desde precios así en un mes no paga 1,5 veces lo que se arriesga hasta el stop, la entrada es CARA y la propuesta se descarta (se informa a qué precio sería razonable). Además muestra cuánto suele subir según la historia: lo típico y lo que pasa 1 de cada 4 veces.'
+- fecha: '2026-11-02'
   caso: El análisis en frío llegó después de la compra (YPFD)
   que_paso: Clau compró YPFD a $8.135 siguiendo la propuesta del Comité. El análisis de qué podía pasar a un mes (rango, casos parecidos, analistas en contra) se hizo recién cuando ya perdía 8,7%.
   leccion: 'Una propuesta sin su análisis en frío es una propuesta a medias: el que decide tiene que ver los números antes de comprar, no después.'
