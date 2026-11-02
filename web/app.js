@@ -475,7 +475,7 @@ function pintarCarteraHoy() {
 }
 
 // ---------- seguimiento diario de lo que tenés: plazo, qué cambió hoy y decidir (la decisión es tuya) ----------
-const NOM_ACC = { mantener: "Mantener", subir_stop: "Subir el stop", vender_mitad: "Vender la mitad", vender_todo: "Vender todo" };
+const NOM_ACC = { mantener: "Mantener", subir_stop: "Subir la alarma de venta", vender_mitad: "Vender la mitad", vender_todo: "Vender todo" };
 const decidioHoy = (tk, acc) => { const d = USUARIO.decisiones?.[tk]; return d && d.fecha === HOY() && (!acc || d.sugerida === acc); };
 function segCartera(tk) {
   const g = (ESTADO.estado?.seguimiento_cartera || {})[tk]; if (!g) return "";
@@ -525,7 +525,7 @@ function formDecidir(tk, g, o) {
     f.innerHTML = `<div class="card"><p style="margin-top:0">Mantenés <b>${esc(tk)}</b>. ${esc(o.texto)}</p><button class="prim" id="ok-dec" style="width:100%">Mantener</button></div>`;
   } else if (o.accion === "subir_stop") {
     f.innerHTML = `<div class="card"><label>Nuevo stop <input id="dec-nivel" inputmode="decimal" value="${String(o.nivel).replace(".", ",")}"></label>
-      <p class="tenue">Te queda como alerta al celular. En Cocos no hay orden stop: si te llega, vendés a mano.</p><button class="prim" id="ok-dec" style="width:100%">Subir el stop</button></div>`;
+      <p class="tenue">En Cocos no hay orden stop: no cargás nada allá. Tocá el botón y la mesa vigila el precio cada 5 minutos; si llega a este nivel te manda 🚨 al celular y ahí vendés a mano.</p><button class="prim" id="ok-dec" style="width:100%">Guardar la alarma de venta</button></div>`;
   } else {
     f.innerHTML = `<div class="card"><label>Cantidad que vendiste <input id="dec-cant" inputmode="numeric" value="${o.cantidad}"></label>
       <label>Precio al que vendiste <input id="dec-precio" inputmode="decimal" value="${String(g.precio).replace(".", ",")}"></label>

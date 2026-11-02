@@ -11,7 +11,7 @@ from datetime import date, timedelta
 
 RF = ("ons", "soberanos", "letras", "bonos", "cauciones", "provinciales", "renta fija")
 NOM_URG = {"vender_todo": "vendé todo", "vender_mitad": "vendé la mitad"}
-NOMBRE_ACCION = {"mantener": "Mantener", "subir_stop": "Subir el stop", "vender_mitad": "Vender la mitad", "vender_todo": "Vender todo"}
+NOMBRE_ACCION = {"mantener": "Mantener", "subir_stop": "Subir la alarma de venta", "vender_mitad": "Vender la mitad", "vender_todo": "Vender todo"}
 
 
 def _p(x) -> str:
@@ -157,7 +157,7 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
             nuevo_stop = None  # el stop que tenés ya protege eso
         if nuevo_stop:
             ops.append({"accion": "subir_stop", "nivel": nuevo_stop,
-                        "texto": f"Subir el stop a {_p(nuevo_stop)}" + (" (tu precio de compra: ya no podés perder)." if nuevo_stop == round(compra_p, 2)
+                        "texto": f"Subir la alarma de venta a {_p(nuevo_stop)}" + (" (tu precio de compra: ya no podés perder)." if nuevo_stop == round(compra_p, 2)
                                                                      else " (asegurás parte de la ganancia).")})
         if cant >= 2:
             ops.append({"accion": "vender_mitad", "cantidad": cant // 2, "texto": f"Vender la mitad ({cant // 2}) y dejar correr el resto."})
@@ -182,7 +182,7 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
             if lvl < precio and not (piso and lvl <= piso):
                 nuevo_stop = lvl
                 ops = [o for o in ops if o["accion"] != "subir_stop"]
-                ops.insert(1, {"accion": "subir_stop", "nivel": lvl, "texto": f"Subir el stop a {_p(lvl)} y dejar correr hacia {_p(obj)}. "
+                ops.insert(1, {"accion": "subir_stop", "nivel": lvl, "texto": f"Subir la alarma de venta a {_p(lvl)} y dejar correr hacia {_p(obj)}. "
                                "Si sigue subiendo, el stop sube con el máximo (6% debajo): ganás más y nunca devolvés lo ganado."})
             sug, por_que = ("subir_stop" if nuevo_stop else "mantener"), x.get("motivo")
         elif cons.startswith("Vender"):
@@ -229,13 +229,13 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
                 if lvl and lvl < precio:
                     nuevo_stop = lvl
                     if not any(o["accion"] == "subir_stop" for o in ops):
-                        ops.insert(1, {"accion": "subir_stop", "nivel": lvl, "texto": f"Subir el stop a {_p(lvl)} (asegurás lo ganado y le das aire)."})
+                        ops.insert(1, {"accion": "subir_stop", "nivel": lvl, "texto": f"Subir la alarma de venta a {_p(lvl)} (asegurás lo ganado y le das aire)."})
                     else:
                         for o in ops:
                             if o["accion"] == "subir_stop":
-                                o.update(nivel=lvl, texto=f"Subir el stop a {_p(lvl)} (asegurás lo ganado y le das aire).")
+                                o.update(nivel=lvl, texto=f"Subir la alarma de venta a {_p(lvl)} (asegurás lo ganado y le das aire).")
                     sug = "subir_stop"
-                    por_que = (f"Llegó al objetivo, pero revisé todo y solo {a_vender} de {len(puntos)} cosas dicen vender: mantené y subí el stop "
+                    por_que = (f"Llegó al objetivo, pero revisé todo y solo {a_vender} de {len(puntos)} cosas dicen vender: mantené y subí la alarma de venta "
                                f"a {_p(lvl)} para no devolver la ganancia.")
             else:
                 por_que = (por_que or "") + f" Revisé todo: {a_vender} de {len(puntos)} cosas dicen vender."
@@ -284,7 +284,7 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         elif piso and precio <= piso * 1.03:
             titular, color = f"ATENTO · a menos de 3% del stop ({_p(piso)})", "amar"
         elif sug == "subir_stop" and stop_txt:
-            titular, color = f"MANTENER{' hasta el ' + fv(vence) if vence else ''} · subí el stop a {_p(stop_txt['nivel'])}", "verde"
+            titular, color = f"MANTENER{' hasta el ' + fv(vence) if vence else ''} · alarma de venta en {_p(stop_txt['nivel'])}", "verde"
         else:
             titular, color = f"MANTENER{' hasta el ' + fv(vence) if vence else ''}", "verde"
         out[tk] = {"ticker": tk, "titular": titular, "color": color, "fecha_compra": f_compra, "vence": vence, "plazo_motivo": plazo_motivo, "dias": dias, "total": total,
