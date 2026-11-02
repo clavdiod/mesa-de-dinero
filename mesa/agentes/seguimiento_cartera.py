@@ -151,13 +151,17 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
             nuevo_stop = round(compra_p, 2)
         elif compra_p and res is not None and res >= 6:
             nuevo_stop = round(compra_p, 2)
-        if compra_p and piso and piso >= compra_p and res is not None and res >= 8:
-            nuevo_stop = round(compra_p + (precio - compra_p) / 2, 2)  # ya no pierde: ahora se asegura la mitad de lo ganado
+        # 02/11 (Clau: "no quiero no perder, quiero ganar"): desde +5% la alarma asegura la MITAD de lo mejor que llegó
+        # a ganar, no el precio de compra. Si sigue subiendo, la alarma sube con el máximo.
+        mx_ = max(float(x.get("max_desde_compra") or precio), precio)
+        if compra_p and res is not None and res >= 5:
+            nuevo_stop = max(nuevo_stop or 0, round(compra_p + (mx_ - compra_p) / 2, 2))
         if nuevo_stop and piso and nuevo_stop <= piso:
             nuevo_stop = None  # el stop que tenés ya protege eso
         if nuevo_stop:
             ops.append({"accion": "subir_stop", "nivel": nuevo_stop,
-                        "texto": f"Subir la alarma de venta a {_p(nuevo_stop)}" + (" (tu precio de compra: ya no podés perder)." if nuevo_stop == round(compra_p, 2)
+                        "texto": f"Subir la alarma de venta a {_p(nuevo_stop)}" + (" (tu precio de compra: ya no podés perder)." if nuevo_stop == round(compra_p, 2) else
+                                                                     f" (asegurás +{_m((nuevo_stop / compra_p - 1) * 100, 1)}%: la mitad de lo mejor que llegó a ganar)." if compra_p and nuevo_stop > compra_p * 1.01
                                                                      else " (asegurás parte de la ganancia).")})
         if cant >= 2:
             ops.append({"accion": "vender_mitad", "cantidad": cant // 2, "texto": f"Vender la mitad ({cant // 2}) y dejar correr el resto."})
@@ -178,7 +182,7 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         elif cons.startswith("Dejar correr") and compra_p:
             # stop que sube solo: nunca debajo de tu compra ni del objetivo cumplido, y a ~6% del máximo alcanzado
             oi = x.get("objetivo_idea") or 0
-            lvl = round(max(compra_p, oi * 0.97, (mx or precio) * 0.94), 2)
+            lvl = round(max(compra_p, oi * 0.97, (mx or precio) * 0.94, compra_p + ((mx or precio) - compra_p) / 2), 2)
             if lvl < precio and not (piso and lvl <= piso):
                 nuevo_stop = lvl
                 ops = [o for o in ops if o["accion"] != "subir_stop"]
