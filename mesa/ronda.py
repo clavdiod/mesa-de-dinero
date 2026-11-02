@@ -757,6 +757,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         senales += hechos2
         vetos |= {s_.ticker for s_ in hechos2 if s_.veto}
     evaluados = []
+    from .agentes import comite as _com_hist
     for tk in preseleccion:
         if tk in ya_propuestos:
             continue
@@ -765,7 +766,9 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         aportes = [(s.direccion * s.fuerza * reg.peso(s.agente, s.fuerza), s.agente) for s in sh if s.direccion > 0]
         # 29/10: solo propuestas de 2 semanas o más (comprar y vender en la semana deja poco después de comisiones).
         # La idea la tiene que empujar un analista que trabaja a ese plazo; los de corto plazo solo confirman.
-        largos = [a_ for a_ in aportes if riesgo.plazo_de(a_[1]) >= riesgo.MIN_RUEDAS_PROPUESTA]
+        # 02/11 (Clau): manda el análisis probado con la historia. El Comprador de pánico, el Economista y el Corresponsal
+        # no pueden proponer una compra solos: solo confirman la idea de un analista que pasó el examen con la historia.
+        largos = [a_ for a_ in aportes if riesgo.plazo_de(a_[1]) >= riesgo.MIN_RUEDAS_PROPUESTA and a_[1] in _com_hist.PROPONEN]
         if not largos:
             continue
         principal = max(largos)[1]
@@ -837,6 +840,15 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         from .agentes import comite as _com
         pesos_v = _com.pesos_vivos([] if simular else (almacen.get("pronosticos/libreta") or []),
                                    {} if simular else (almacen.get("ranking/stats") or {}))
+        # el gráfico de cada candidato (para el filtro de acciones argentinas que siguen cayendo)
+        from .agentes.estructura import leer as _leer_est
+        for e_ in debatidos:
+            try:
+                t_ = ctx.titulo(e_["ticker"]) or {}
+                e_["estructura"] = _leer_est(ctx.cache.velas(e_["ticker"]) if ctx.cache else [], t_.get("ultimo"), t_.get("grupo"))
+                e_["grupo"] = t_.get("grupo")
+            except Exception:
+                pass
         elegidos, acta = _com.decidir(debatidos, pesos_v, cupo)
         previo_c = {} if simular else (almacen.get("ui/estado") or {}).get("comite") or {}
         actas = [a for a in (previo_c.get("acta") or []) if previo_c.get("fecha") == hoy.isoformat() and a["ticker"] not in {x["ticker"] for x in acta}]

@@ -13,6 +13,13 @@ from __future__ import annotations
 
 from datetime import date
 
+# 02/11: los que pueden PROPONER una compra (probados con años de historia o con el análisis técnico medido).
+# El resto (Comprador de pánico, Economista, Corresponsal, Anticipo NY...) solo confirma o frena.
+PROPONEN = {"anticipador_arg", "anticipador", "anticipador_mundo", "ganadores", "profesionales", "wallstreet", "tecnico",
+            "oportunidades_mediano", "historiador"}
+HISTORIA = {"anticipador_arg", "anticipador", "anticipador_mundo", "ganadores", "profesionales", "wallstreet", "tecnico"}
+SOLO_CONFIRMA = {"panico": 0.5, "mundo": 0.7, "anticipo": 0.7, "adr": 0.7}  # tope de su peso
+
 ORIGENES = ("anticipador", "anticipador_arg", "anticipador_mundo", "anticipo", "mundo", "ganadores", "profesionales")
 MINIMO_FAVOR, RELACION, MIN_AGENTES = 1.0, 1.6, 2
 
@@ -49,15 +56,26 @@ def votar(e: dict, pesos: dict) -> dict:
             mejor[s["agente"]] = {"v": s["direccion"] * s["fuerza"], "texto": s.get("texto", "")}
     votos = []
     for ag, m in mejor.items():
-        p = (pesos.get(ag) or {}).get("peso", 1.0)
+        p = min((pesos.get(ag) or {}).get("peso", 1.0), SOLO_CONFIRMA.get(ag, 9))
         votos.append({"agente": ag, "nombre": nombre(ag), "dir": 1 if m["v"] > 0 else -1, "fuerza": round(abs(m["v"]), 2),
                       "peso": p, "voto": round(m["v"] * p, 2), "acierto": (pesos.get(ag) or {}).get("acierto"),
                       "texto": m["texto"][:200]})
     favor = round(sum(v["voto"] for v in votos if v["voto"] > 0), 2)
     contra = round(-sum(v["voto"] for v in votos if v["voto"] < 0), 2)
     n_favor = sum(1 for v in votos if v["voto"] > 0)
-    ok = n_favor >= MIN_AGENTES and favor >= MINIMO_FAVOR and favor >= RELACION * contra
-    if n_favor < MIN_AGENTES:
+    n_hist = sum(1 for v in votos if v["voto"] > 0 and v["agente"] in HISTORIA)
+    eco_contra = any(v["agente"] == "economista" and v["voto"] < 0 for v in votos)
+    est = e.get("estructura") or {}
+    cayendo_arg = e.get("grupo") == "acciones" and (est.get("estado") == "cayendo" or est.get("minimo_anual") == "perforado")
+    ok = (n_favor >= MIN_AGENTES + (1 if eco_contra else 0) and favor >= MINIMO_FAVOR and favor >= RELACION * contra
+          and n_hist >= 1 and not cayendo_arg)
+    if n_hist < 1:
+        motivo = "Ningún analista probado con la historia (Anticipadores, Cazador, Wall Street, Técnico) la marca: no se propone."
+    elif cayendo_arg:
+        motivo = "Acción argentina que sigue cayendo (o perforó su mínimo anual): la historia dice esperar a que deje de caer."
+    elif eco_contra and n_favor < MIN_AGENTES + 1:
+        motivo = "El Economista está en contra del sector: hace falta un analista más a favor."
+    elif n_favor < MIN_AGENTES:
         motivo = "Solo un analista a favor: hace falta que otro con otro método lo confirme."
     elif favor < MINIMO_FAVOR:
         motivo = f"Votos a favor flojos ({favor:.1f}): no alcanza el mínimo ({MINIMO_FAVOR})."
