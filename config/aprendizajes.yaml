@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-02'
+  caso: 'RSI, MACD, tendencia y estructura correctiva: qué dice cada una'
+  que_paso: '10 años, 20 ruedas (44.500 casos en acciones argentinas, 65.900 en CEDEARs). Acciones argentinas: MACD positivo +2,2% contra negativo +0,2%; MACD que cruza hacia abajo -0,4%, hacia arriba +1,6%; RSI arriba de 70 +2,6% (el mejor); corrección dentro de tendencia alcista con RSI bajo 40: +7,4% promedio, pero suben solo 41 de cada 100. CEDEARs: RSI bajo 30 +2,0%, arriba de 70 +1,0%; tendencia bajista +2,3% contra alcista +1,0% (rebotan; ojo, la muestra solo tiene empresas que siguen cotizando).'
+  leccion: Cada indicador dice algo distinto según el mercado. En Argentina manda el impulso (MACD positivo, RSI alto); en EE.UU. los excesos se corrigen (RSI bajo es oportunidad, RSI alto rinde menos).
+  cambio: 'Toda potencial compra muestra: contexto del mercado, tendencia, estructura correctiva, RSI y MACD con lo que significa cada uno según la historia; un MACD negativo o que cruza hacia abajo en una acción argentina cuenta como alerta en contra.'
+- fecha: '2026-11-02'
   caso: 'Qué sirve del gráfico: pisos, techos, máximo del año y volumen'
   que_paso: 'Se midió en 10 años (32.500 casos en acciones argentinas, 48.200 en CEDEARs, 20 ruedas). Acciones argentinas: comprar a menos de 3% de un piso -0,7% (el piso se perforó 70 de cada 100 veces); cerca del máximo del año +1,6% contra +1,2% lejos; día con el doble de volumen +2,8% contra +0,5%. CEDEARs: cerca del piso +1,1% (se perfora 50%); cerca del máximo del año +0,9% contra +1,6% lejos; volumen alto +1,5% contra +1,3%.'
   leccion: '''Comprar en el piso'' no funciona en Argentina: los pisos se rompen. Lo que funciona es el volumen (la plata entrando) y, en acciones argentinas, la fuerza (cerca del máximo). En CEDEARs pasa lo contrario: cerca del máximo rinde menos. La regla del 20% más alto del año se corrigió: vale solo para CEDEARs.'

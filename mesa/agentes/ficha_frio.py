@@ -13,7 +13,56 @@ import math
 import statistics as st
 
 
-def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None, votos: list[dict], grupo: str | None = None) -> dict | None:
+def _ema(x: list[float], n: int) -> list[float]:
+    k, out = 2 / (n + 1), [x[0]]
+    for v in x[1:]:
+        out.append(v * k + out[-1] * (1 - k))
+    return out
+
+
+def lecturas(c: list[float], grupo: str | None) -> dict:
+    """Tendencia, estructura correctiva, RSI y MACD, con lo que rindió cada lectura en 10 años (probado 02/11)."""
+    arg = grupo == "acciones"
+    d = [b - a for a, b in zip(c[-200:], c[-199:])]
+    au = _ema([max(x, 0) for x in d], 27)[-1]; ad = _ema([max(-x, 0) for x in d], 27)[-1]
+    rsi = 100 - 100 / (1 + au / ad) if ad else 100
+    m = [a - b for a, b in zip(_ema(c, 12), _ema(c, 26))]; sg = _ema(m, 9); h = [a - b for a, b in zip(m, sg)]
+    m50, m200 = st.mean(c[-50:]), st.mean(c[-200:]) if len(c) >= 200 else st.mean(c)
+    tend = "alcista" if c[-1] > m50 > m200 else "bajista" if c[-1] < m50 < m200 else "mixta"
+    corr = c[-1] / max(c[-60:]) - 1
+    correctiva = m50 > m200 and -0.20 <= corr <= -0.08
+    out = {"rsi": round(rsi), "macd": "positivo" if h[-1] > 0 else "negativo", "macd_cruce": ("arriba" if h[-1] > 0 >= h[-2] else "abajo" if h[-1] < 0 <= h[-2] else None),
+           "tendencia": tend, "correctiva": correctiva, "correccion_pct": round(corr * 100, 1)}
+    t, buenas, malas = [], [], []
+    t.append(f"Tendencia {tend} (precio contra sus promedios de 50 y 200 ruedas)")
+    if correctiva:
+        t.append(f"estructura correctiva: corrige {abs(corr) * 100:.0f}% dentro de una tendencia alcista")
+    t.append(f"RSI {rsi:.0f}")
+    t.append(f"MACD {out['macd']}" + (f" (cruzó hacia {out['macd_cruce']})" if out["macd_cruce"] else ""))
+    if arg:  # acciones argentinas, 10 años, 20 ruedas
+        if out["macd"] == "positivo":
+            buenas.append("MACD positivo: en acciones argentinas rindió +2,2% a un mes contra +0,2% con MACD negativo")
+        else:
+            malas.append("MACD negativo: en acciones argentinas rindió +0,2% a un mes contra +2,2% con MACD positivo")
+        if out["macd_cruce"] == "abajo":
+            malas.append("el MACD acaba de cruzar hacia abajo (rindió -0,4% a un mes)")
+        if rsi > 70:
+            buenas.append("RSI arriba de 70: en acciones argentinas no es 'caro', rindió +2,6% (lo que sube sigue subiendo)")
+        if correctiva and rsi < 40:
+            buenas.append("corrección dentro de tendencia alcista con RSI bajo: rindió +7,4% promedio (pero solo 4 de cada 10 suben: pocas muy grandes)")
+    else:  # CEDEARs
+        if rsi < 30:
+            buenas.append("RSI bajo 30 (sobrevendido): en CEDEARs rindió +2,0% a un mes contra +1,4% promedio")
+        if rsi > 70:
+            malas.append("RSI arriba de 70 (sobrecomprado): en CEDEARs rindió +1,0% contra +1,4% promedio")
+        if out["macd_cruce"] == "arriba":
+            buenas.append("el MACD acaba de cruzar hacia arriba (rindió +1,8%)")
+    out.update(texto="; ".join(t), buenas=buenas, malas=malas)
+    return out
+
+
+def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None, votos: list[dict], grupo: str | None = None,
+          contexto: str | None = None) -> dict | None:
     c = [v["cierre"] for v in velas if v.get("cierre")] + [float(precio)]
     if len(c) < 80:
         return None
@@ -89,6 +138,13 @@ def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None,
     if obj and obj > mx1 * 1.02:
         out["objetivo_irreal"] = True
         malas.append(f"el objetivo ({obj:,.0f}) está arriba del máximo del último año ({mx1:,.0f})".replace(",", "."))
+    try:
+        lec = lecturas(c, grupo)
+        out["lecturas"] = lec
+        malas.extend(lec["malas"])
+    except Exception:
+        pass
+    out["contexto"] = contexto
     out["entrada_cara"] = caro
     # precio razonable: donde hasta el máximo del año hay al menos 2 veces el riesgo hasta el stop, y no estirado
     razon = min(m20 * 1.02, (mx1 + 2 * stop) / 3 if stop else m20)
@@ -134,6 +190,11 @@ def texto(f: dict | None) -> str:
         u = f["subida"]
         p.append(f"Cuánto puede subir según la historia: lo típico {str(u['tipica_pct']).replace('.', ',')}% en un mes, y 1 de cada 4 veces {str(u['buena_pct']).replace('.', ',')}%; "
                  f"arriesgás {str(u['riesgo_pct']).replace('.', ',')}% hasta el stop.")
+    if f.get("contexto"):
+        p.append(f"Mercado: {f['contexto']}.")
+    lec = f.get("lecturas")
+    if lec:
+        p.append(lec["texto"] + "." + (" A favor: " + "; ".join(lec["buenas"]) + "." if lec["buenas"] else ""))
     if f.get("max_1a"):
         p.append(f"Máximo del año {n(f['max_1a'])} ({str(f['hasta_max_pct']).replace('.', ',')}% arriba)" + (f"; próximo techo {n(f['techo']['nivel'])} ({f['techo']['toques']} toques)" if f.get("techo") else "")
                  + (f"; piso más cercano {n(f['piso']['nivel'])} ({f['piso']['toques']} toques)" if f.get("piso") else "") + ".")
