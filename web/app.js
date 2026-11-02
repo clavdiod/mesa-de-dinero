@@ -505,6 +505,7 @@ function abrirDecidir(tk) {
     ${g.total ? `<p class="tenue" style="margin:4px 0">Día ${g.dias} de ${g.total} (hasta el ${esc(fecha(g.vence))}).</p>` : ""}
     <p style="margin:6px 0"><b>Hoy:</b> ${g.cambios.map(esc).join(" ")}</p>
     ${g.compra_punta ? `<p class="tenue">⚠️ ${esc(g.compra_punta)}</p>` : ""}
+    ${(ESTADO.estado?.graficos || {})[tk] ? `<p style="margin:6px 0"><button class="chico" id="ver-graf">📈 Ver gráfico (soportes, máximos, tu plan)</button></p><div id="graf-dec"></div>` : ""}
     ${g.por_que ? `<p style="margin:6px 0"><b>Por qué:</b> ${esc(g.por_que)}</p>` : ""}
     ${g.estructura ? `<p class="tenue"><b>Gráfico:</b> ${esc(g.estructura)}</p>` : ""}
     <div id="decidir-ops">${g.opciones.map((o, i) => `<button class="opcion ${o.sugerida ? "sug" : ""}" data-op="${i}"><b>${esc(NOM_ACC[o.accion])}</b>${o.sugerida ? ' <span class="chip verde">sugerido</span>' : ""}<small>${esc(o.texto)}</small></button>`).join("")}</div>
@@ -512,6 +513,7 @@ function abrirDecidir(tk) {
     <p class="tenue" style="margin-bottom:0">La mesa no opera: lo hacés en tu broker y acá anotás lo que hiciste. <button class="chico" id="decidir-cerrar">Después</button></p>`;
   $("#decidir-fondo").style.display = "";
   $("#decidir-cerrar").onclick = cerrarDecidir;
+  const bg = $("#ver-graf"); if (bg) bg.onclick = () => { bg.remove(); dibujarGrafico($("#graf-dec"), tk); };
   caja.querySelectorAll("[data-op]").forEach((b) => b.onclick = () => {
     // la que elegiste queda marcada (azul); el verde sigue siendo lo que sugiere la mesa
     caja.querySelectorAll("[data-op]").forEach((x) => { x.classList.remove("elegida"); x.querySelector(".chip-elegida")?.remove(); });
@@ -1604,3 +1606,43 @@ if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
 cargar().then(cargarDisponibles); pintarRanking().catch(() => {}); pintarSimulacion();
 setInterval(() => { if (!document.hidden && !BLOQUEADA) { cargar(); pintarSimulacion(); } }, 60000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden && !BLOQUEADA) cargar(); });
+
+
+// ---------- gráfico de velas con soportes, máximos y tu plan (como los análisis técnicos) ----------
+let LWC = null;
+function cargarLWC() {
+  if (LWC) return LWC;
+  LWC = new Promise((ok, mal) => { const sc = document.createElement("script");
+    sc.src = "https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js";
+    sc.onload = () => ok(window.LightweightCharts); sc.onerror = mal; document.head.append(sc); });
+  return LWC;
+}
+async function dibujarGrafico(caja, tk) {
+  const g = (ESTADO.estado?.graficos || {})[tk]; if (!g || !caja) return;
+  caja.innerHTML = '<p class="tenue">Cargando gráfico…</p>';
+  let L; try { L = await cargarLWC(); } catch (_) { caja.innerHTML = '<p class="tenue">No se pudo cargar el gráfico.</p>'; return; }
+  const css = getComputedStyle(document.documentElement), col = (v, d) => (css.getPropertyValue(v).trim() || d);
+  caja.innerHTML = `<div class="graf" style="height:320px"></div><div class="graf-ley tenue"></div>`;
+  const ch = L.createChart(caja.querySelector(".graf"), { autoSize: true, layout: { background: { color: "transparent" }, textColor: col("--tenue", "#888") },
+    grid: { vertLines: { visible: false }, horzLines: { color: col("--borde", "#333") } }, rightPriceScale: { borderVisible: false }, timeScale: { borderVisible: false } });
+  const velas = ch.addCandlestickSeries({ upColor: col("--verde", "#22c55e"), downColor: col("--rojo", "#ef4444"), borderVisible: false,
+    wickUpColor: col("--verde", "#22c55e"), wickDownColor: col("--rojo", "#ef4444") });
+  velas.setData(g.velas.map(([t, o, h, l, c]) => ({ time: t, open: o, high: h, low: l, close: c })));
+  // promedio de 20 ruedas
+  const pm = ch.addLineSeries({ color: col("--azul", "#60a5fa"), lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+  pm.setData(g.velas.slice(19).map((_, i) => ({ time: g.velas[i + 19][0], value: g.velas.slice(i, i + 20).reduce((a, x) => a + x[4], 0) / 20 })));
+  const linea = (precio, color, titulo, estilo = 2) => precio && velas.createPriceLine({ price: precio, color, lineWidth: 1, lineStyle: estilo, axisLabelVisible: true, title: titulo });
+  linea(g.max_1a, col("--tenue", "#888"), "máx. año", 0); linea(g.min_1a, col("--tenue", "#888"), "mín. año", 0);
+  (g.resistencias || []).slice(0, 2).forEach((r) => linea(r.nivel, col("--amar", "#f59e0b"), `techo (${r.toques})`));
+  (g.soportes || []).slice(0, 2).forEach((r) => linea(r.nivel, col("--verde", "#22c55e"), `piso (${r.toques})`));
+  linea(g.compra, col("--txt", "#ddd"), "tu compra", 1); linea(g.alarma, col("--rojo", "#ef4444"), "alarma de venta", 0); linea(g.objetivo, col("--verde", "#22c55e"), "objetivo", 0);
+  if (g.linea) {  // línea de tendencia prolongada hasta hoy
+    const [f1, p1] = g.linea.p1, [f2, p2] = g.linea.p2, idx = (f) => g.velas.findIndex((x) => x[0] === f), i1 = idx(f1), i2 = idx(f2), iu = g.velas.length - 1;
+    if (i1 >= 0 && i2 > i1) { const pend = (p2 - p1) / (i2 - i1);
+      const tl = ch.addLineSeries({ color: g.linea.tipo === "bajista" ? col("--rojo", "#ef4444") : col("--verde", "#22c55e"), lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
+      tl.setData([{ time: f1, value: p1 }, { time: g.velas[iu][0], value: p1 + pend * (iu - i1) }]); }
+  }
+  if (g.fecha_compra) velas.setMarkers([{ time: g.velas.find((x) => x[0] >= g.fecha_compra)?.[0] || g.fecha_compra, position: "belowBar", color: col("--azul", "#60a5fa"), shape: "arrowUp", text: "compra" }]);
+  ch.timeScale().fitContent();
+  caja.querySelector(".graf-ley").innerHTML = `Velas de un año · línea azul: promedio de 20 ruedas · <span style="color:var(--amar)">techos</span> y <span style="color:var(--verde)">pisos</span> donde el precio rebotó (entre paréntesis, cuántas veces)${g.linea ? ` · línea ${g.linea.tipo} punteada` : ""}.`;
+}

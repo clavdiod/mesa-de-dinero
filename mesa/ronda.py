@@ -1101,6 +1101,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "protecciones": prot,
         "comite": comite_estado,
         "proyeccion_cartera": proy_cartera,
+        "graficos": _graficos(ctx, cartera, seg_cartera),
         "seguimiento_cartera": seg_cartera,
         "memoria": None if simular else (almacen.get("memoria/papeles") or {}),
         "pronosticos": libreta[:200],
@@ -1164,6 +1165,24 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
 
 def _ar(x: float) -> str:
     return f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _graficos(ctx, cartera: list[dict], seg: dict) -> dict:
+    """Velas de un año y niveles (máx/mín, soportes, resistencias, línea de tendencia, tu plan) de cada papel de tu cartera."""
+    from .agentes import grafico
+    out = {}
+    for pos in cartera:
+        tk = str(pos.get("ticker", "")).upper()
+        t = ctx.titulo(tk) or {}
+        if not tk or t.get("grupo") in ("ons", "soberanos", "letras", "bonos", "cauciones") or not ctx.cache:
+            continue
+        try:
+            g = grafico.armar(ctx.cache.velas(tk), t.get("ultimo") or 0, pos, (seg or {}).get(tk))
+            if g:
+                out[tk] = g
+        except Exception as ex:
+            print(f"[gráfico] {tk}: {ex}")
+    return out
 
 
 def _alertas_niveles(ctx: Contexto, lista: list[dict], almacen, simular: bool) -> list[dict]:
