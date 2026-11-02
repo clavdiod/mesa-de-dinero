@@ -896,8 +896,19 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     cap = {**config()["capital"], **{k: v for k, v in (almacen.get("usuario/capital") or {}).items() if v}}
     un_r = float(cap.get("monto_ars", 0)) * float(cap.get("riesgo_pct", cap.get("riesgo_por_operacion_pct", 1))) / 100
     nuevas = []
+    from .agentes import ficha_frio as _ff
     for e in elegidos:
         pl = e["plan"]
+        try:  # 02/11: la ficha en frío va con la propuesta, ANTES de que decidas
+            t_ = ctx.titulo(e["ticker"]) or {}
+            e["ficha_frio"] = _ff.ficha(ctx.cache.velas(e["ticker"]) if ctx.cache else [], t_.get("ultimo") or pl["entrada"], pl,
+                                        e.get("estructura"), (e.get("comite") or {}).get("votos") or [])
+            e["ficha_txt"] = _ff.texto(e["ficha_frio"])
+        except Exception as ex_:
+            print(f"[ficha en frío] {e['ticker']}: {ex_}")
+        if (e.get("ficha_frio") or {}).get("veredicto") == "en contra":
+            print(f"[ficha en frío] {e['ticker']} no se propone: {e['ficha_txt']}")
+            continue  # si los números en frío no acompañan, no llega a vos
         riesgo_unit = pl["entrada"] - pl["stop"]
         cantidad = int(un_r * pl["tamano_r"] / riesgo_unit) if riesgo_unit > 0 and un_r else None
         nuevas.append({**e, "fecha": hoy.isoformat(), "hora": ctx.hora, "decision": "pendiente",

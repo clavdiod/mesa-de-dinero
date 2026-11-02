@@ -51,6 +51,7 @@ function tarjeta(p) {
       <span class="chip ${p.decision === "aprobada" ? "verde" : p.decision === "rechazada" ? "rojo" : ""}">${esc(p.decision)}</span></div>
     ${seg.consejo ? `<div class="consejo ${CONSEJO_COL[seg.consejo.accion] || ""}"><b>${esc(CONSEJO_TXT[seg.consejo.accion] || seg.consejo.accion)}</b> ${esc(seg.consejo.texto)} <span class="tenue">(${esc(seg.consejo.hora || "")})</span></div>` : ""}
     <p>${esc(p.resumen_jefe || "")} <span class="chip ${p.confianza === "alta" ? "verde" : "amar"}">confianza ${esc(p.confianza)}</span></p>
+    ${p.ficha_txt ? `<div class="ficha-frio ${p.ficha_frio?.veredicto === "acompañan" ? "ok" : p.ficha_frio?.veredicto === "en contra" ? "mal" : "duda"}"><b>🧊 En frío, antes de comprar:</b> ${esc(p.ficha_txt)}</div>` : ""}
     <div class="grilla">
       <div class="met"><span>Compra límite</span><b>${num(pl.entrada)}</b></div>
       <div class="met"><span>Objetivo</span><b style="color:var(--verde)">${num(pl.objetivo)}</b></div>

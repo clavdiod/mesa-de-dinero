@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-02'
+  caso: El análisis en frío llegó después de la compra (YPFD)
+  que_paso: Clau compró YPFD a $8.135 siguiendo la propuesta del Comité. El análisis de qué podía pasar a un mes (rango, casos parecidos, analistas en contra) se hizo recién cuando ya perdía 8,7%.
+  leccion: 'Una propuesta sin su análisis en frío es una propuesta a medias: el que decide tiene que ver los números antes de comprar, no después.'
+  cambio: 'Toda propuesta del Comité trae ''🧊 En frío, antes de comprar'': rango normal a un mes, qué pasó en momentos parecidos del mismo papel (cuántas veces llegó al objetivo y cuántas tocó el stop), el gráfico y quiénes están en contra, con un veredicto. Si los números no acompañan (dos o más alertas), la propuesta no llega.'
+- fecha: '2026-11-02'
   caso: 'YPFD, ALUA y CEPU: compras del Comprador de pánico en plena caída'
   que_paso: Las tres se aprobaron el 29-30/10 porque el riesgo país había saltado (Comprador de pánico) y el Corresponsal acompañó; el Economista estaba en contra de acciones locales y energía. El 30/10 se probó que comprar en plena caída rinde peor que esperar a que dejen de caer. El 02/11 el riesgo país saltó de 741 a 787 y las tres cayeron juntas; YPFD tocó su stop (-8,7%).
   leccion: 'Las tres eran la misma apuesta. Y la idea salió de un agente que reacciona al miedo, no de uno probado con la historia. Clau: ''prima el análisis técnico y el historial''.'

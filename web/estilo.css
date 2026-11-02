@@ -217,3 +217,7 @@ details.corto-plazo { margin-top: 12px; border-top: 1px solid var(--borde); padd
 details.corto-plazo > summary { cursor: pointer; list-style: none; }
 details.mas-mercado { margin: 14px 0; border: 1px solid var(--borde); border-radius: var(--r); padding: 10px 12px; }
 details.mas-mercado > summary { cursor: pointer; font-size: 17px; }
+.ficha-frio { border-left: 3px solid var(--borde); padding: 8px 10px; margin: 8px 0; border-radius: 8px; background: var(--bg); }
+.ficha-frio.ok { border-left-color: var(--verde); }
+.ficha-frio.duda { border-left-color: var(--amar); }
+.ficha-frio.mal { border-left-color: var(--rojo); }
