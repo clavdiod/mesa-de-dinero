@@ -504,6 +504,7 @@ function abrirDecidir(tk) {
     ${g.total ? `<p class="tenue" style="margin:4px 0">Día ${g.dias} de ${g.total} (hasta el ${esc(fecha(g.vence))}).</p>` : ""}
     <p style="margin:6px 0"><b>Hoy:</b> ${g.cambios.map(esc).join(" ")}</p>
     ${g.compra_punta ? `<p class="tenue">⚠️ ${esc(g.compra_punta)}</p>` : ""}
+    ${g.por_que ? `<p style="margin:6px 0"><b>Por qué:</b> ${esc(g.por_que)}</p>` : ""}
     ${g.estructura ? `<p class="tenue"><b>Gráfico:</b> ${esc(g.estructura)}</p>` : ""}
     <div id="decidir-ops">${g.opciones.map((o, i) => `<button class="opcion ${o.sugerida ? "sug" : ""}" data-op="${i}"><b>${esc(NOM_ACC[o.accion])}</b>${o.sugerida ? ' <span class="chip verde">sugerido</span>' : ""}<small>${esc(o.texto)}</small></button>`).join("")}</div>
     <div id="decidir-form"></div>

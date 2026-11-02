@@ -280,7 +280,8 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         resto = (total - dias) if (total is not None and dias is not None) else None
         stop_txt = next((o for o in ops if o["accion"] == "subir_stop"), None)
         if sug == "vender_todo":
-            titular, color = ("VENDER HOY · estás devolviendo la ganancia" if devolviendo else "SALIR HOY"), "rojo"
+            titular, color = ("VENDER HOY · estás devolviendo la ganancia" if devolviendo else
+                              f"VENDER · tocó el stop del plan ({_p(piso)})" if piso and precio <= piso else "SALIR HOY"), "rojo"
         elif sug == "vender_mitad":
             titular, color = ("VENDER LA MITAD HOY · " + ("estás devolviendo la ganancia" if devolviendo else "llegó al objetivo" if cons.startswith("Tomar") else "")).rstrip(" ·"), "amar"
         elif resto == 1:
