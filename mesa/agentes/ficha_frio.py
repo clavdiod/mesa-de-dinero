@@ -30,6 +30,7 @@ def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None,
             llega = obj and any(x / c[i] >= obj / precio for x in fut)
             toca = stop and any(x / c[i] <= stop / precio for x in fut)
             casos.append((fut[-1] / c[i] - 1, llega, toca))
+    malas = []
     # 02/11 (regla de Clau): ¿el precio de entrada es razonable? ¿cuánto suele subir desde acá?
     subidas = []
     for i in range(40, len(c) - 21):
@@ -52,6 +53,20 @@ def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None,
         out["subida"] = {"tipica_pct": round(tip * 100, 1), "buena_pct": round(buena * 100, 1), "riesgo_pct": round(riesgo * 100, 1)}
         if tip < 1.5 * riesgo:
             caro.append(f"desde precios así suele subir {tip * 100:.1f}% en un mes (1 de cada 4 veces, {buena * 100:.1f}%) y arriesgás {riesgo * 100:.1f}% hasta el stop: no paga el riesgo".replace(".", ","))
+    # 02/11 (revisión de las compras de Clau): el techo real es el máximo del último año. Si hasta ahí no hay al menos
+    # 2 veces lo que se arriesga hasta el stop, la entrada no paga. Y el objetivo nunca puede estar arriba de ese techo.
+    mx1 = max(c[-250:])
+    hasta_max = mx1 / entrada - 1
+    out["max_1a"] = round(mx1, 2); out["hasta_max_pct"] = round(hasta_max * 100, 1)
+    pct1 = sum(1 for x in c[-250:] if x < entrada) / len(c[-250:]) * 100
+    out["percentil_1a"] = round(pct1)
+    if stop and hasta_max < 2 * (1 - stop / entrada):
+        caro.append(f"hasta su máximo del último año ({mx1:,.0f}) hay solo {hasta_max * 100:.1f}% y arriesgás {(1 - stop / entrada) * 100:.1f}%: no paga".replace(",", "X").replace(".", ",").replace("X", "."))
+    if pct1 >= 80:
+        caro.append(f"la entrada está en el {100 - pct1:.0f}% más alto de los precios del último año")
+    if obj and obj > mx1 * 1.02:
+        out["objetivo_irreal"] = True
+        malas.append(f"el objetivo ({obj:,.0f}) está arriba del máximo del último año ({mx1:,.0f})".replace(",", "."))
     out["entrada_cara"] = caro
     out["entrada_mejor"] = round(min(entrada, m20), 2) if caro else None
     if len(casos) >= 8:
@@ -65,7 +80,6 @@ def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None,
     out["grafico"] = (estructura or {}).get("estado")
     # veredicto simple: ¿los números acompañan?
     h = out.get("historia") or {}
-    malas = []
     if h and h["toca_stop"] > h["llega_obj"]:
         malas.append(f"en casos parecidos tocó el stop más veces ({h['toca_stop']}%) que el objetivo ({h['llega_obj']}%)")
     if h and h["mediana_pct"] < 0:
