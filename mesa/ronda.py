@@ -945,8 +945,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         alertas_seg = seguimiento.revisar(reg, ctx, por_ticker, lambda ss: puntaje_ticker(ss, reg, ctx))
         # 30/10: lo que tenés en tu cartera lo avisa SOLO el seguimiento de tu cartera (que revisa todo antes de decir
         # "vendé" y respeta tu stop). Antes llegaban dos avisos distintos del mismo papel (YPFD: "salir" con stop en 7.470).
-        mios_ = {str(c.get("ticker", "")).upper() for c in cartera}
-        alertas_seg = [a_ for a_ in alertas_seg if a_["ticker"].split(" ")[0] not in mios_]
+        # 02/11: y lo que NO tenés (posiciones en papel del Comité, como VIST) no manda avisos: se ve en Resultados.
+        alertas_seg = []
         opinion_cartera = seguimiento.opinion_cartera(ctx, cartera, por_ticker, lambda ss: puntaje_ticker(ss, reg, ctx))
     except Exception as ex:
         print(f"[seguimiento] {ex}")
