@@ -13,7 +13,7 @@ import math
 import statistics as st
 
 
-def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None, votos: list[dict]) -> dict | None:
+def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None, votos: list[dict], grupo: str | None = None) -> dict | None:
     c = [v["cierre"] for v in velas if v.get("cierre")] + [float(precio)]
     if len(c) < 80:
         return None
@@ -62,8 +62,30 @@ def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None,
     out["percentil_1a"] = round(pct1)
     if stop and hasta_max < 2 * (1 - stop / entrada):
         caro.append(f"hasta su máximo del último año ({mx1:,.0f}) hay solo {hasta_max * 100:.1f}% y arriesgás {(1 - stop / entrada) * 100:.1f}%: no paga".replace(",", "X").replace(".", ",").replace("X", "."))
-    if pct1 >= 80:
+    # probado el 02/11 (10 años): en CEDEARs, cerca del máximo del año rinde menos (+0,9% contra +1,6% a 20 ruedas);
+    # en acciones argentinas NO (+1,6% contra +1,2%: ahí el que sube sigue subiendo). La regla vale solo para CEDEARs.
+    if pct1 >= 80 and grupo != "acciones":
         caro.append(f"la entrada está en el {100 - pct1:.0f}% más alto de los precios del último año")
+    # pisos y techos del gráfico (con 2+ toques)
+    try:
+        from .grafico import _niveles, _pivotes
+        w = c[-251:-1]
+        hi_, lo_ = _pivotes(w)
+        sop = [d for d in _niveles([w[j] for j in lo_], entrada, True) if d["toques"] >= 2 and d["nivel"] < entrada]
+        res = [d for d in _niveles([w[j] for j in hi_], entrada, False) if d["toques"] >= 2 and d["nivel"] > entrada]
+        if sop:
+            s_ = max(sop, key=lambda d: d["nivel"]); out["piso"] = s_
+            if grupo == "acciones" and entrada <= s_["nivel"] * 1.03:
+                malas.append(f"está pegada a un piso ({s_['nivel']:,.0f}) y en acciones argentinas los pisos se perforan 7 de cada 10 veces: el stop tiene que ir debajo".replace(",", "."))
+        if res:
+            out["techo"] = min(res, key=lambda d: d["nivel"])
+    except Exception:
+        pass
+    # volumen: en acciones argentinas, un día con el doble de volumen rindió +2,8% a 20 ruedas contra +0,5% (probado 02/11)
+    vols = [x.get("volumen") or 0 for x in velas[-21:]]
+    if len(vols) >= 21 and sum(vols[:-1]) > 0:
+        rel = vols[-1] / (sum(vols[:-1]) / 20)
+        out["volumen_rel"] = round(rel, 1)
     if obj and obj > mx1 * 1.02:
         out["objetivo_irreal"] = True
         malas.append(f"el objetivo ({obj:,.0f}) está arriba del máximo del último año ({mx1:,.0f})".replace(",", "."))
@@ -112,6 +134,11 @@ def texto(f: dict | None) -> str:
         u = f["subida"]
         p.append(f"Cuánto puede subir según la historia: lo típico {str(u['tipica_pct']).replace('.', ',')}% en un mes, y 1 de cada 4 veces {str(u['buena_pct']).replace('.', ',')}%; "
                  f"arriesgás {str(u['riesgo_pct']).replace('.', ',')}% hasta el stop.")
+    if f.get("max_1a"):
+        p.append(f"Máximo del año {n(f['max_1a'])} ({str(f['hasta_max_pct']).replace('.', ',')}% arriba)" + (f"; próximo techo {n(f['techo']['nivel'])} ({f['techo']['toques']} toques)" if f.get("techo") else "")
+                 + (f"; piso más cercano {n(f['piso']['nivel'])} ({f['piso']['toques']} toques)" if f.get("piso") else "") + ".")
+    if (f.get("volumen_rel") or 0) >= 2:
+        p.append(f"Hoy opera {str(f['volumen_rel']).replace('.', ',')} veces su volumen normal (en acciones argentinas eso rindió +2,8% a un mes contra +0,5%).")
     if f.get("contra"):
         p.append("En contra: " + ", ".join(f["contra"]) + ".")
     p.append({"cara": "❌ Entrada cara: " + "; ".join(f.get("entrada_cara") or []) + (f". Precio razonable: {n(f['entrada_mejor'])} o menos." if f.get("entrada_mejor") else "."),

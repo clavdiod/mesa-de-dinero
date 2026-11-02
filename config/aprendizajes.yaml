@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-02'
+  caso: 'Qué sirve del gráfico: pisos, techos, máximo del año y volumen'
+  que_paso: 'Se midió en 10 años (32.500 casos en acciones argentinas, 48.200 en CEDEARs, 20 ruedas). Acciones argentinas: comprar a menos de 3% de un piso -0,7% (el piso se perforó 70 de cada 100 veces); cerca del máximo del año +1,6% contra +1,2% lejos; día con el doble de volumen +2,8% contra +0,5%. CEDEARs: cerca del piso +1,1% (se perfora 50%); cerca del máximo del año +0,9% contra +1,6% lejos; volumen alto +1,5% contra +1,3%.'
+  leccion: '''Comprar en el piso'' no funciona en Argentina: los pisos se rompen. Lo que funciona es el volumen (la plata entrando) y, en acciones argentinas, la fuerza (cerca del máximo). En CEDEARs pasa lo contrario: cerca del máximo rinde menos. La regla del 20% más alto del año se corrigió: vale solo para CEDEARs.'
+  cambio: La ficha en frío de cada compra muestra el máximo del año, el próximo techo y el piso con sus toques, y el volumen del día. Alerta si una acción argentina está pegada a un piso (el stop tiene que ir debajo) y destaca el volumen alto. La regla de 'entrada en el 20% más alto del año' queda solo para CEDEARs.
+- fecha: '2026-11-02'
   caso: 'Revisión de las 5 compras: dónde estaba la entrada'
   que_paso: 'IBB se compró en el 2% más alto del año (+2% hasta su máximo). YPFD en el 19% más alto, con +13% hasta su máximo arriesgando 8%, y un objetivo ($10.130) arriba del máximo del año ($9.220). CEPU y TRAN en el piso del año pero en plena caída (-10% y -19% bajo su promedio). Solo ALUA entró bien: parte baja del año, sin caer, +37% hasta su techo.'
   leccion: 'Errores de novato: comprar cerca del techo con poco margen, objetivos imposibles y atajar cuchillos. Clau: ''no es un regaño, es una oportunidad única de aprender''.'

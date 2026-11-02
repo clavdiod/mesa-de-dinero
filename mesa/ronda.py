@@ -685,7 +685,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                 # Reglas de la mesa (02/11): el plan de un anticipador también pasa la revisión de entrada
                 if x.get("plan") and precio_:
                     from .agentes import ficha_frio as _ff2
-                    f_ = _ff2.ficha(vs_, precio_, x["plan"], None, [])
+                    f_ = _ff2.ficha(vs_, precio_, x["plan"], None, [], t_.get("grupo"))
                     if f_:
                         x["ficha_txt"] = _ff2.texto(f_)
                         if f_.get("veredicto") == "cara":
@@ -911,7 +911,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         try:  # 02/11: la ficha en frío va con la propuesta, ANTES de que decidas
             t_ = ctx.titulo(e["ticker"]) or {}
             e["ficha_frio"] = _ff.ficha(ctx.cache.velas(e["ticker"]) if ctx.cache else [], t_.get("ultimo") or pl["entrada"], pl,
-                                        e.get("estructura"), (e.get("comite") or {}).get("votos") or [])
+                                        e.get("estructura"), (e.get("comite") or {}).get("votos") or [], t_.get("grupo"))
             e["ficha_txt"] = _ff.texto(e["ficha_frio"])
         except Exception as ex_:
             print(f"[ficha en frío] {e['ticker']}: {ex_}")
