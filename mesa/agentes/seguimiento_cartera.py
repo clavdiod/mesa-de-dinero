@@ -173,7 +173,10 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         mx = x.get("max_desde_compra")
         gan_max = (mx / compra_p - 1) * 100 if mx and compra_p else None
         # solo con al menos una rueda completa desde la compra: el mismo día no hay ganancia "devuelta"
-        devolviendo = bool(gan_max is not None and gan_max >= 5 and res is not None and res <= gan_max / 2
+        # 03/11: con margen de 0,5 punto (IBB tocó el nivel por $5 en la apertura y rebotó) y nunca antes de las 11:00,
+        # cuando todavía no hay operaciones reales (a las 10:30 IBB figuraba a 12.400 y TRAN a 2.140: precios viejos).
+        abierto = (hora or "00:00") >= "11:00"
+        devolviendo = bool(abierto and gan_max is not None and gan_max >= 5 and res is not None and res <= gan_max / 2 - 0.5
                            and (dias or 0) >= 1)
         if devolviendo:
             sug = "vender_todo" if (res or 0) <= 1.5 else "vender_mitad"
@@ -268,7 +271,7 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
                 cambios.append(f"La sugerencia cambió: antes «{NOMBRE_ACCION[ay['sugerida']]}», hoy «{NOMBRE_ACCION[sug]}».")
         if not cambios:
             cambios = ["Sin cambios importantes en la mesa."] if ay else ["Primer día de seguimiento."]
-        if sug != "mantener" and avisados.get(tk) != f"{hoy_s}|{sug}":
+        if sug != "mantener" and (hora or "00:00") >= "11:00" and avisados.get(tk) != f"{hoy_s}|{sug}":
             urgente = sug in ("vender_todo", "vender_mitad")
             avisos.append({"fecha": hoy_s, "hora": hora, "ticker": f"{tk} ({'VENDER' if urgente else 'decidir'})",
                            "texto": (f"🚨 {tk}: {NOM_URG.get(sug, NOMBRE_ACCION[sug]).upper()} AHORA. " if urgente else f"{tk}: la mesa sugiere «{NOMBRE_ACCION[sug]}». ")

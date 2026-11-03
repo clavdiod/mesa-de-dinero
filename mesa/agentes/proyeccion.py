@@ -183,7 +183,7 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
         mesa = op.get("veredicto")
         if penitencia and tk in penitencia:
             consejo, motivo = "Vigilar", "La mesa perdió sus 2 últimas ideas con este papel: está en penitencia."
-        elif piso and precio <= piso:
+        elif piso and precio <= piso and (hora or "11:00") >= "11:00":  # 03/11: antes de las 11 no hay precio real
             consejo, motivo = "Vender", "Perforó el piso" + (" (stop del plan)" if p else "") + ": la idea no se está dando."
         elif a_piso is not None and a_piso > -3:
             consejo, motivo = "Vigilar", f"Está a {_m(abs(a_piso), 1)}% del piso: si lo perfora, salir."
