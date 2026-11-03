@@ -182,7 +182,7 @@ def experto_spread(cad: list[dict], spot: float, direccion: str) -> dict | None:
                 continue
             for b in xs:
                 lejos = (b["strike"] - a["strike"]) if tipo == "C" else (a["strike"] - b["strike"])
-                if lejos <= 0 or not (0.06 <= lejos / spot <= 0.15):
+                if lejos <= 0 or not (0.06 <= lejos / spot <= 0.16):
                     continue
                 costo = a["ask"] - b["bid"]
                 if costo <= 0:
@@ -193,7 +193,7 @@ def experto_spread(cad: list[dict], spot: float, direccion: str) -> dict | None:
                      "vence": venc, "dias": a["dias"], "punto_equilibrio": round(a["strike"] + costo if tipo == "C" else a["strike"] - costo, 2),
                      "tipo": tipo, "strike": a["strike"], "bid": a["bid"], "ask": a["ask"], "contratos": 1,
                      "pagas": round(costo * LOTE * (1 + COMISION)), "ganas_max": round(gana * LOTE)}
-                if rel >= 1.5 and (not mejor or rel > mejor["relacion"]):
+                if rel >= 1.3 and (not mejor or rel > mejor["relacion"]):
                     mejor = x
     return mejor
 

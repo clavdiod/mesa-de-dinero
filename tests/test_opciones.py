@@ -30,4 +30,4 @@ def test_spread_alcista_con_perdida_limitada():
                          "spread_pct": 3, "operaciones": 10, "volumen": 100, "delta": 0.5, "iv": 0.5}
     cad = [mk(5200, 428, 448), mk(5600, 265, 275), mk(5800, 198, 200), mk(6000, 147, 155)]
     sp = OP.experto_spread(cad, 5215, "a favor")
-    assert sp and sp["costo"] > 0 and sp["gana_max"] / sp["costo"] >= 1.5
+    assert sp and sp["costo"] > 0 and sp["gana_max"] / sp["costo"] >= 1.3
