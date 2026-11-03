@@ -99,6 +99,11 @@ class IOL:
                          f"{desde.isoformat()}/{hasta.isoformat()}/{aj}", "historial")
         return [normalizar_vela(v) for v in (data or [])]
 
+    def opciones(self, simbolo: str, mercado: str = "bCBA") -> list[dict]:
+        """Cadena de opciones del subyacente (1 consulta). Formato crudo de IOL; se normaliza en agentes/opciones.py."""
+        data = self._get(f"/api/v2/{mercado}/Titulos/{simbolo}/Opciones", "opciones")
+        return data if isinstance(data, list) else (data or {}).get("opciones") or []
+
     def paneles_disponibles(self, instrumento: str, pais: str = "argentina") -> Any:
         return self._get(f"/api/v2/{pais}/Titulos/Cotizacion/Paneles/{instrumento}", "descubrimiento")
 
