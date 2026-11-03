@@ -1198,7 +1198,8 @@ def _ar(x: float) -> str:
     return f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-SUBYACENTES_OPC = ["GGAL", "YPFD", "PAMP", "ALUA", "CEPU", "TRAN", "BMA", "TXAR", "COME", "SUPV", "METR", "BBAR", "CRES", "TGSU2", "EDN"]
+# 03/11: los papeles con opciones habilitadas en Cocos (lo que se puede operar de verdad)
+SUBYACENTES_OPC = ["GGAL", "YPFD", "PAMP", "TXAR", "COME"]
 
 
 def _mesa_opciones(ctx, almacen, iol, hoy, cartera, opinion, por_ticker, reg, cada30: bool, simular: bool) -> dict | None:
@@ -1213,7 +1214,7 @@ def _mesa_opciones(ctx, almacen, iol, hoy, cartera, opinion, por_ticker, reg, ca
         meta_k = f"opciones/meta/{hoy.isoformat()}"
         meta = almacen.get(meta_k) or {}
         mios = {str(c.get("ticker", "")).upper(): int(float(c.get("cantidad") or 0)) for c in cartera}
-        subs = list(dict.fromkeys([t for t in mios if t in SUBYACENTES_OPC] + SUBYACENTES_OPC))
+        subs = list(SUBYACENTES_OPC)
         faltan = [t for t in subs if t not in (meta.get("_hechos") or [])]
         for t in faltan[:15]:
             try:
