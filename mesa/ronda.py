@@ -1091,6 +1091,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     except Exception as ex:
         print(f"[seguimiento_cartera] {ex}")
 
+    mesa_opciones = _mesa_opciones(ctx, almacen, iol, hoy, cartera, opinion_cartera, por_ticker, reg, cada30, simular)
     eventos_cal = _calendario(almacen, ctx, hoy, ops, abiertas, cartera, simular)  # antes del resumen: carga licitaciones y avisos
 
     resumen = {
@@ -1130,6 +1131,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "protecciones": prot,
         "comite": comite_estado,
         "proyeccion_cartera": proy_cartera,
+        "opciones": mesa_opciones,
         "graficos": _graficos(ctx, cartera, seg_cartera),
         "seguimiento_cartera": seg_cartera,
         "memoria": None if simular else (almacen.get("memoria/papeles") or {}),
@@ -1194,6 +1196,70 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
 
 def _ar(x: float) -> str:
     return f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+SUBYACENTES_OPC = ["GGAL", "YPFD", "PAMP", "ALUA", "CEPU", "TRAN", "BMA", "TXAR", "COME", "SUPV", "METR", "BBAR", "CRES", "TGSU2", "EDN"]
+
+
+def _mesa_opciones(ctx, almacen, iol, hoy, cartera, opinion, por_ticker, reg, cada30: bool, simular: bool) -> dict | None:
+    """Mesa de Opciones (en papel): cada 30 minutos con el mercado abierto. ~1 consulta por ronda + 15 por día de metadatos."""
+    if simular or not iol:
+        return almacen.get("opciones/estado") if not simular else None
+    guard = almacen.get("opciones/estado") or {}
+    if not cada30 or not ("11:00" <= ctx.hora <= "17:00"):
+        return guard or None
+    try:
+        from .agentes import opciones as OP
+        meta_k = f"opciones/meta/{hoy.isoformat()}"
+        meta = almacen.get(meta_k) or {}
+        mios = {str(c.get("ticker", "")).upper(): int(float(c.get("cantidad") or 0)) for c in cartera}
+        subs = list(dict.fromkeys([t for t in mios if t in SUBYACENTES_OPC] + SUBYACENTES_OPC))
+        faltan = [t for t in subs if t not in (meta.get("_hechos") or [])]
+        for t in faltan[:15]:
+            try:
+                meta.update(OP.metadatos(iol.opciones(t)))
+            except Exception as ex:
+                print(f"[opciones] meta {t}: {ex}")
+            meta.setdefault("_hechos", []).append(t)
+        almacen.put(meta_k, meta)
+        d = iol._get("/api/v2/Cotizaciones/Opciones/Todas/argentina", "opciones")
+        panel = d.get("titulos", d) if isinstance(d, dict) else d
+        meta_ = {k: v for k, v in meta.items() if k != "_hechos"}
+        r = 0.20
+        papeles = []
+        for t in subs:
+            ti = ctx.titulo(t) or {}
+            spot = ti.get("ultimo")
+            if not spot:
+                continue
+            cad = OP.cadena(meta_, panel, t, float(spot), hoy, r)
+            if not cad:
+                continue
+            cierres = [v["cierre"] for v in (ctx.cache.velas(t) if ctx.cache else []) if v.get("cierre")]
+            op_ = (opinion or {}).get(t)
+            if not op_:
+                ss = por_ticker.get(t, [])
+                pj = puntaje_ticker(ss, reg, ctx) if ss else 0
+                op_ = {"veredicto": "a favor" if pj >= 0.5 else "en contra" if pj <= -0.5 else "neutral"}
+            papeles.append(OP.comite(t, float(spot), cad, cierres, mios.get(t, 0), op_))
+        papel = almacen.get("opciones/papel") or []
+        for c_ in papeles:
+            for idea in c_["ideas"]:
+                if idea["aprobada"]:
+                    papel = OP.abrir_papel(papel, idea, c_["ticker"], hoy, ctx.hora)
+        precios = {x.get("simbolo"): x for x in panel or []}
+        def _precio(sym):
+            x = precios.get(sym) or {}; pu = x.get("puntas") or {}
+            return ((pu.get("precioCompra") or 0) + (pu.get("precioVenta") or 0)) / 2 if pu.get("precioCompra") and pu.get("precioVenta") else x.get("ultimoPrecio")
+        papel = OP.valuar_papel(papel, _precio, lambda tk: (ctx.titulo(tk) or {}).get("ultimo"), hoy)
+        almacen.put("opciones/papel", papel)
+        guard = {"fecha": hoy.isoformat(), "hora": ctx.hora, "papeles": papeles, "papel": papel[-30:],
+                 "resultado_papel": round(sum(p.get("resultado") or 0 for p in papel), 2)}
+        almacen.put("opciones/estado", guard)
+        return guard
+    except Exception as ex:
+        print(f"[opciones] {ex}")
+        return guard or None
 
 
 def _graficos(ctx, cartera: list[dict], seg: dict) -> dict:

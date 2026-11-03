@@ -148,6 +148,8 @@ const RESUMEN_PLEG = {
     return c ? `próximo ${diaTxt(c.fecha)} · ${c.ticker}${c.total != null ? " " + plataMon(c.total, c.moneda) : ""}` : ""; },
   "radar": () => { const r = radarDelDia(); const a = r.filter((x) => x.severidad === "alta");
     return `${r.length} movimiento${r.length === 1 ? "" : "s"} raro${r.length === 1 ? "" : "s"}${a.length ? ` · ${a.length} fuerte${a.length > 1 ? "s" : ""}: ${a.slice(0, 3).map((x) => x.ticker).join(", ")}` : ""}`; },
+  "opciones-mesa": () => { const o = ESTADO.estado?.opciones || {}; const ap = (o.papeles || []).flatMap((p) => (p.ideas || []).filter((i) => i.aprobada).map((i) => p.ticker));
+    return (ap.length ? "aprobadas: " + ap.join(", ") : "nada aprobado hoy") + ((o.papel || []).length ? ` · en papel $ ${num(o.resultado_papel, 0)}` : ""); },
   "renta-fija": () => { const r = ESTADO.estado?.renta_fija || {}; const l = [...(r.ons || []), ...(r.soberanos || [])];
     return l.length ? l.slice(0, 3).map((x) => `${x.ticker} ${num(x.tir, 1)}%`).join(" · ") + (l.length > 3 ? ` · +${l.length - 3}` : "") : ""; },
   "anticipos": () => { const e = ESTADO.estado || {}; const n = (e.anticipos || []).length, m = (e.anticipo_lista?.lista || []).length;
@@ -182,7 +184,7 @@ function plegar(box) {
   } finally { delete box.dataset.plegando; }
 }
 const OBS_PLEG = new MutationObserver((ms) => { for (const m of ms) if (m.target.id && !m.target.dataset.plegando && !m.target.querySelector(":scope > details.plegable, :scope > details.plegable-card")) plegar(m.target); });
-["radar-ganadores", "comite", "renta-fija", "cobros-hoy", "licitaciones-hoy", "anticipos", "eventos-semana", "radar",
+["radar-ganadores", "comite", "renta-fija", "opciones-mesa", "cobros-hoy", "licitaciones-hoy", "anticipos", "eventos-semana", "radar",
   "economista", "wallstreet", "ganadores", "profesionales", "adr", "ministro", "mae", "mundo", "cripto"].forEach((id) => {
   const b = document.getElementById(id); if (b) OBS_PLEG.observe(b, { childList: true });
 });
@@ -1544,7 +1546,7 @@ async function cargar() {
     try { FEEDBACK = await api("usuario/feedback_avisos"); if (!Array.isArray(FEEDBACK)) FEEDBACK = []; } catch (_) { FEEDBACK = []; }
     try { const [dc, op] = await Promise.all([api("usuario/decisiones_cartera"), api("usuario/operaciones")]);
       USUARIO.decisiones = Array.isArray(dc) ? {} : dc || {}; USUARIO.operaciones = Array.isArray(op) ? op : []; } catch (_) {}
-    pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes(); pintarAnticipos(); try { pintarRentaFija(); } catch (_) {} pintarRadar(); pintarAviso();
+    pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes(); pintarAnticipos(); try { pintarRentaFija(); } catch (_) {} try { pintarOpciones(); } catch (_) {} pintarRadar(); pintarAviso();
     setTimeout(abrirDecisionPendiente, 600);
     $("#login").style.display = "none"; $("#bloqueo").style.display = "none"; document.querySelector("main").style.display = "";
   } catch (e) {
@@ -1656,4 +1658,27 @@ async function dibujarGrafico(caja, tk) {
   if (g.fecha_compra) velas.setMarkers([{ time: g.velas.find((x) => x[0] >= g.fecha_compra)?.[0] || g.fecha_compra, position: "belowBar", color: col("--azul", "#60a5fa"), shape: "arrowUp", text: "compra" }]);
   ch.timeScale().fitContent();
   caja.querySelector(".graf-ley").innerHTML = `Velas de un año · línea azul: promedio de 20 ruedas · <span style="color:var(--amar)">techos</span> y <span style="color:var(--verde)">pisos</span> donde el precio rebotó (entre paréntesis, cuántas veces)${g.linea ? ` · línea ${g.linea.tipo} punteada` : ""}.`;
+}
+
+
+// ---------- Mesa de Opciones (en papel) ----------
+function pintarOpciones() {
+  const o = ESTADO.estado?.opciones; const caja = $("#opciones-mesa"); if (!caja) return;
+  if (!o || !(o.papeles || []).length) { caja.innerHTML = ""; return; }
+  const n = (x, d = 0) => num(x, d);
+  const papel = (o.papel || []).slice().reverse();
+  const filas = o.papeles.map((p) => {
+    const v = p.volatilidad || {};
+    const ideas = (p.ideas || []).map((i) => `<div class="agente"><b>${i.aprobada ? "✅" : "⏸️"} ${esc(i.estrategia)}</b><span>${esc(i.texto)}${i.aprobada ? "" : `<br><span class="tenue">No ahora: ${esc(i.motivo)}.</span>`}</span></div>`).join("");
+    return `<details class="dia-pron"><summary><b>${esc(p.ticker)}</b> <span class="tenue">· ${p.liquidas} de ${p.opciones} opciones líquidas · mesa: ${esc(p.mesa || "—")}</span></summary>
+      <p class="tenue"><b>Volatilidad:</b> el mercado cobra ${v.iv_atm ? n(v.iv_atm * 100) + "%" : "—"} anual; el papel se movió ${v.hv20 ? n(v.hv20 * 100) + "%" : "—"} (20 ruedas) y ${v.hv60 ? n(v.hv60 * 100) + "%" : "—"} (60). ${esc(v.lectura || "")}.</p>
+      ${ideas || '<p class="tenue">Sin estrategias con sentido para lo que tenés de este papel.</p>'}</details>`;
+  }).join("");
+  const res = papel.length ? `<h3>En papel</h3><div class="tabla-scroll"><table><tr><th>Fecha</th><th>Estrategia</th><th>Opción</th><th class="n">Entrada</th><th class="n">Ahora</th><th class="n">Resultado</th></tr>
+    ${papel.map((x) => `<tr><td>${esc(fecha(x.fecha))}</td><td>${esc(x.estrategia)}<br><span class="tenue">${esc(x.lado)} ${x.contratos}</span></td><td>${esc(x.opcion)}</td><td class="n">${n(x.precio, 2)}</td><td class="n">${x.ahora != null ? n(x.ahora, 2) : "—"}</td>
+      <td class="n" style="color:var(--${(x.resultado || 0) >= 0 ? "verde" : "rojo"})">${x.resultado != null ? "$ " + n(x.resultado) : "—"}${x.estado === "vencida" ? "<br><span class='tenue'>vencida</span>" : ""}</td></tr>`).join("")}</table></div>
+    <p class="tenue">Resultado total en papel: <b>$ ${n(o.resultado_papel)}</b> (con comisión estimada de 1%).</p>` : '<p class="tenue">Todavía no hay posiciones en papel: la mesa de opciones abre una cuando un experto propone y el comité la aprueba.</p>';
+  caja.innerHTML = `<h2>🎯 Mesa de Opciones <span class="hora">· en papel · ${esc(o.hora || "")}</span></h2><div class="card eco">
+    <p class="tenue">Expertos solo de opciones: Volatilidad, Lanzador cubierto, Protector, Liquidez y Riesgo. Consultan a la mesa principal por la dirección del papel. Todo en papel hasta que los números demuestren que funciona. 1 contrato = 100 acciones.</p>
+    ${filas}${res}</div>`;
 }
