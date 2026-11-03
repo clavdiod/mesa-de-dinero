@@ -1,13 +1,20 @@
-"""Prueba: cadena de opciones de GGAL desde la conexión de la mesa (2 consultas). Muestra los campos crudos."""
+"""Prueba: panel de opciones con precios (IOL Cotizaciones/Opciones)."""
 import json
 from mesa.datos.consumo import Consumo
 from mesa.datos.iol import IOL
 from mesa.nucleo.almacen import almacen_por_defecto
 a = almacen_por_defecto()
 iol = IOL(Consumo(a), almacen=a)
-for tk in ("GGAL", "YPFD"):
+try:
+    print("::notice::paneles " + json.dumps(iol.paneles_disponibles("Opciones"), ensure_ascii=False)[:600])
+except Exception as ex:
+    print(f"::notice::paneles ERR {ex}")
+for pan in ("Todas", "Opciones", "Merval"):
     try:
-        x = iol.opciones(tk)
-        print(f"::notice::{tk}: {len(x)} opciones | ejemplo: " + json.dumps(x[:2], ensure_ascii=False)[:1500])
+        d = iol._get(f"/api/v2/Cotizaciones/Opciones/{pan}/argentina", "opciones")
+        t = d.get("titulos", d) if isinstance(d, dict) else d
+        con = [x for x in t if (x.get("ultimoPrecio") or 0) > 0]
+        print(f"::notice::panel {pan}: {len(t)} filas, {len(con)} con precio | ej: " + json.dumps(con[:1] or t[:1], ensure_ascii=False)[:1200])
+        break
     except Exception as ex:
-        print(f"::notice::{tk}: ERR {ex}")
+        print(f"::notice::panel {pan} ERR {ex}")
