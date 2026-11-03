@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-03'
+  caso: Nace la Mesa de Opciones (en papel)
+  que_paso: 'Clau pidió un grupo de expertos solo de opciones, que se apoye en la mesa para la decisión final. Cocos cobra para operar opciones (plan Pro), así que se empieza en papel. Primer día: de 1.148 opciones de BYMA, las líquidas están casi todas en GGAL (39 de 130); en ALUA, CEPU y TRAN no hay ninguna opción con puntas, y en YPFD solo 2.'
+  leccion: 'En Argentina las opciones son un mercado de GGAL y poco más: cualquier estrategia sobre otros papeles choca con la falta de liquidez. Y una opción sin compradores ni vendedores no se puede valuar ni cerrar.'
+  cambio: Mesa de Opciones con 6 expertos (Volatilidad, Lanzador cubierto, Protector, Direccional con pérdida limitada, Liquidez y Riesgo) y su propio comité, que consulta a la mesa principal. Corre cada 30 minutos con el mercado abierto (1 consulta a IOL por ronda), abre posiciones en papel cuando aprueba y mide el resultado con comisión.
+- fecha: '2026-11-03'
   caso: 'Avisos equivocados: hay que controlarlos antes de mandarlos'
   que_paso: 'En una semana llegaron avisos que no correspondían: TRAN ''vendé'' el día de compra, YPFD ''salir mañana'' por un titular de la Fed, VIST que no era de Clau, IBB ''vendé todo'' a las 10:30 con un precio viejo y ''vendé la mitad'' por rozar un nivel por $5. Clau: ''basta de errores, no tengo que venir a consultar cada activo''.'
   leccion: 'Arreglar cada error de a uno no alcanza: cada aviso tiene que pasar un control antes de salir, y cada error real tiene que quedar como prueba automática para que no vuelva.'
