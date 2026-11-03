@@ -1669,7 +1669,7 @@ function pintarOpciones() {
   const papel = (o.papel || []).slice().reverse();
   const filas = o.papeles.map((p) => {
     const v = p.volatilidad || {};
-    const ideas = (p.ideas || []).map((i) => `<div class="agente"><b>${i.aprobada ? "✅" : "⏸️"} ${esc(i.estrategia)}</b><span>${esc(i.texto)}${i.aprobada ? "" : `<br><span class="tenue">No ahora: ${esc(i.motivo)}.</span>`}</span></div>`).join("");
+    const ideas = (p.ideas || []).map((i) => `<div class="agente"><b>${i.aprobada ? "✅" : i.no_operable ? "ℹ️" : "⏸️"} ${esc(i.estrategia)}${i.no_operable ? " · no disponible en Cocos" : ""}</b><span>${esc(i.texto)}${i.aprobada ? "" : `<br><span class="tenue">No ahora: ${esc(i.motivo)}.</span>`}</span></div>`).join("");
     return `<details class="dia-pron"><summary><b>${esc(p.ticker)}</b> <span class="tenue">· ${p.liquidas} de ${p.opciones} opciones líquidas · mesa: ${esc(p.mesa || "—")}</span></summary>
       <p class="tenue"><b>Volatilidad:</b> el mercado cobra ${v.iv_atm ? n(v.iv_atm * 100) + "%" : "—"} anual; el papel se movió ${v.hv20 ? n(v.hv20 * 100) + "%" : "—"} (20 ruedas) y ${v.hv60 ? n(v.hv60 * 100) + "%" : "—"} (60). ${esc(v.lectura || "")}.</p>
       ${ideas || '<p class="tenue">Sin estrategias con sentido para lo que tenés de este papel.</p>'}</details>`;
@@ -1679,6 +1679,6 @@ function pintarOpciones() {
       <td class="n" style="color:var(--${(x.resultado || 0) >= 0 ? "verde" : "rojo"})">${x.resultado != null ? "$ " + n(x.resultado) : "—"}${x.estado === "vencida" ? "<br><span class='tenue'>vencida</span>" : ""}</td></tr>`).join("")}</table></div>
     <p class="tenue">Resultado total en papel: <b>$ ${n(o.resultado_papel)}</b> (con comisión estimada de 1%).</p>` : '<p class="tenue">Todavía no hay posiciones en papel: la mesa de opciones abre una cuando un experto propone y el comité la aprueba.</p>';
   caja.innerHTML = `<h2>🎯 Mesa de Opciones <span class="hora">· en papel · ${esc(o.hora || "")}</span></h2><div class="card eco">
-    <p class="tenue">Expertos solo de opciones: Volatilidad, Lanzador cubierto, Protector, Liquidez y Riesgo. Consultan a la mesa principal por la dirección del papel. Todo en papel hasta que los números demuestren que funciona. 1 contrato = 100 acciones.</p>
+    <p class="tenue">Expertos solo de opciones: Volatilidad, Lanzador cubierto, Protector, Liquidez y Riesgo. Consultan a la mesa principal por la dirección del papel. Todo en papel hasta que los números demuestren que funciona. 1 contrato = 100 acciones. En Cocos solo se puede comprar calls y puts (perfil agresivo, sin comisión de Cocos).</p>
     ${filas}${res}</div>`;
 }

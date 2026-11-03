@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-03'
+  caso: 'Cocos habilitó opciones: solo comprar'
+  que_paso: Cocos habilitó operar opciones para perfil agresivo, sin comisión de Cocos al comprar ni al ejercer (quedan derechos de BYMA e impuestos). Según sus términos, solo se puede comprar calls y puts y venderlos antes del vencimiento; al vencer, si quedó a favor, Cocos la ejerce y acredita la diferencia en pesos. No se puede lanzar (vender opciones que no tenés), ni armar spreads, ni ejercer antes.
+  leccion: 'Comprar opciones es la forma de usarlas con más chance de perder la prima entera: hay que comprar solo cuando la mesa tiene dirección clara y las primas no están caras, y con un plan de salida sobre la prima.'
+  cambio: La Mesa de Opciones suma el experto Comprador (call si la mesa está a favor, put si está en contra; cerca del precio, 25-60 días, primas no caras; vender si la prima se duplica o pierde la mitad). Lanzamiento cubierto y spreads quedan como información 'no disponible en Cocos'. Comisión estimada bajada a 0,5%.
+- fecha: '2026-11-03'
   caso: Nace la Mesa de Opciones (en papel)
   que_paso: 'Clau pidió un grupo de expertos solo de opciones, que se apoye en la mesa para la decisión final. Cocos cobra para operar opciones (plan Pro), así que se empieza en papel. Primer día: de 1.148 opciones de BYMA, las líquidas están casi todas en GGAL (39 de 130); en ALUA, CEPU y TRAN no hay ninguna opción con puntas, y en YPFD solo 2.'
   leccion: 'En Argentina las opciones son un mercado de GGAL y poco más: cualquier estrategia sobre otros papeles choca con la falta de liquidez. Y una opción sin compradores ni vendedores no se puede valuar ni cerrar.'

@@ -31,3 +31,13 @@ def test_spread_alcista_con_perdida_limitada():
     cad = [mk(5200, 428, 448), mk(5600, 265, 275), mk(5800, 198, 200), mk(6000, 147, 155)]
     sp = OP.experto_spread(cad, 5215, "a favor")
     assert sp and sp["costo"] > 0 and sp["gana_max"] / sp["costo"] >= 1.3
+
+
+def test_cocos_solo_compra():
+    mk = lambda t, k, b, a, d: {"simbolo": f"{t}{k}", "tipo": t, "strike": k, "vence": "2026-12-18", "dias": 45, "bid": b, "ask": a,
+                               "spread_pct": 3, "operaciones": 10, "volumen": 100, "delta": d, "iv": 0.4}
+    cad = [mk("C", 5200, 428, 448, 0.58), mk("C", 5800, 198, 200, 0.3), mk("C", 6000, 147, 155, 0.25)]
+    r = OP.comite("GGAL", 5215, cad, [5000 + i for i in range(80)], 300, {"veredicto": "a favor"})
+    for i in r["ideas"]:
+        if i["aprobada"]:
+            assert i["estrategia"].startswith(("compra", "put de"))

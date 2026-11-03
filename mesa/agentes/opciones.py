@@ -11,7 +11,11 @@ Expertos:
 - Riesgo: lote de 100 acciones por contrato, comisión (~1% ida y vuelta + derechos), pérdida máxima.
 - Direccional con pérdida limitada: si la mesa principal está a favor (o en contra) del papel, arma un spread de calls
   (o de puts): pagás poco, sabés de entrada lo máximo que podés perder y ganar. No hace falta tener las acciones.
+- Comprador: compra un call (mesa a favor) o un put (mesa en contra) cerca del precio, solo con primas no caras,
+  con plan de salida sobre la prima (+100% / -50%).
 - Comité de opciones: junta todo, consulta a la mesa principal (a favor / en contra del papel) y decide.
+03/11 — Cocos (TyC): solo se puede COMPRAR calls y puts (perfil agresivo, sin comisión de Cocos; derechos de BYMA).
+No permite lanzar (vender opciones que no tenés), ni spreads, ni ejercer antes. Esas ideas quedan como información.
 """
 from __future__ import annotations
 
@@ -20,7 +24,8 @@ import re
 from datetime import date, datetime
 
 LOTE = 100
-COMISION = 0.01  # ida y vuelta, aproximada (Cocos cobra hasta 1% en opciones)
+COMISION = 0.005  # ida y vuelta: Cocos no cobra comisión al comprar opciones ni al ejercer; quedan derechos de BYMA e impuestos
+COCOS_PERMITE = {"compra call", "compra put", "put de protección"}  # 03/11 (TyC de Cocos): solo comprar; no lanzar ni spreads
 MESES = {"EN": 1, "FE": 2, "MR": 3, "AB": 4, "MY": 5, "JU": 6, "JL": 7, "AG": 8, "SE": 9, "OC": 10, "NO": 11, "DI": 12}
 
 
@@ -198,6 +203,27 @@ def experto_spread(cad: list[dict], spot: float, direccion: str) -> dict | None:
     return mejor
 
 
+def experto_comprador(cad: list[dict], spot: float, direccion: str) -> dict | None:
+    """Comprar un call (mesa a favor) o un put (mesa en contra), lo único que permite Cocos además del seguro.
+    Opción cerca del precio (probabilidad de terminar a favor 40-60%), 25 a 60 días, líquida.
+    Plan: se vende si la prima se duplica (+100%) o si pierde la mitad (-50%), o 5 días antes de vencer."""
+    tipo = "C" if direccion == "a favor" else "P"
+    cands = []
+    for o in cad:
+        ok, _ = experto_liquidez(o)
+        if o["tipo"] != tipo or not ok or not (25 <= o["dias"] <= 60) or not o.get("delta"):
+            continue
+        if not (0.40 <= abs(o["delta"]) <= 0.60):
+            continue
+        eq = o["strike"] + o["ask"] if tipo == "C" else o["strike"] - o["ask"]
+        cands.append({**o, "prima": o["ask"], "costo_pct": round(o["ask"] / spot * 100, 2), "equilibrio": round(eq, 2),
+                      "hace_falta_pct": round((eq / spot - 1) * 100, 1), "contratos": 1,
+                      "pagas": round(o["ask"] * LOTE * (1 + COMISION / 2)), "objetivo_prima": round(o["ask"] * 2, 2), "stop_prima": round(o["ask"] * 0.5, 2)})
+    if not cands:
+        return None
+    return min(cands, key=lambda x: abs(x["hace_falta_pct"]))  # el que necesita el movimiento más chico para ganar
+
+
 def comite(tk: str, spot: float, cad: list[dict], cierres: list[float], acciones: int, mesa: dict | None) -> dict:
     """Junta a los expertos y consulta a la mesa principal (opinión del papel) para la decisión final."""
     vol = experto_volatilidad(cad, spot, cierres)
@@ -232,6 +258,24 @@ def comite(tk: str, spot: float, cad: list[dict], cierres: list[float], acciones
                                     f"por acción (~${sp['pagas']:,} un contrato) y podés ganar hasta {sp['gana_max']:,.2f} (~${sp['ganas_max']:,}), {sp['relacion']} veces lo que arriesgás. "
                                     f"Empieza a ganar si el papel pasa {sp['punto_equilibrio']:,.0f}. Lo máximo que perdés es lo que pagás.").replace(",", "."),
                           "motivo": "" if not caro else "las primas están muy caras para comprar"})
+    if veredicto in ("a favor", "en contra"):
+        cm = experto_comprador(cad, spot, veredicto)
+        if cm:
+            barata = (vol.get("ratio") or 9) <= 1.1
+            nom = "compra call" if cm["tipo"] == "C" else "compra put"
+            ideas.append({"estrategia": nom, "aprobada": barata, "opcion": cm["simbolo"], "detalle": cm,
+                          "texto": (f"Comprar 1 {('call' if cm['tipo'] == 'C' else 'put')} {cm['simbolo']} (strike {cm['strike']:,.0f}, vence {cm['vence'][8:10]}/{cm['vence'][5:7]}) "
+                                    f"a {cm['prima']:,.2f}: pagás ~${cm['pagas']:,} (100 acciones). Gana si al vencimiento el papel está "
+                                    f"{'arriba' if cm['tipo'] == 'C' else 'abajo'} de {cm['equilibrio']:,.0f} ({cm['hace_falta_pct']:+.1f}%). Lo máximo que perdés es lo que pagás. "
+                                    f"Plan: vender si la prima llega a {cm['objetivo_prima']:,.2f} (+100%) o baja a {cm['stop_prima']:,.2f} (-50%).").replace(",", "X").replace(".", ",").replace("X", "."),
+                          "motivo": "" if barata else "las primas están caras: comprar opciones así suele perder"})
+    # lo que Cocos todavía no permite queda como información, nunca aprobado
+    for i in ideas:
+        if i["estrategia"].split(" (")[0] not in COCOS_PERMITE and not i["estrategia"].startswith(("compra", "put de")):
+            if i["aprobada"]:
+                i["motivo"] = "Cocos todavía no permite esta estrategia (solo comprar calls y puts)"
+            i["aprobada"] = False
+            i["no_operable"] = True
     liquidas = sum(1 for o in cad if experto_liquidez(o)[0])
     return {"ticker": tk, "spot": spot, "volatilidad": vol, "ideas": ideas, "opciones": len(cad), "liquidas": liquidas,
             "mesa": veredicto}
