@@ -1,5 +1,10 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
+- fecha: '2026-11-03'
+  caso: 'Avisos equivocados: hay que controlarlos antes de mandarlos'
+  que_paso: 'En una semana llegaron avisos que no correspondían: TRAN ''vendé'' el día de compra, YPFD ''salir mañana'' por un titular de la Fed, VIST que no era de Clau, IBB ''vendé todo'' a las 10:30 con un precio viejo y ''vendé la mitad'' por rozar un nivel por $5. Clau: ''basta de errores, no tengo que venir a consultar cada activo''.'
+  leccion: 'Arreglar cada error de a uno no alcanza: cada aviso tiene que pasar un control antes de salir, y cada error real tiene que quedar como prueba automática para que no vuelva.'
+  cambio: 'Auditor de avisos: solo con el mercado abierto, precio de hoy y de los últimos 20 minutos, sin saltos sospechosos sin volumen, y respetando lo que decidiste hoy. Lo descartado queda anotado. Y 6 pruebas automáticas con los casos reales (TRAN, IBB 10:30, IBB $5, YPFD Fed, precio viejo, decisión de mantener) que corren en cada cambio.'
 - fecha: '2026-11-02'
   caso: Las noticias de la empresa explican los indicadores
   que_paso: 'Clau pidió que las noticias participen de cada evaluación, para explicar un indicador. Además el Corresponsal y el radar tomaban titulares que no eran de la empresa: ''Pioneer Dome'' (mina australiana) para Domec y una página de opciones de Yahoo para VXX.'
