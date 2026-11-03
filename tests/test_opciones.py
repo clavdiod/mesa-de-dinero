@@ -23,3 +23,11 @@ def test_lanzador_necesita_100_acciones():
     assert OP.experto_lanzador(cad, 5215, 50) is None
     l = OP.experto_lanzador(cad, 5215, 250)
     assert l and l["lotes"] == 2 and l["renta_pct"] > 3
+
+
+def test_spread_alcista_con_perdida_limitada():
+    mk = lambda k, b, a: {"simbolo": f"C{k}", "tipo": "C", "strike": k, "vence": "2026-12-18", "dias": 45, "bid": b, "ask": a,
+                         "spread_pct": 3, "operaciones": 10, "volumen": 100, "delta": 0.5, "iv": 0.5}
+    cad = [mk(5200, 428, 448), mk(5600, 265, 275), mk(5800, 198, 200), mk(6000, 147, 155)]
+    sp = OP.experto_spread(cad, 5215, "a favor")
+    assert sp and sp["costo"] > 0 and sp["gana_max"] / sp["costo"] >= 1.5

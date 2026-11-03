@@ -9,6 +9,8 @@ Expertos:
 - Protector: busca el put que funciona como seguro de lo que tenés (cuánto cuesta y desde qué precio te cubre).
 - Liquidez: descarta opciones sin puntas, con diferencia compra/venta mayor a 15% o sin operaciones.
 - Riesgo: lote de 100 acciones por contrato, comisión (~1% ida y vuelta + derechos), pérdida máxima.
+- Direccional con pérdida limitada: si la mesa principal está a favor (o en contra) del papel, arma un spread de calls
+  (o de puts): pagás poco, sabés de entrada lo máximo que podés perder y ganar. No hace falta tener las acciones.
 - Comité de opciones: junta todo, consulta a la mesa principal (a favor / en contra del papel) y decide.
 """
 from __future__ import annotations
@@ -166,6 +168,36 @@ def experto_protector(cad: list[dict], spot: float, acciones: int) -> dict | Non
     return min(cands, key=lambda x: x["costo_pct"] / max(0.5, 15 + x["cubre_desde_pct"]))
 
 
+def experto_spread(cad: list[dict], spot: float, direccion: str) -> dict | None:
+    """Apuesta de dirección con pérdida limitada (no necesita tener las acciones):
+    a favor → compra call cerca del precio y vende otro más arriba (bull call spread);
+    en contra → compra put cerca del precio y vende otro más abajo (bear put spread). Plazo 3 a 8 semanas."""
+    tipo = "C" if direccion == "a favor" else "P"
+    liq = [o for o in cad if o["tipo"] == tipo and 20 <= o["dias"] <= 60 and experto_liquidez(o)[0]]
+    mejor = None
+    for venc in sorted({o["vence"] for o in liq}):
+        xs = sorted((o for o in liq if o["vence"] == venc), key=lambda o: o["strike"])
+        for a in xs:
+            if abs(a["strike"] / spot - 1) > 0.04:
+                continue
+            for b in xs:
+                lejos = (b["strike"] - a["strike"]) if tipo == "C" else (a["strike"] - b["strike"])
+                if lejos <= 0 or not (0.06 <= lejos / spot <= 0.15):
+                    continue
+                costo = a["ask"] - b["bid"]
+                if costo <= 0:
+                    continue
+                gana = lejos - costo
+                rel = gana / costo
+                x = {"compra": a, "vende": b, "costo": round(costo, 2), "gana_max": round(gana, 2), "relacion": round(rel, 2),
+                     "vence": venc, "dias": a["dias"], "punto_equilibrio": round(a["strike"] + costo if tipo == "C" else a["strike"] - costo, 2),
+                     "tipo": tipo, "strike": a["strike"], "bid": a["bid"], "ask": a["ask"], "contratos": 1,
+                     "pagas": round(costo * LOTE * (1 + COMISION)), "ganas_max": round(gana * LOTE)}
+                if rel >= 1.5 and (not mejor or rel > mejor["relacion"]):
+                    mejor = x
+    return mejor
+
+
 def comite(tk: str, spot: float, cad: list[dict], cierres: list[float], acciones: int, mesa: dict | None) -> dict:
     """Junta a los expertos y consulta a la mesa principal (opinión del papel) para la decisión final."""
     vol = experto_volatilidad(cad, spot, cierres)
@@ -190,6 +222,16 @@ def comite(tk: str, spot: float, cad: list[dict], cierres: list[float], acciones
                                 f"a {prot['ask']:,.2f}: pagás ~${prot['pagas']:,} ({prot['costo_pct']}% del valor) y quedás cubierto si cae más de {abs(prot['cubre_desde_pct'])}%.").replace(",", "."),
                       "motivo": "" if ok else ("la mesa no está en contra del papel: el seguro sería un gasto" if veredicto != "en contra"
                                                else "las primas están caras: el seguro sale demasiado")})
+    if veredicto in ("a favor", "en contra"):
+        sp = experto_spread(cad, spot, veredicto)
+        if sp:
+            caro = (vol.get("ratio") or 1) >= 1.3
+            nom = "bull call spread (apuesta a la suba con pérdida limitada)" if sp["tipo"] == "C" else "bear put spread (apuesta a la baja con pérdida limitada)"
+            ideas.append({"estrategia": nom, "aprobada": not caro, "opcion": sp["compra"]["simbolo"] + "/" + sp["vende"]["simbolo"], "detalle": sp,
+                          "texto": (f"Comprar {sp['compra']['simbolo']} y vender {sp['vende']['simbolo']} (vence {sp['vence'][8:10]}/{sp['vence'][5:7]}): pagás {sp['costo']:,.2f} "
+                                    f"por acción (~${sp['pagas']:,} un contrato) y podés ganar hasta {sp['gana_max']:,.2f} (~${sp['ganas_max']:,}), {sp['relacion']} veces lo que arriesgás. "
+                                    f"Empieza a ganar si el papel pasa {sp['punto_equilibrio']:,.0f}. Lo máximo que perdés es lo que pagás.").replace(",", "."),
+                          "motivo": "" if not caro else "las primas están muy caras para comprar"})
     liquidas = sum(1 for o in cad if experto_liquidez(o)[0])
     return {"ticker": tk, "spot": spot, "volatilidad": vol, "ideas": ideas, "opciones": len(cad), "liquidas": liquidas,
             "mesa": veredicto}
@@ -198,6 +240,13 @@ def comite(tk: str, spot: float, cad: list[dict], cierres: list[float], acciones
 # ---------- en papel ----------
 def abrir_papel(papel: list[dict], idea: dict, tk: str, hoy: date, hora: str) -> list[dict]:
     d = idea["detalle"]
+    if "spread" in idea["estrategia"]:
+        if any(p["opcion"] == idea["opcion"] and p["estado"] == "abierta" for p in papel):
+            return papel
+        papel.append({"fecha": hoy.isoformat(), "hora": hora, "ticker": tk, "estrategia": idea["estrategia"], "opcion": idea["opcion"], "lado": "compra",
+                      "precio": d["costo"], "piernas": [[d["compra"]["simbolo"], 1, d["compra"]["strike"]], [d["vende"]["simbolo"], -1, d["vende"]["strike"]]],
+                      "tipo": d["tipo"], "strike": d["strike"], "vence": d["vence"], "contratos": 1, "estado": "abierta"})
+        return papel
     if any(p["opcion"] == idea["opcion"] and p["estado"] == "abierta" for p in papel):
         return papel
     lado = "venta" if idea["estrategia"] == "lanzamiento cubierto" else "compra"
@@ -214,9 +263,15 @@ def valuar_papel(papel: list[dict], precio_op, spot_de, hoy: date) -> list[dict]
         if p["estado"] != "abierta":
             continue
         s = spot_de(p["ticker"])
-        if p["vence"] < hoy.isoformat():
-            intr = max(0.0, (s - p["strike"]) if p["tipo"] == "C" else (p["strike"] - s)) if s else None
-            ahora, p["estado"] = intr, "vencida"
+        intr_ = lambda k: max(0.0, (s - k) if p["tipo"] == "C" else (k - s))
+        if p.get("piernas"):
+            if p["vence"] < hoy.isoformat():
+                ahora, p["estado"] = (sum(q * intr_(k) for _, q, k in p["piernas"]) if s else None), "vencida"
+            else:
+                pr = [precio_op(sym) for sym, _, _ in p["piernas"]]
+                ahora = sum(q * x for (_, q, _), x in zip(p["piernas"], pr)) if all(x is not None for x in pr) else None
+        elif p["vence"] < hoy.isoformat():
+            ahora, p["estado"] = (intr_(p["strike"]) if s else None), "vencida"
         else:
             ahora = precio_op(p["opcion"])
         if ahora is None:
