@@ -1,0 +1,87 @@
+# Casos reales con los que se entrena y se examina el auditor de avisos de tu cartera.
+# esperado: "no_avisar" (el aviso de VENTA estaba mal) o "avisar" (el aviso de venta era correcto y no se puede bloquear).
+# Cada error nuevo que marques con 👎 en la campanita se suma acá. Si un cambio rompe un caso, no se publica.
+- caso: "TRAN 28/10: 'vendé' el día de compra por un máximo de antes de comprar"
+  esperado: no_avisar
+  ticker: TRAN
+  compra: 2158
+  fecha_compra: "2026-10-28"
+  hoy: "2026-10-28"
+  hora: "15:10"
+  precio: 2168
+  maximo_dia: 2300
+- caso: "IBB 03/11 10:30: precio viejo de antes de la apertura (12.400)"
+  esperado: no_avisar
+  ticker: IBB
+  compra: 12700
+  fecha_compra: "2026-10-22"
+  hoy: "2026-11-03"
+  hora: "10:30"
+  precio: 12400
+  maximo_previo: 13650
+- caso: "IBB 03/11 11:10: rozó por $5 el nivel de asegurar la mitad y rebotó"
+  esperado: no_avisar
+  ticker: IBB
+  compra: 12700
+  fecha_compra: "2026-10-22"
+  hoy: "2026-11-03"
+  hora: "11:10"
+  precio: 13170
+  maximo_previo: 13650
+- caso: "Precio de ayer usado hoy"
+  esperado: no_avisar
+  ticker: IBB
+  compra: 12700
+  fecha_compra: "2026-10-22"
+  hoy: "2026-11-03"
+  hora: "11:30"
+  precio: 12400
+  maximo_previo: 13650
+  fecha_precio: "2026-11-02T16:59"
+- caso: "TRAN 03/11: Clau decidió mantener hoy"
+  esperado: no_avisar
+  ticker: TRAN
+  compra: 2158
+  fecha_compra: "2026-10-28"
+  hoy: "2026-11-03"
+  hora: "11:25"
+  precio: 2150
+  maximo_previo: 2280
+  decision_hoy: mantener
+- caso: "Salto de 30% con casi nada de volumen (precio sospechoso)"
+  esperado: no_avisar
+  ticker: TRAN
+  compra: 2158
+  fecha_compra: "2026-10-28"
+  hoy: "2026-11-03"
+  hora: "12:00"
+  precio: 1500
+  cierre_anterior: 2200
+  volumen: 20
+- caso: "IREN 29/10 11:00: llegó a +14% y devolvió más de la mitad (correcto: Clau vendió)"
+  esperado: avisar
+  ticker: IREN
+  compra: 3495
+  fecha_compra: "2026-10-22"
+  hoy: "2026-10-29"
+  hora: "11:00"
+  precio: 3667
+  maximo_previo: 3995
+- caso: "LRCX 30/10 11:05: llegó a +9% y volvió a la compra (correcto: Clau vendió)"
+  esperado: avisar
+  ticker: LRCX
+  compra: 7050
+  fecha_compra: "2026-10-26"
+  hoy: "2026-10-30"
+  hora: "11:05"
+  precio: 7060
+  maximo_previo: 7715
+- caso: "YPFD 02/11 14:20: tocó el stop del plan (correcto avisar)"
+  esperado: avisar
+  ticker: YPFD
+  compra: 8135
+  fecha_compra: "2026-10-29"
+  hoy: "2026-11-02"
+  hora: "14:20"
+  precio: 7430
+  stop: 7470

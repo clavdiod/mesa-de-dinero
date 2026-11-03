@@ -302,7 +302,8 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
     return out, avisos
 
 
-def auditar(avisos: list[dict], titulo, hoy: date, hora: str, decisiones: dict | None = None) -> tuple[list[dict], list[str]]:
+def auditar(avisos: list[dict], titulo, hoy: date, hora: str, decisiones: dict | None = None,
+            feedback: list[dict] | None = None) -> tuple[list[dict], list[str]]:
     """03/11: control de calidad ANTES de mandarte un aviso de tu cartera. Lo que no pasa se descarta y queda anotado.
     - Solo con el mercado abierto (11:00 a 17:00): antes o después los precios no son operaciones reales.
     - El precio tiene que ser de hoy y de los últimos 20 minutos.
@@ -334,6 +335,10 @@ def auditar(avisos: list[dict], titulo, hoy: date, hora: str, decisiones: dict |
         d = (decisiones or {}).get(tk) or {}
         if not motivo and d.get("fecha") == hoy_s and d.get("accion") == "mantener" and "ALARMA" not in str(a.get("texto", "")).upper():
             motivo = "hoy decidiste mantener"
+        # lo que marcaste con 👎 hoy: no se repite el mismo tipo de aviso ese día (salvo que toque la alarma de venta)
+        if not motivo and any(f.get("fecha") == hoy_s and f.get("ticker") == tk for f in feedback or []) \
+                and "ALARMA" not in str(a.get("texto", "")).upper() and "STOP" not in str(a.get("texto", "")).upper():
+            motivo = "hoy marcaste un aviso de este papel como equivocado"
         if motivo:
             fuera.append(f"{tk}: {motivo}")
         else:

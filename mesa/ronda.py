@@ -1079,7 +1079,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                 for o_ in g_.get("opciones") or []:
                     o_["sugerida"] = o_["accion"] == "mantener"
                 avisos_cartera = [x_ for x_ in avisos_cartera if not str(x_.get("ticker", "")).startswith(tk_)]
-        avisos_cartera, fuera_ = segc.auditar(avisos_cartera, ctx.titulo, hoy, ctx.hora, dec_)
+        fb_ = [] if simular else (almacen.get("usuario/feedback_avisos") or [])
+        avisos_cartera, fuera_ = segc.auditar(avisos_cartera, ctx.titulo, hoy, ctx.hora, dec_, fb_ if isinstance(fb_, list) else [])
         if fuera_:
             print("[auditor] avisos descartados: " + "; ".join(fuera_))
             if not simular:

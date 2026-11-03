@@ -1,3 +1,4 @@
+let FEEDBACK = [];
 "use strict";
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -101,9 +102,18 @@ function pintarAvisos() {
     const corte = resto.search(/[;.](\s|$)/), corto = corte > 20 && corte < resto.length - 2 ? resto.slice(0, corte) : resto;
     const cab = `<span class="av-hora">${esc(a.hora || "")}</span>${m && m[1] ? esc(m[1]) : ""}${tk ? `<b class="link" data-abrir-debate="${esc(tk)}">${esc(tk)}</b>: ` : ""}${esc(corto)}`;
     const cls = `av-item${avClave(a) > AV_LEIDO ? " nuevo" : ""}`;
-    return corto === resto ? `<div class="${cls}">${cab}</div>`
-      : `<details class="${cls}"><summary>${cab} <span class="tenue">· más</span></summary><p class="tenue" style="margin:4px 0 0">${esc(resto.slice(corto.length).replace(/^[;.]\s*/, ""))}</p></details>`;
+    const esVenta = /VEND|decidir/i.test(String(a.ticker || "")) && tk;
+    const marcado = (FEEDBACK || []).some((f) => f.fecha === a.fecha && f.hora === a.hora && f.ticker === tk);
+    const fb = esVenta ? (marcado ? ' <span class="chip">👎 marcado como error</span>'
+      : ` <button class="chico" data-fb="${esc(JSON.stringify({ fecha: a.fecha, hora: a.hora, ticker: tk, texto: t.slice(0, 300) }))}">👎 estaba mal</button>`) : "";
+    return corto === resto ? `<div class="${cls}">${cab}${fb}</div>`
+      : `<details class="${cls}"><summary>${cab} <span class="tenue">· más</span>${fb}</summary><p class="tenue" style="margin:4px 0 0">${esc(resto.slice(corto.length).replace(/^[;.]\s*/, ""))}</p></details>`;
   };
+  setTimeout(() => document.querySelectorAll("#lista-avisos [data-fb]").forEach((b) => b.onclick = async (ev) => {
+    ev.preventDefault(); ev.stopPropagation();
+    try { const f = JSON.parse(b.dataset.fb); FEEDBACK = [{ ...f, marcado: new Date().toISOString() }, ...(FEEDBACK || [])].slice(0, 300);
+      await put("usuario/feedback_avisos", FEEDBACK); toast("Gracias: el auditor lo suma a sus casos"); pintarAvisos(); } catch (e) { toast("No se pudo guardar"); }
+  }), 0);
   $("#lista-avisos").innerHTML = xs.length ? [...porDia].map(([d, l]) => `<div class="av-dia">${d === HOY() ? "Hoy" : esc(fecha(d))}</div>${l.map(item).join("")}`).join("")
     : '<p class="tenue">Sin avisos por ahora.</p>';
 }
@@ -1531,6 +1541,7 @@ async function cargar() {
   try {
     [ESTADO, PROPS, USUARIO.lista, USUARIO.cartera, USUARIO.ons, USUARIO.capital] = await Promise.all([
       api("estado"), api("propuestas"), api("usuario/lista"), api("usuario/cartera"), api("usuario/ons"), api("usuario/capital")]);
+    try { FEEDBACK = await api("usuario/feedback_avisos"); if (!Array.isArray(FEEDBACK)) FEEDBACK = []; } catch (_) { FEEDBACK = []; }
     try { const [dc, op] = await Promise.all([api("usuario/decisiones_cartera"), api("usuario/operaciones")]);
       USUARIO.decisiones = Array.isArray(dc) ? {} : dc || {}; USUARIO.operaciones = Array.isArray(op) ? op : []; } catch (_) {}
     pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes(); pintarAnticipos(); try { pintarRentaFija(); } catch (_) {} pintarRadar(); pintarAviso();
