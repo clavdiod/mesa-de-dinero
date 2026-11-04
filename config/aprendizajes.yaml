@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-04'
+  caso: 'Las compras de la mesa salieron mal: -$81.300 en TRAN, ALUA, CEPU e YPFD'
+  que_paso: 'Clau: ''la mesa me dijo de estas compras y salió muy mal''. Revisando apareció además un error de datos: desde agosto el historial de YPFD (y MIRG) mezclaba precios de antes y después del desdoblamiento 10 a 1, así que la mesa veía un máximo del año de 87.225 y soportes, RSI y tendencia equivocados cuando propuso YPFD. Las entradas de CEPU y TRAN se hicieron con el gráfico todavía cayendo.'
+  leccion: 'Si se sigue comprando, cada propuesta tiene que pasar todos los controles, no casi todos. Y un historial roto invalida cualquier análisis: hay que controlar los datos antes que los indicadores.'
+  cambio: El Comité solo propone si la ficha en frío dice 'los números acompañan' (antes pasaba con una alarma en contra). El historial detecta y ajusta solo los desdoblamientos y agrupamientos (con prueba automática).
+- fecha: '2026-11-04'
   caso: 'Fundamentos (P/E, crecimiento, PEG): ¿predicen en los CEDEARs?'
   que_paso: 'Clau trajo un posteo de Damian Brik sobre crecimiento de ganancias, P/E y PEG. Se midió con las ganancias reales publicadas a la SEC (solo lo ya publicado en cada fecha), 53 empresas de los CEDEARs, 10 años, 4.085 meses-empresa, rendimiento a 3 meses. Todos: +4,2%. PEG<1 (barata para lo que crece): +3,8%. PEG≥2 (cara): +3,5%. P/E<15: +4,4%. P/E>40: +5,4%. Ganancias en baja: +5,0%. Cíclica con P/E<10 (la trampa de Lynch): +5,1%, sube el 63% de las veces.'
   leccion: 'En estas empresas grandes los fundamentos casi no separan ganadoras de perdedoras a 3 meses: lo barato no rindió más y lo caro no rindió menos; la trampa de la cíclica barata no apareció. El mercado ya tiene esos números en el precio. Ojo: son solo las empresas que hoy siguen en CEDEARs (sesgo de supervivencia) y se usaron ganancias pasadas, no estimaciones a futuro.'
