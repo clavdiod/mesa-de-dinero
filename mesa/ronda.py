@@ -923,7 +923,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
             e["ficha_txt"] = _ff.texto(e["ficha_frio"])
         except Exception as ex_:
             print(f"[ficha en frío] {e['ticker']}: {ex_}")
-        if (e.get("ficha_frio") or {}).get("veredicto") in ("en contra", "cara"):  # 02/11: entrada cara → se descarta
+        if (e.get("ficha_frio") or {}).get("veredicto") != "acompañan":  # 04/11: solo pasa si TODOS los números acompañan (antes pasaba con 1 en contra)
             print(f"[ficha en frío] {e['ticker']} no se propone: {e['ficha_txt']}")
             continue  # si los números en frío no acompañan, no llega a vos
         riesgo_unit = pl["entrada"] - pl["stop"]
