@@ -687,7 +687,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                 # Reglas de la mesa (02/11): el plan de un anticipador también pasa la revisión de entrada
                 if x.get("plan") and precio_:
                     from .agentes import ficha_frio as _ff2
-                    f_ = _ff2.ficha(vs_, precio_, x["plan"], None, [], t_.get("grupo"))
+                    from .agentes import fundamentos as _fu2
+                    f_ = _ff2.ficha(vs_, precio_, x["plan"], None, [], t_.get("grupo"), fundamentos=_fu2.de(almacen, x["ticker"]))
                     if f_:
                         x["ficha_txt"] = _ff2.texto(f_)
                         if f_.get("veredicto") == "cara":
@@ -907,7 +908,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     cap = {**config()["capital"], **{k: v for k, v in (almacen.get("usuario/capital") or {}).items() if v}}
     un_r = float(cap.get("monto_ars", 0)) * float(cap.get("riesgo_pct", cap.get("riesgo_por_operacion_pct", 1))) / 100
     nuevas = []
-    from .agentes import ficha_frio as _ff
+    from .agentes import ficha_frio as _ff, fundamentos as _fu
     for e in elegidos:
         pl = e["plan"]
         try:  # 02/11: la ficha en frío va con la propuesta, ANTES de que decidas
@@ -918,7 +919,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                                         + (f" (ayer {ctx.riesgo_pais_ayer})" if ctx.riesgo_pais_ayer else ""),
                                         [{"dir": s_.get("direccion"), "texto": s_.get("texto"), "agente": s_.get("agente")} for s_ in e.get("senales") or []
                                          if s_.get("agente") in ("hechos_emisor", "calificadoras") or (s_.get("agente") == "mundo" and str(s_.get("texto", "")).startswith("Noticias de"))],
-                                        t_.get("variacion"))
+                                        t_.get("variacion"), _fu.de(almacen, e["ticker"]))
             e["ficha_txt"] = _ff.texto(e["ficha_frio"])
         except Exception as ex_:
             print(f"[ficha en frío] {e['ticker']}: {ex_}")

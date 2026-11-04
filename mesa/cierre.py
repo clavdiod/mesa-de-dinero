@@ -284,6 +284,14 @@ def diario(simular: bool = False) -> dict:
         except Exception as ex:
             print(f"[cierre] renta fija: {ex}")
 
+    # Fundamentos de los CEDEARs (04/11): P/E, crecimiento, PEG, flujo de caja libre, cíclica. Solo informativo.
+    if not simular:
+        try:
+            from .agentes import fundamentos as _fun
+            _fun.actualizar(a, _universo_cedears(a), hoy)
+        except Exception as ex:
+            print(f"[cierre] fundamentos: {ex}")
+
     # Anticipador: estadística propia (desde el primer precio operable hasta el cierre)
     if not simular:
         try:
