@@ -12,6 +12,37 @@ from ..nucleo.config import config
 from ..nucleo.reloj import ahora
 
 
+SPLITS_COMUNES = [2, 3, 4, 5, 10, 20, 25, 50, 100]
+
+
+def ajustar_splits(velas: list[dict]) -> list[str]:
+    """Desdoblamientos (y agrupamientos): si entre dos ruedas seguidas el precio salta 3 veces o más y el salto
+    coincide con un split común (±8%), los precios anteriores se ajustan para que la serie sea comparable.
+    Devuelve qué ajustó. Sin esto, máximos, soportes, RSI y la ficha en frío dan cualquier cosa."""
+    hechos = []
+    for i in range(len(velas) - 1, 0, -1):
+        a, b = velas[i - 1].get("cierre"), velas[i].get("apertura") or velas[i].get("cierre")
+        if not a or not b:
+            continue
+        bruto = a / b
+        inv = bruto < 1
+        x = 1 / bruto if inv else bruto
+        if x < 3:
+            continue
+        r = min(SPLITS_COMUNES, key=lambda c: abs(c / x - 1))
+        if abs(r / x - 1) > 0.08:
+            continue
+        f = 1 / r if inv else r
+        for v in velas[:i]:
+            for k in ("maximo", "cierre", "apertura", "minimo"):
+                if v.get(k):
+                    v[k] = round(v[k] / f, 4)
+            if v.get("volumen"):
+                v["volumen"] = v["volumen"] * f
+        hechos.append(f"{velas[i].get('fecha')} {'1:' if inv else ''}{r}{'' if inv else ':1'}")
+    return hechos
+
+
 class CacheHistorico:
     def __init__(self, almacen, iol=None):
         self.almacen = almacen
@@ -50,6 +81,8 @@ class CacheHistorico:
                     self._sucio.add(t)
             else:
                 self._mem[t] = []
+            if ajustar_splits(self._mem[t]):  # 04/11: YPFD y MIRG mezclaban precios de antes y después del split
+                self._sucio.add(t)
         return self._mem[t]
 
     def cierres(self, ticker: str) -> list[float]:
@@ -118,6 +151,7 @@ class CacheHistorico:
             agregadas += 1
         if agregadas:
             velas.sort(key=lambda v: v["fecha"])
+            ajustar_splits(velas)
             self._mem[t] = velas
             self._sucio.add(t)
             self.indice[t] = {"desde": velas[0]["fecha"], "hasta": velas[-1]["fecha"], "ruedas": len(velas)}

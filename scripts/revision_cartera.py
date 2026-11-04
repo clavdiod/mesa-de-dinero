@@ -5,7 +5,9 @@ import numpy as np
 from mesa.nucleo.almacen import almacen_por_defecto
 from mesa.datos import gratis
 from mesa.agentes import estructura, grafico, ficha_frio
+from mesa.datos.cache import CacheHistorico
 a = almacen_por_defecto()
+cache = CacheHistorico(a)
 cart = {c["ticker"]: c for c in a.get("usuario/cartera") or []}
 ccl = gratis.ccl_historico()
 fc = sorted(ccl)
@@ -34,7 +36,7 @@ for tk in ("YPFD", "ALUA", "CEPU", "TRAN"):
                 rec.append(cs[i + 1:i + 61].max() / cs[i] - 1)
         res20, res60, rec = map(np.array, (res20, res60, rec))
         falta = ent / pr - 1 if ent and pr else 0
-        vel = a.get(f"cache/diario/{tk}") or []
+        vel = cache.velas(tk)
         est = estructura.leer(vel, pr, "acciones") or {}
         g = grafico.armar(vel, pr) or {}
         lec = ficha_frio.lecturas([v["cierre"] for v in vel if v.get("cierre")] + [pr], "acciones")
@@ -53,3 +55,5 @@ for tk in ("YPFD", "ALUA", "CEPU", "TRAN"):
         print("::notice::" + txt.replace("\n", " "))
     except Exception as ex:
         import traceback; print(f"::notice::{tk} ERR {ex} {traceback.format_exc()[-300:]}")
+cache.guardar()
+print('::notice::historial guardado con splits ajustados')
