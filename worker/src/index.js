@@ -408,15 +408,30 @@ async function disparar(env, workflow, inputs) {
   return estado;
 }
 
+// 05/11: días sin mercado (fines de semana y ref/feriados_AAAA, que incluye los días que cargue Clau): no se dispara nada
+async function habil(env, dt) {
+  const a = new Date(dt.getTime() - 3 * 3600e3), wd = a.getUTCDay();
+  if (wd === 0 || wd === 6) return false;
+  const f = await leer(env, `ref/feriados_${a.getUTCFullYear()}`, []);
+  return !f.includes(a.toISOString().slice(0, 10));
+}
+
+// el cierre semanal corre el último día hábil de la semana (viernes, o antes si el viernes no hay mercado)
+async function ultimoHabilSemana(env, dt) {
+  const wd = new Date(dt.getTime() - 3 * 3600e3).getUTCDay();
+  for (let k = 1; k <= 5 - wd; k++) if (await habil(env, new Date(dt.getTime() + k * 86400e3))) return false;
+  return true;
+}
+
 async function reloj(evento, env) {
   const d = new Date(evento.scheduledTime);
   const hm = d.getUTCHours() * 60 + d.getUTCMinutes(), dia = d.getUTCDay();
-  if (dia >= 1 && dia <= 5) {
+  if (dia >= 1 && dia <= 5 && await habil(env, d)) {
     if (hm >= 13 * 60 + 30 && hm <= 20 * 60) await disparar(env, "ronda.yml", { forzar: "false" }); // 10:30-17:00 ART
     if (hm === 13 * 60) await disparar(env, "tareas.yml", { tarea: "calificadoras" });                  // 10:00 ART
     if (hm === 20 * 60 + 10) await disparar(env, "tareas.yml", { tarea: "diario" });                    // 17:10 ART
-    if (dia === 5 && hm === 20 * 60 + 30) await disparar(env, "tareas.yml", { tarea: "semanal" });      // vie 17:30
-    if (dia === 5 && hm === 20 * 60 + 45) await disparar(env, "tareas.yml", { tarea: "entrenar" });     // vie 17:45: re-entrena con la historia
+    if (hm === 20 * 60 + 30 && await ultimoHabilSemana(env, d)) await disparar(env, "tareas.yml", { tarea: "semanal" });  // 17:30
+    if (hm === 20 * 60 + 45 && await ultimoHabilSemana(env, d)) await disparar(env, "tareas.yml", { tarea: "entrenar" }); // 17:45: re-entrena
   }
   if (d.getUTCDate() <= 3 && hm === 21 * 60) await disparar(env, "tareas.yml", { tarea: "mensual" });
 }

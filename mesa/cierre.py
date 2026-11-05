@@ -605,6 +605,13 @@ if __name__ == "__main__":
     _a = almacen_por_defecto()
     _hoy = ahora().date().isoformat()
     _hechas = _a.get("tareas/hechas") or {}
+    # 05/11: el respaldo de GitHub no corre en días sin mercado (no se consulta nada); semanal/entrenar no se repiten en la semana
+    if os.environ.get("RESPALDO") and tarea != "mensual" and not es_dia_habil(ahora().date(), _a):
+        print(f"::notice::{tarea}: día sin mercado, no se hace nada")
+        sys.exit(0)
+    if os.environ.get("RESPALDO") and tarea in ("semanal", "entrenar") and (_hechas.get(tarea) or "") >= (ahora().date() - timedelta(days=ahora().date().weekday())).isoformat():
+        print(f"::notice::{tarea}: ya se hizo esta semana")
+        sys.exit(0)
     if os.environ.get("RESPALDO") and _hechas.get(tarea) == _hoy:
         print(f"::notice::{tarea}: ya se hizo hoy (respaldo sin trabajo)")
         sys.exit(0)
