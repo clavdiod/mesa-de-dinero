@@ -221,6 +221,7 @@ function pintarEstado() {
   }
   pintarEconomista();
   pintarWallStreet();
+  pintarWsVivo();
   pintarMinistro();
   pintarGanadores();
   pintarProfesionales();
@@ -895,6 +896,17 @@ function pintarEconomista() {
     ${(r.clase || []).map((x) => `<p>${esc(x)}</p>`).join("")}
     ${(r.ensena || []).length ? `<p class="tenue"><b>Lo que les enseña hoy al resto:</b></p>${r.ensena.map((x) => `<p class="tenue">• ${esc(x)}</p>`).join("")}` : ""}
     <p class="tenue">${r.ensenanza_activa ? "Así ajusta a la mesa: a las señales de los demás que van con este contexto se les cree hasta 25% más, y a las que van en contra, hasta 25% menos." : "⏸ " + esc(r.ensenanza_motivo || "Su enseñanza está en pausa hasta que la historia muestre que sirve.")}</p></div>`;
+}
+
+// 05/11: Wall Street en vivo (la lectura de la rueda de Nueva York, solo información)
+function pintarWsVivo() {
+  const r = ESTADO.estado?.ws_vivo, el = $("#ws-vivo");
+  if (!el) return;
+  if (!r || !r.lineas?.length) { el.innerHTML = ""; return; }
+  el.innerHTML = `<details class="card eco"><summary><div class="fila"><b>🗽 Wall Street ahora</b><span class="chip ${r.color}">${esc(r.titulo)}</span></div></summary>
+    ${r.lineas.map((x) => `<p>${esc(x)}</p>`).join("")}
+    ${(r.titulares || []).length ? `<p class="tenue"><b>Titulares:</b></p>${r.titulares.map((x) => `<p class="tenue">• ${esc(x)}</p>`).join("")}` : ""}
+    <p class="tenue">${esc(r.nota)} Hora de Nueva York ${esc(r.hora_ny)}.</p></details>`;
 }
 
 function pintarWallStreet() {

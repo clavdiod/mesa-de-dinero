@@ -126,8 +126,9 @@ def lectura(ahora: datetime, propios: dict[str, str] | None = None, hist: dict |
             lin.append(f"{s} ({SEMIS.get(s, 'apalancado 3x')}) {_p(x['var'])} hoy, {_p(x['d5'], 0)} en 5 días, {_p(x['m1'], 0)} en un mes y {_p(x['desde_max'], 0)} desde su máximo."
                        + (" Movimientos así suelen ser ventas forzadas (llamados de margen)." if x["var"] < 0 else ""))
     # volumen anormal con el precio en un extremo del día: quién manda
-    vend = [s for s, x in d.items() if s != "^VIX" and (x["vol_rel"] or 0) >= 1.8 and x["pos_dia"] is not None and x["pos_dia"] <= 0.2 and x["var"] < 0]
-    comp = [s for s, x in d.items() if s != "^VIX" and (x["vol_rel"] or 0) >= 1.8 and x["pos_dia"] is not None and x["pos_dia"] >= 0.8 and x["var"] > 0]
+    sin_vol = ("^VIX", "BTC-USD")  # el VIX no tiene volumen y bitcoin opera las 24 horas
+    vend = [s for s, x in d.items() if s not in sin_vol and (x["vol_rel"] or 0) >= 1.8 and x["pos_dia"] is not None and x["pos_dia"] <= 0.2 and x["var"] < 0]
+    comp = [s for s, x in d.items() if s not in sin_vol and (x["vol_rel"] or 0) >= 1.8 and x["pos_dia"] is not None and x["pos_dia"] >= 0.8 and x["var"] > 0]
     if vend:
         lin.append("Vendedores en control: " + ", ".join(f"{s} ({d[s]['vol_rel']:.1f}x)".replace(".", ",") for s in vend[:5])
                    + " operan mucho más volumen que lo normal a esta hora y están pegados al mínimo del día.")
