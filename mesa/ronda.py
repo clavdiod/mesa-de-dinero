@@ -1133,6 +1133,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "comite": comite_estado,
         "proyeccion_cartera": proy_cartera,
         "opciones": mesa_opciones,
+        "ws_vivo": _ws_vivo(ctx, almacen, cartera, ya, hoy, simular),
         "graficos": _graficos(ctx, cartera, seg_cartera),
         "seguimiento_cartera": seg_cartera,
         "memoria": None if simular else (almacen.get("memoria/papeles") or {}),
@@ -1200,6 +1201,34 @@ def _ar(x: float) -> str:
 
 
 # 03/11: los papeles con opciones habilitadas en Cocos (lo que se puede operar de verdad)
+def _ws_vivo(ctx, almacen, cartera, ya, hoy, simular) -> dict | None:
+    """05/11: lectura de la rueda de Nueva York mientras está abierta (Yahoo, gratis; no gasta cupo de IOL)."""
+    if simular:
+        return None
+    try:
+        from .agentes import ws_vivo, adr as _adr
+        from .datos import gratis as _g
+        propios = {}
+        for c in cartera or []:
+            tk = str(c.get("ticker") or "").upper()
+            t = ctx.titulo(tk) or {}
+            if t.get("grupo") == "cedears":
+                propios[tk[:-1] if tk[-1:] in ("D", "C") and ctx.titulo(tk[:-1]) else tk] = tk
+            elif tk in _adr.ADRS:
+                propios[_adr.ADRS[tk]] = f"{tk} (ADR {_adr.ADRS[tk]})"
+        h = almacen.get("wsvivo/hist") or {}
+        if h.get("fecha") != hoy.isoformat():  # 10 años de QQQ, una vez por día
+            q = _g.yahoo("QQQ", "10y")
+            if q:
+                h = {"fecha": hoy.isoformat(), "qqq": q}
+                almacen.put("wsvivo/hist", h)
+        tit = [n["titulo"] for n in _g.buscar_noticias("Wall Street Nasdaq", horas=6, max_items=3)]
+        return ws_vivo.lectura(ya, propios, h, tit)
+    except Exception as ex:
+        print(f"[ws vivo] {ex}")
+        return None
+
+
 SUBYACENTES_OPC = ["GGAL", "YPFD", "PAMP", "TXAR", "COME"]
 
 
