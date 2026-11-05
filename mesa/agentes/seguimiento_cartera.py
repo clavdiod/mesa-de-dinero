@@ -142,8 +142,9 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         techo5 = round(((r1[1] / precio) ** 0.5 - 1) * 100, 1) if r1 and r1[1] else None
         riesgo_u = (compra_p - piso) if compra_p and piso and compra_p > piso else None
         # --- opciones ---
-        ops = [{"accion": "mantener", "texto": "Mantener" + (f": en los próximos días lo normal es que pueda subir hasta +{_m(techo5, 1)}%" if techo5 else "")
-                + (f" (objetivo {_p(obj)})" if obj else "") + "."}]
+        # 05/11: antes decía "+3,9% (objetivo 1.048)" y mezclaba dos cosas: ahora el techo va en precio y el objetivo aparte, con lo que falta
+        ops = [{"accion": "mantener", "texto": "Mantener" + (f": en los próximos días lo normal es que pueda subir hasta +{_m(techo5, 1)}% (unos {_p(precio * (1 + techo5 / 100))})" if techo5 else "")
+                + (f". El objetivo del plan ({_p(obj)}) está {_m((obj / precio - 1) * 100, 1)}% arriba" if obj and precio else "") + "."}]
         nuevo_stop = None
         if compra_p and riesgo_u and precio >= compra_p + 2 * riesgo_u:
             nuevo_stop = round(compra_p + riesgo_u, 2)
