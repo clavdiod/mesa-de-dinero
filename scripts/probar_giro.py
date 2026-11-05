@@ -21,11 +21,11 @@ with ThreadPoolExecutor(8) as ex:
     datos = dict(zip(tks, ex.map(lambda t: gratis.yahoo_ohlcv(t + ".BA", "10y"), tks)))
 R = {k: [] for k in ("caida_todos", "macd_cruza_arriba", "macd_cruza_y_volumen", "supera_max_5r", "supera_media20", "cierra_arriba_media20_2dias", "rompe_linea_bajista", "sigue_cayendo")}
 for tk, v in datos.items():
-    v = [x for x in v or [] if x.get("cierre") and usd(x["fecha"])]
+    v = [x for x in v or [] if x.get("c") and usd(x["fecha"])]
     if len(v) < 300:
         continue
-    c = np.array([x["cierre"] / usd(x["fecha"]) for x in v]); o = np.array([(x.get("apertura") or x["cierre"]) / usd(x["fecha"]) for x in v])
-    vol = np.array([x.get("volumen") or 0 for x in v], float)
+    c = np.array([x["c"] / usd(x["fecha"]) for x in v]); o = np.array([(x.get("o") or x["c"]) / usd(x["fecha"]) for x in v])
+    vol = np.array([x.get("v") or 0 for x in v], float)
     m = ema(c, 12) - ema(c, 26); h = m - ema(m, 9)
     for i in range(80, len(c) - 21):
         dd = c[i] / c[i - 59:i + 1].max() - 1
@@ -47,6 +47,7 @@ for tk, v in datos.items():
             lin_a = c[j2] + (c[j2] - c[j1]) / (j2 - j1) * (i - 1 - j2)
             if c[i] > lin and c[i - 1] <= lin_a: R["rompe_linea_bajista"].append(r)
         if c[i] < c[i - 5:i].min() and h[i] < 0: R["sigue_cayendo"].append(r)
+print(f"::notice::{sum(1 for v in datos.values() if v)} acciones con historia")
 for k, x in R.items():
     x = np.array(x) * 100
     if len(x) >= 20:
