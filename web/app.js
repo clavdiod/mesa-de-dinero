@@ -546,7 +546,16 @@ function formDecidir(tk, g, o) {
   } else {
     f.innerHTML = `<div class="card"><label>Cantidad que vendiste <input id="dec-cant" inputmode="numeric" value="${o.cantidad}"></label>
       <label>Precio al que vendiste <input id="dec-precio" inputmode="decimal" value="${String(g.precio).replace(".", ",")}"></label>
+      <p id="dec-resumen" style="font-weight:600"></p>
       <p class="tenue">Cargalo después de vender en tu broker (o con el precio de la orden que dejaste).</p><button class="prim" id="ok-dec" style="width:100%">Anotar la venta</button></div>`;
+    // 05/11: la venta de ALUA quedó anotada con 1 en vez de 395: se muestra lo que se va a guardar antes de tocar el botón
+    const pos0 = USUARIO.cartera.find((y) => String(y.ticker).toUpperCase() === tk);
+    const resumen = () => {
+      const n = Math.round(aNum($("#dec-cant").value)), pv = aNum($("#dec-precio").value), tot = pos0?.cantidad || 0;
+      const r = pos0?.precio && n && pv ? Math.round((pv - pos0.precio) * Math.min(n, tot)) : null;
+      $("#dec-resumen").textContent = n ? `Anotás ${num(Math.min(n, tot), 0)} de ${num(tot, 0)}${r === null ? "" : ` · resultado ${r < 0 ? "−" : "+"}$${num(Math.abs(r), 0)}`}` : "Poné la cantidad";
+    };
+    $("#dec-cant").oninput = resumen; $("#dec-precio").oninput = resumen; resumen();
   }
   f.scrollIntoView({ behavior: "smooth" });
   $("#ok-dec").onclick = async () => {
@@ -562,6 +571,10 @@ function formDecidir(tk, g, o) {
         const n = Math.round(aNum($("#dec-cant").value)), pv = aNum($("#dec-precio").value);
         const i = USUARIO.cartera.findIndex((y) => String(y.ticker).toUpperCase() === tk); if (i < 0 || !n || !pv) return toast("Revisá cantidad y precio");
         const pos = USUARIO.cartera[i], cant = Math.min(n, pos.cantidad);
+        if (o.accion === "vender_todo" && cant !== pos.cantidad && !$("#ok-dec").dataset.confirmado) {
+          $("#ok-dec").dataset.confirmado = "1"; $("#ok-dec").textContent = `Confirmar: vendiste ${cant} de ${pos.cantidad}`;
+          return toast(`Elegiste vender todo (${pos.cantidad}) pero pusiste ${cant}. Si está bien, tocá de nuevo.`);
+        }
         USUARIO.operaciones.unshift({ fecha: HOY(), ticker: tk, cantidad: cant, precio: pv, compra: pos.precio, fecha_compra: pos.fecha || null,
           resultado_pct: pos.precio ? Math.round((pv / pos.precio - 1) * 10000) / 100 : null, ganancia: pos.precio ? Math.round((pv - pos.precio) * cant) : null });
         pos.cantidad -= cant; if (pos.cantidad <= 0) USUARIO.cartera.splice(i, 1);
