@@ -1,5 +1,10 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
+- fecha: '2026-11-05'
+  caso: ¿Se puede avisar cuándo un papel 'dejó de caer'?
+  que_paso: 'Clau quería un aviso claro cuando TRAN o CEPU dejen de caer, para sumar ahí y no en la caída. Se probaron 7 señales en 66 acciones argentinas, 10 años, en dólares, después de caídas de 15% o más (70.376 casos, entrada al día siguiente, comisión 1,2%). Sin señal: suben 43% de las veces a un mes. La mejor fue MACD que cruza hacia arriba con volumen fuerte: +1,7% promedio, pero sube solo 46% de las veces y la mediana es -1,3%. Cortar la línea bajista: 45%. Pasar el promedio de 20 ruedas: 44%. MACD solo: 42%.'
+  leccion: 'Después de una caída fuerte, ninguna señal de giro le gana a tirar una moneda: el promedio lo salvan unos pocos rebotes grandes, y en el caso típico se pierde. Sumar ''cuando da vuelta'' no tiene ventaja probada.'
+  cambio: No se activa el aviso de 'dejó de caer' (se prometió no mandarlo si la prueba no daba bien). Promediar a la baja no se propone.
 - fecha: '2026-11-04'
   caso: 'Las compras de la mesa salieron mal: -$81.300 en TRAN, ALUA, CEPU e YPFD'
   que_paso: 'Clau: ''la mesa me dijo de estas compras y salió muy mal''. Revisando apareció además un error de datos: desde agosto el historial de YPFD (y MIRG) mezclaba precios de antes y después del desdoblamiento 10 a 1, así que la mesa veía un máximo del año de 87.225 y soportes, RSI y tendencia equivocados cuando propuso YPFD. Las entradas de CEPU y TRAN se hicieron con el gráfico todavía cayendo.'
