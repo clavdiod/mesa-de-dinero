@@ -1080,6 +1080,11 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                 for o_ in g_.get("opciones") or []:
                     o_["sugerida"] = o_["accion"] == "mantener"
                 avisos_cartera = [x_ for x_ in avisos_cartera if not str(x_.get("ticker", "")).startswith(tk_)]
+        try:  # 06/11: analista de volúmenes de tu cartera (compra o venta fuera de lo normal, con lo que dice la historia)
+            from .agentes import volumen_cartera as _vc
+            avisos_cartera += _vc.avisos(cartera, ctx.titulo, (lambda tk_: ctx.cache.velas(tk_) if ctx.cache else []), hoy.isoformat(), ctx.hora, avis)
+        except Exception as ex_v:
+            print(f"[volumen cartera] {ex_v}")
         fb_ = [] if simular else (almacen.get("usuario/feedback_avisos") or [])
         avisos_cartera, fuera_ = segc.auditar(avisos_cartera, ctx.titulo, hoy, ctx.hora, dec_, fb_ if isinstance(fb_, list) else [])
         if fuera_:
