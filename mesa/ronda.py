@@ -1083,6 +1083,9 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         try:  # 06/11: analista de volúmenes de tu cartera (compra o venta fuera de lo normal, con lo que dice la historia)
             from .agentes import volumen_cartera as _vc
             avisos_cartera += _vc.avisos(cartera, ctx.titulo, (lambda tk_: ctx.cache.velas(tk_) if ctx.cache else []), hoy.isoformat(), ctx.hora, avis)
+            # y compras grandes en cualquier acción argentina (06/11: "si no me avisás me lo pierdo")
+            avisos_cartera += _vc.compras_mercado(ctx.grupo("acciones"), (lambda tk_: ctx.cache.velas(tk_) if ctx.cache else []), hoy.isoformat(), ctx.hora, avis,
+                                                  {str(c_.get("ticker") or "").upper() for c_ in cartera})
         except Exception as ex_v:
             print(f"[volumen cartera] {ex_v}")
         fb_ = [] if simular else (almacen.get("usuario/feedback_avisos") or [])

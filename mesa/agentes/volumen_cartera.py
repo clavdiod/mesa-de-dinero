@@ -70,3 +70,51 @@ def avisos(cartera: list[dict], titulo, velas, hoy: str, hora: str, avisados: di
         avisados[f"vol:{tk}"] = f"{hoy}|{tipo}"
         out.append({"fecha": hoy, "hora": hora, "ticker": f"{tk} (volumen)", "texto": texto, "tipo_aviso": "volumen"})
     return out
+
+
+def compras_mercado(acciones: list[dict], velas, hoy: str, hora: str, avisados: dict, mias: set[str], maximo: int = 3) -> list[dict]:
+    """06/11: compra fuerte en CUALQUIER acción argentina ('alguien grande comprando'). Pedido de Clau: no perdérselas.
+    Probado 06/11 (66 acciones, 10 años, en dólares, neto): compra fuerte en general sube 49 de cada 100 a un mes (+2,2%);
+    después de una caída de 20%+ en 3 meses: 54 de cada 100 (+4,5%, mediana +2%, 1 de cada 3 sube 10%+); en el máximo del año: 44 (no sirve, se descarta)."""
+    out = []
+    if not ("12:00" <= (hora or "") <= "17:05"):
+        return out
+    h, m = (int(x) for x in hora.split(":")[:2])
+    frac = min(1.0, max(0.15, (h * 60 + m - 630) / 390))
+    cands = []
+    for t in acciones or []:
+        tk = str(t.get("simbolo") or "").upper()
+        if not tk or tk in mias or not t.get("ultimo") or not t.get("volumen") or (t.get("monto") or 0) < 20_000_000:
+            continue
+        vs = [v for v in velas(tk) if v.get("cierre") and v.get("fecha") != hoy]
+        vols = [v["volumen"] for v in vs[-20:] if v.get("volumen")]
+        if len(vols) < 15 or not st.mean(vols) or len(vs) < 120:
+            continue
+        rel = t["volumen"] / frac / st.mean(vols)
+        ult, ant = t["ultimo"], t.get("cierre_anterior") or vs[-1]["cierre"]
+        var = (ult / ant - 1) * 100
+        hi, lo = t.get("maximo") or ult, t.get("minimo") or ult
+        posd = (ult - lo) / (hi - lo) if hi > lo else 0.5
+        if not (rel >= 2.5 and var >= 2 and posd >= 0.7):
+            continue
+        cs = [v["cierre"] for v in vs]
+        mx1 = max(cs[-252:])
+        if ult >= mx1:
+            continue  # en el máximo del año la compra fuerte no anticipó nada
+        caida = (cs[-1] / max(cs[-60:]) - 1) * 100
+        cands.append((caida <= -20, rel, tk, var, caida, mx1, ult))
+    for fuerte, rel, tk, var, caida, mx1, ult in sorted(cands, reverse=True)[:maximo]:
+        if avisados.get(f"volm:{tk}") == hoy:
+            continue
+        avisados[f"volm:{tk}"] = hoy
+        if fuerte:
+            txt = (f"⭐🟢 {tk}: alguien grande compra después de la caída. Va camino a {_n(rel)} veces su volumen normal, sube {_n(var)}% "
+                   f"y opera cerca del máximo del día, después de caer {_n(abs(caida), 0)}% en 3 meses. En 10 años, compras así después de una caída "
+                   f"subieron 54 de cada 100 veces en el mes siguiente (+4,5% promedio; 1 de cada 3, más de 10%), contra 42 de cada 100 un día cualquiera.")
+        else:
+            txt = (f"🟢 {tk}: compra fuerte. Va camino a {_n(rel)} veces su volumen normal, sube {_n(var)}% y opera cerca del máximo del día. "
+                   f"En 10 años, compras así subieron 49 de cada 100 veces en el mes siguiente (+2,2% promedio), contra 42 de cada 100 un día cualquiera: ventaja chica.")
+        txt += (f" Precio {_n(ult, 2)}; máximo del año {_n(mx1, 2)} ({_n((mx1 / ult - 1) * 100, 0)}% arriba). "
+                "No es una propuesta del Comité: antes de comprar, mirá que la entrada no esté estirada y poné una alarma de venta.")
+        out.append({"fecha": hoy, "hora": hora, "ticker": f"{tk} (compra grande)", "texto": txt, "tipo_aviso": "volumen_mercado"})
+    return out

@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-06'
+  caso: 'Compras grandes en todo el mercado: ¿cuándo valen?'
+  que_paso: 'Clau: ''quiero volumen atípico de todo el mercado para la compra, es alguien grande comprando y si no me avisás me lo pierdo''. Se probó la compra fuerte (2,5 veces el volumen, +2%, cerca del máximo del día) por situación, 66 acciones, 10 años, en dólares, neto. En general: 49 de cada 100 suben a un mes (+2,2%). Después de caer 20%+ en 3 meses: 54 de cada 100, +4,5%, mediana +2%, 1 de cada 3 sube más de 10%. Con 4 veces el volumen: +3,0% pero 48 de cada 100. En tendencia alcista: 46. En el máximo del año: 44.'
+  leccion: 'La compra grande que más anticipa es la que llega después de una caída fuerte: alguien entra a comprar barato. En máximos no sirve.'
+  cambio: 'Avisos de compra grande en cualquier acción argentina (desde el mediodía, con monto operado de $20 M o más, máximo 3 por ronda, una vez por día por papel): ⭐ si viene después de caer 20%+, y sin aviso si está en el máximo del año. Con precio, máximo del año y lo que dice la historia.'
+- fecha: '2026-11-06'
   caso: ¿Qué anticipa un volumen anormal?
   que_paso: 'Clau pidió un analista de volúmenes que avise compras o ventas fuera de lo normal (después de ver a TRAN operar 4 a 5 veces su volumen el 3 y 4/11 mientras caía). Se probó con 66 acciones argentinas, 10 años, en dólares, neto de comisión. Un día cualquiera: a un mes sube 42 de cada 100. Compra fuerte (2,5 veces el volumen, +2%, cerca del máximo): 49 de cada 100, +2,2%. Venta fuerte: la semana siguiente -1,5%, a un mes igual que siempre. Venta fuerte en el mínimo del año: 51 de cada 100, +3,5%. Agotamiento (ayer venta con 3 veces el volumen y -4%, hoy volumen normal sin perforar): 55 de cada 100, +4%. Venta sostenida 3 días: 46 de cada 100, no anticipa más caída. Compra fuerte en máximo del año: 44 de cada 100, mediana -2,5%.'
   leccion: 'El volumen sí dice algo, pero al revés de lo que asusta: la venta fuerte asusta y a un mes no anticipa nada; muchas veces en el mínimo del año es la descarga final, y cuando la venta se agota es la mejor señal. La compra fuerte acompaña, salvo en máximos del año.'
