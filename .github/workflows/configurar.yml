@@ -24,4 +24,7 @@ jobs:
           IOL_CLAVE: ${{ secrets.IOL_CLAVE }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VAPID_PRIVADA: ${{ secrets.VAPID_PRIVADA }}
+          VAPID_PUBLICA: ${{ secrets.VAPID_PUBLICA }}
+          VAPID_CONTACTO: ${{ secrets.VAPID_CONTACTO }}
         run: PYTHONPATH=. python scripts/${{ inputs.script || 'probar_iol' }}.py

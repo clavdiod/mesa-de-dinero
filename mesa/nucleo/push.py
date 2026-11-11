@@ -48,7 +48,7 @@ def enviar(suscripciones: list[dict]) -> dict:
     if not (priv and pub) or not suscripciones:
         return {"enviadas": 0, "vencidas": []}
     sub = env("VAPID_CONTACTO", "mailto:mesa@example.com")
-    ok, vencidas = 0, []
+    ok, vencidas, codigos = 0, [], []
     for s in suscripciones:
         ep = s.get("endpoint")
         if not ep:
@@ -58,10 +58,12 @@ def enviar(suscripciones: list[dict]) -> dict:
             r = requests.post(ep, timeout=15, headers={
                 "TTL": "3600", "Urgency": "high", "Content-Length": "0",
                 "Authorization": f"vapid t={_jwt(f'{u.scheme}://{u.netloc}', priv, sub)}, k={pub}"})
+            codigos.append(f"{u.netloc}:{r.status_code}")
             if r.status_code in (404, 410):
                 vencidas.append(ep)
             elif r.ok:
                 ok += 1
-        except Exception:
+        except Exception as ex:
+            codigos.append(f"{u.netloc}:error {type(ex).__name__}")
             continue
-    return {"enviadas": ok, "vencidas": vencidas}
+    return {"enviadas": ok, "vencidas": vencidas, "codigos": codigos}

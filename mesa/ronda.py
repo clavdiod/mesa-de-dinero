@@ -1190,6 +1190,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     if (nuevas or alertas_lista) and not simular:
         subs = almacen.get("push/suscripciones") or []
         res = push.enviar(subs)
+        print(f"[push] {len(subs)} suscripciones, enviadas {res['enviadas']}: {res.get('codigos')}")  # 11/11: para saber si llegan
         if res["vencidas"]:
             almacen.put("push/suscripciones", [s for s in subs if s.get("endpoint") not in res["vencidas"]])
     return {"corrio": True, "nuevas": len(nuevas), "senales": len(senales), "consumo": consumo.resumen(),
