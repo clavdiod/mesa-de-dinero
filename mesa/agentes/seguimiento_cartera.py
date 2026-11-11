@@ -177,12 +177,14 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         # 03/11: con margen de 0,5 punto (IBB tocó el nivel por $5 en la apertura y rebotó) y nunca antes de las 11:00,
         # cuando todavía no hay operaciones reales (a las 10:30 IBB figuraba a 12.400 y TRAN a 2.140: precios viejos).
         abierto = (hora or "00:00") >= "11:00"
-        devolviendo = bool(abierto and gan_max is not None and gan_max >= 5 and res is not None and res <= gan_max / 2 - 0.5
+        # 11/11: solo mientras todavía hay ganancia que cuidar. Si ya vas en pérdida (TRAN -8,7% decía "salí antes de perder"),
+        # "devolviste la ganancia" no tiene sentido: ahí manda la alarma de venta.
+        devolviendo = bool(abierto and gan_max is not None and gan_max >= 5 and res is not None and 0 < res <= gan_max / 2 - 0.5
                            and (dias or 0) >= 1)
         if devolviendo:
             sug = "vender_todo" if (res or 0) <= 1.5 else "vender_mitad"
             por_que = (f"Llegó a ganar {_m(gan_max, 1)}% (máximo {_p(mx)}) y ya devolvió más de la mitad: hoy vas {_m(res, 1)}%. "
-                       + ("Salí antes de perder." if sug == "vender_todo" else "Asegurá al menos la mitad."))
+                       + ("Salí ahora con lo que queda de ganancia." if sug == "vender_todo" else "Asegurá al menos la mitad."))
         elif cons.startswith("Dejar correr") and compra_p:
             # stop que sube solo: nunca debajo de tu compra ni del objetivo cumplido, y a ~6% del máximo alcanzado
             oi = x.get("objetivo_idea") or 0
