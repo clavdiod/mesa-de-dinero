@@ -1548,17 +1548,28 @@ $("#btn-chat-borrar").addEventListener("click", () => { CHAT = []; guardarChat()
 pintarChat();
 
 // ---------- push ----------
+async function registrarPush(pedirPermiso) {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) throw new Error("Este navegador no soporta avisos");
+  const { clave } = await api("push/clave"); if (!clave) throw new Error("Falta configurar la clave de avisos");
+  const reg = await navigator.serviceWorker.ready;
+  if (pedirPermiso ? (await Notification.requestPermission()) !== "granted" : Notification.permission !== "granted") return false;
+  const pad = "=".repeat((4 - (clave.length % 4)) % 4), raw = atob((clave + pad).replace(/-/g, "+").replace(/_/g, "/"));
+  const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: Uint8Array.from(raw, (c) => c.charCodeAt(0)) });
+  await post("push/suscribir", sub.toJSON());
+  return true;
+}
 $("#btn-push").addEventListener("click", async () => {
-  try {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return toast("Este navegador no soporta avisos");
-    const { clave } = await api("push/clave"); if (!clave) return toast("Falta configurar la clave de avisos");
-    const reg = await navigator.serviceWorker.ready;
-    if ((await Notification.requestPermission()) !== "granted") return toast("Permiso de avisos denegado");
-    const pad = "=".repeat((4 - (clave.length % 4)) % 4), raw = atob((clave + pad).replace(/-/g, "+").replace(/_/g, "/"));
-    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: Uint8Array.from(raw, (c) => c.charCodeAt(0)) });
-    await post("push/suscribir", sub.toJSON()); toast("Avisos activados");
-  } catch (e) { toast(`No se pudo: ${e.message}`); }
+  try { toast((await registrarPush(true)) ? "Avisos activados" : "Permiso de avisos denegado"); } catch (e) { toast(`No se pudo: ${e.message}`); }
 });
+// 11/11: el registro del celular se había perdido y no llegó ningún aviso. Cada vez que abrís la app, si ya diste permiso,
+// se vuelve a registrar sola (el servidor no duplica). Si no hay permiso, se avisa arriba.
+setTimeout(async () => {
+  try {
+    if (typeof Notification !== "undefined" && Notification.permission !== "granted")
+      toast("⚠️ Los avisos al celular están apagados: activalos en Ajustes › Avisos en el celular");
+    else await registrarPush(false);
+  } catch (_) {}
+}, 4000);
 $("#btn-analizar").addEventListener("click", async () => {
   try { const r = await post("analizar", {}); toast(r.mensaje || "Ronda pedida"); } catch (e) { toast(`No se pudo: ${e.message}`); }
 });
