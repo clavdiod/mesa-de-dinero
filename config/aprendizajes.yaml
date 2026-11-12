@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-12'
+  caso: Dólar, tasas e inflación esperada (idea de El Dashboard)
+  que_paso: 'Clau compartió El Dashboard (eldashboard.com.ar). No tiene API y pide cuenta, así que no se usa como fuente; se sumaron los mismos datos desde las fuentes públicas: BCRA (API v4: dólar mayorista, CER, inflación, TAMAR, BADLAR, plazo fijo), A3 Mercados (dólar futuro) y BYMA/data912 (bonos CER). Al revisar se vio que la mesa usaba la API v3 del BCRA, que ya no devolvía datos (las reservas podían estar viejas). Primer resultado (12/11): el dólar mayorista está 27% debajo del techo de la banda; el mercado espera 1,7-2% de inflación por mes (igual que el REM) y 1,95% de devaluación por mes; la LECAP S29E7 paga 2,00%: casi no hay premio por quedarse en pesos.'
+  leccion: Para decidir en pesos hay que comparar la tasa de la LECAP contra la devaluación que descuenta el dólar futuro y contra la inflación que el mercado ya tiene en los precios (CER contra LECAP), no solo contra la inflación del REM.
+  cambio: 'Nueva tarjeta ''Dólar, tasas e inflación esperada'' en Hoy (se arma en el cierre diario): banda cambiaria, curva del dólar futuro, inflación implícita LECAP contra CER, tasas de referencia y la comparación pesos contra dólar. API del BCRA pasada a v4.'
+- fecha: '2026-11-12'
   caso: Llegar al precio de salida no es vender sí o sí
   que_paso: 'Clau: ''cuando llegue analicemos qué conviene, no solo vender para sacarla de encima: para eso están todos los agentes''.'
   leccion: 'Al llegar a la ganancia buscada hay que decidir con la misma revisión que para comprar: si los indicadores y la mesa ven que puede seguir, conviene dejarla correr con la ganancia asegurada.'

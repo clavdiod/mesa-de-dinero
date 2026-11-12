@@ -223,6 +223,7 @@ function pintarEstado() {
   pintarWallStreet();
   pintarWsVivo();
   pintarAsimetria();
+  pintarCurvas();
   pintarMinistro();
   pintarGanadores();
   pintarProfesionales();
@@ -937,6 +938,23 @@ function pintarAsimetria() {
       ${c(f.escenarios.pesimista)}${c(f.escenarios.reestructuracion)}${c(f.escenarios.optimista)}${c(f.escenarios.crisis)}<td class="n"><span class="chip ${f.color}">${f.ratio ? num(f.ratio, 1) + " a 1" : "sin riesgo"}</span></td></tr>`).join("")}</table></div>
     <p class="tenue"><b>Con la historia:</b> ${esc(r.historia || "")} La columna "Crisis 2022" es lo que pasaría si vuelve el piso real de julio de 2022 (paridad 20%).</p>
     <p class="tenue">⭐ = lo tenés. La regla: buscar mucho para ganar y poco para perder; 3 a 1 o más es asimétrico (una ganancia compensa tres pérdidas). Cuanto más bajan los bonos, mejor se pone. Solo información: no vota ni propone compras.</p></details>`;
+}
+
+// 12/11: dólar, tasas e inflación esperada (banda, dólar futuro, CER contra LECAP)
+function pintarCurvas() {
+  const r = ESTADO.estado?.curvas, el = $("#curvas");
+  if (!el) return;
+  if (!r || !(r.lineas || []).length) { el.innerHTML = ""; return; }
+  const b = r.banda, ca = r.carry;
+  const chip = ca ? `<span class="chip ${ca.diferencia > 0.3 ? "verde" : ca.diferencia < -0.3 ? "rojo" : "amar"}">Pesos ${ca.diferencia > 0.3 ? "rinden más" : ca.diferencia < -0.3 ? "pierden contra el dólar" : "≈ dólar"}</span>` : "";
+  el.innerHTML = `<details class="card eco"><summary><div class="fila"><b>🧭 Dólar, tasas e inflación esperada</b>${chip}</div>
+    ${b ? `<span class="tenue">Dólar mayorista ${num(b.a3500)} · techo de la banda ${num(b.techo)} (${num(b.distancia_pct, 1)}% arriba)</span>` : ""}</summary>
+    ${r.lineas.map((x) => `<p>${esc(x)}</p>`).join("")}
+    ${(r.futuros || []).length ? `<p class="tenue" style="margin-top:8px"><b>Dólar futuro (A3):</b> cuánta devaluación espera el mercado</p><div class="tabla-scroll"><table><tr><th>Mes</th><th class="n">Precio</th><th class="n">Devaluación total</th><th class="n">Por mes</th></tr>
+      ${r.futuros.map((f) => `<tr><td>${esc(f.contrato.slice(3, 5))}/${esc(f.contrato.slice(7))}</td><td class="n">${num(f.precio)}</td><td class="n">${num(f.devaluacion_total_pct, 1)}%</td><td class="n">${num(f.devaluacion_mensual_pct, 2)}%</td></tr>`).join("")}</table></div>` : ""}
+    ${(r.breakeven || []).length ? `<p class="tenue" style="margin-top:8px"><b>Inflación que espera el mercado</b> (LECAP contra bono CER de plazo parecido)</p><div class="tabla-scroll"><table><tr><th>Vence</th><th>LECAP</th><th class="n">Tasa por mes</th><th>CER</th><th class="n">Tasa real por mes</th><th class="n">Inflación implícita</th></tr>
+      ${r.breakeven.map((p) => `<tr><td>${esc(fecha(p.vence))}</td><td>${esc(p.lecap)}</td><td class="n">${num(p.tem_lecap, 2)}%</td><td>${esc(p.cer)}</td><td class="n">${num(p.tem_real_cer, 2)}%</td><td class="n"><b>${num(p.inflacion_implicita_mensual, 2)}%</b></td></tr>`).join("")}</table></div>` : ""}
+    <p class="tenue">Fuentes públicas y gratis: BCRA (dólar mayorista, CER, inflación, tasas), A3 Mercados (dólar futuro), BYMA y data912 (bonos). Se actualiza al cierre de cada día. Solo información: no vota.</p></details>`;
 }
 
 function pintarWallStreet() {
