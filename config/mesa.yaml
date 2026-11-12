@@ -91,7 +91,7 @@ fuentes:
   dolares: "https://dolarapi.com/v1/dolares"
   riesgo_pais: "https://api.argentinadatos.com/v1/finanzas/indices/riesgo-pais/ultimo"
   feriados: "https://api.argentinadatos.com/v1/feriados/{anio}"
-  bcra: "https://api.bcra.gob.ar/estadisticas/v3.0/monetarias"
+  bcra: "https://api.bcra.gob.ar/estadisticas/v4.0/monetarias"  # 12/11: la v3 dejó de devolver datos
   rss_noticias:
     - "https://www.ambito.com/rss/pages/finanzas.xml"
     - "https://www.cronista.com/files/rss/finanzas-mercados.xml"
@@ -101,3 +101,9 @@ fuentes:
     letras: "https://data912.com/live/arg_notes"
     bonos: "https://data912.com/live/arg_bonds"
   google_news: "https://news.google.com/rss/search?q={q}&hl=es-419&gl=AR&ceid=AR:es-419"
+
+# Banda cambiaria (12/11): el techo se actualiza todos los días con la inflación de dos meses atrás.
+# Ancla: techo al 31/10/2026 = 1.989,12 (31/11 según iProfesional) / 1,0193 (IPC de septiembre). Revisar si cambia el esquema.
+banda:
+  ancla_fecha: "2026-10-31"
+  ancla_techo: 1951.46

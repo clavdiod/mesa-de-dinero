@@ -281,6 +281,23 @@ def diario(simular: bool = False) -> dict:
             except Exception as ex2:
                 print(f"[cierre] lecaps: {ex2}")
             a.put("renta_fija/propuestas", prop_rf)
+            try:  # 12/11: dólar, tasas e inflación esperada (banda, dólar futuro, CER contra LECAP)
+                from datetime import date as _d
+                from .agentes import curvas as _cur
+                from .datos import macro_ar as _ma
+                fich_cer = a.get("macro/cer_fichas") or {}
+                n_fich = len(fich_cer)
+                bonos_cer = _ma.bonos_cer(None, fich_cer)
+                if len(fich_cer) != n_fich:
+                    a.put("macro/cer_fichas", fich_cer)
+                exp_ = ((a.get("ministro/series") or {}).get("series") or {}).get("expectativa") or {}
+                from .nucleo.config import config as _cfg
+                cur = _cur.armar(hoy, _ma.bcra_ultimos(), _ma.dolar_futuro(hoy), bonos_cer, _ma.bcra_serie(30, _d(2023, 1, 1)),
+                                 prop_rf.get("lecaps") or [], _ma.bcra_serie(27, _d(2025, 1, 1)), _cfg().get("banda") or {},
+                                 exp_[max(exp_)] if exp_ else None)
+                a.put("macro/curvas", cur)
+            except Exception as ex3:
+                print(f"[cierre] curvas: {ex3}")
         except Exception as ex:
             print(f"[cierre] renta fija: {ex}")
 

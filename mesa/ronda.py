@@ -1147,6 +1147,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "opciones": mesa_opciones,
         "ws_vivo": _ws_vivo(ctx, almacen, cartera, ya, hoy, simular),
         "asimetria": _asimetria(ctx, cartera, hoy),
+        "curvas": None if simular else almacen.get("macro/curvas"),
         "graficos": _graficos(ctx, cartera, seg_cartera),
         "seguimiento_cartera": seg_cartera,
         "memoria": None if simular else (almacen.get("memoria/papeles") or {}),

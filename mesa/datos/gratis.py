@@ -49,8 +49,8 @@ def bcra_reservas() -> dict:
     try:
         d = _json(config()["fuentes"]["bcra"])
         for v in d.get("results", []):
-            if v.get("idVariable") == 1:
-                return {"valor": v.get("valor"), "fecha": v.get("fecha")}
+            if v.get("idVariable") == 1:  # v4: ultValorInformado / ultFechaInformada
+                return {"valor": v.get("ultValorInformado", v.get("valor")), "fecha": v.get("ultFechaInformada", v.get("fecha"))}
     except Exception as e:
         return {"valor": None, "_error": str(e)}
     return {"valor": None}
