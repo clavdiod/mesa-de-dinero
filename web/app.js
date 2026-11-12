@@ -1204,7 +1204,7 @@ function pintarLicitaciones(lim) {
     const cab = `<span class="ev-ic">🏦</span><span>${conDia ? `<b>${diaTxt(e.fecha)}</b> · ` : ""}<span class="chip ${CHIP_LIC[e.clase] || ""}">${esc(e.clase)}</span> ${esc(e.nombre)}
       ${e.emisor ? `<span class="tenue"> · Emisor: ${esc(e.emisor)}</span>` : ""} ${e.fecha === hoy ? estado(e) : ""}</span>`;
     // 12/11: toda licitación se puede abrir; si todavía no hay aviso publicado, se muestra lo que dio el MAE
-    const basico = [["Emisor", e.emisor], ["Moneda", e.moneda], ["Monto a licitar", e.monto ? num(e.monto, 0) : null], ["Qué se licita", e.licita],
+    const basico = [["Emisor", e.emisor], ["Moneda", e.moneda], ["Monto a licitar", e.monto > 1 ? num(e.monto, 0) : null], ["Qué se licita", e.licita],
       ["Horario", e.hora_cierre ? `${e.hora_inicio} a ${e.hora_cierre} h` : null], ["Liquida", e.liquidacion ? fecha(e.liquidacion) : null],
       ["Modalidad", e.modalidad], ["Colocadores", e.colocador], ["Estado", e.estado]].filter(([, v]) => v);
     const det = detalle(e) || `${basico.length ? `<div class="tabla-scroll"><table class="ficha">${basico.map(([t, v]) => `<tr><td><b>${t}</b></td><td>${esc(v)}</td></tr>`).join("")}</table></div>` : ""}
