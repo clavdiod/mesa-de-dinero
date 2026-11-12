@@ -206,6 +206,20 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
             sug, por_que = "subir_stop", "Ya va bien a favor: proteger lo ganado."
         else:
             sug, por_que = "mantener", x.get("motivo")
+        # 12/11: "quiero vender a precios que me den ganancia, no tengo urgencia". Mientras espera su precio de salida,
+        # la mesa no le pide vender por otras reglas: solo cuando llega a la salida (vendé con ganancia) o a la alarma de revisión.
+        ou = pos.get("objetivo_usuario")
+        if ou:
+            ou = float(ou)
+            if precio >= ou:
+                sug, por_que = "vender_todo", f"Llegó a tu precio de salida con ganancia ({_p(ou)}): es lo que esperabas."
+            elif piso and precio <= piso:
+                sug, por_que = "vender_todo", f"Tocó la alarma de revisión ({_p(piso)}): algo grave cambió, revisemos si seguir esperando."
+            else:
+                sug, por_que = "mantener", (f"Esperás vender con ganancia en {_p(ou)} (faltan {_m((ou / precio - 1) * 100, 1)}%). "
+                                            "Mientras tanto la mesa no te pide vender, salvo que toque la alarma de revisión"
+                                            + (f" en {_p(piso)}." if piso else "."))
+                ops = [o for o in ops if o["accion"] != "subir_stop"]
         # --- antes de decir "vendé", se revisa TODO (no una sola regla) ---
         revision = []
         if sug in ("vender_mitad", "vender_todo"):
@@ -285,7 +299,11 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         fv = (lambda f: f"{f[8:10]}/{f[5:7]}" + (f"/{f[2:4]}" if f[:4] != hoy_s[:4] else "")) if vence else None
         resto = (total - dias) if (total is not None and dias is not None) else None
         stop_txt = next((o for o in ops if o["accion"] == "subir_stop"), None)
-        if sug == "vender_todo":
+        if ou and sug == "vender_todo" and precio >= ou:
+            titular, color = f"VENDER CON GANANCIA · llegó a tu precio ({_p(ou)})", "verde"
+        elif ou and sug == "mantener":
+            titular, color = f"ESPERAR · vender en {_p(ou)} con ganancia (faltan {_m((ou / precio - 1) * 100, 1)}%)", "verde"
+        elif sug == "vender_todo":
             titular, color = ("VENDER HOY · estás devolviendo la ganancia" if devolviendo else
                               f"VENDER · tocó el stop del plan ({_p(piso)})" if piso and precio <= piso else "SALIR HOY"), "rojo"
         elif sug == "vender_mitad":
