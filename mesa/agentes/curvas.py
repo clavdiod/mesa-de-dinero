@@ -58,8 +58,8 @@ def armar(hoy: date, bcra: dict, futuros: list[dict], cer_bonos: list[dict], cer
     if techo and a3500:
         dist = (techo / a3500 - 1) * 100
         out["banda"] = {"a3500": a3500, "techo": techo, "distancia_pct": round(dist, 1)}
-        out["lineas"].append(f"Dólar mayorista {a3500:,.2f} y techo de la banda {techo:,.2f}: le queda {dist:.1f}% para llegar al techo."
-                             .replace(",", "X").replace(".", ",").replace("X", ".")
+        ar = lambda x, d=2: f"{x:,.{d}f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        out["lineas"].append(f"Dólar mayorista {ar(a3500)} y techo de la banda {ar(techo)}: le queda {ar(dist, 1)}% para llegar al techo."
                              + (" Cerca del techo: más presión sobre bonos y acciones." if dist < 5 else " Lejos del techo: el BCRA no necesita intervenir."))
     # dólar futuro
     fut = []
