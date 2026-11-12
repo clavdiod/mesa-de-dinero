@@ -285,11 +285,11 @@ def diario(simular: bool = False) -> dict:
                 from datetime import date as _d
                 from .agentes import curvas as _cur
                 from .datos import macro_ar as _ma
-                fich_cer = a.get("macro/cer_fichas") or {}
+                fich_cer = a.get("macro/cer_fichas2") or {}
                 n_fich = len(fich_cer)
                 bonos_cer = _ma.bonos_cer(None, fich_cer)
                 if len(fich_cer) != n_fich:
-                    a.put("macro/cer_fichas", fich_cer)
+                    a.put("macro/cer_fichas2", fich_cer)
                 exp_ = ((a.get("ministro/series") or {}).get("series") or {}).get("expectativa") or {}
                 from .nucleo.config import config as _cfg
                 cur = _cur.armar(hoy, _ma.bcra_ultimos(), _ma.dolar_futuro(hoy), bonos_cer, _ma.bcra_serie(30, _d(2023, 1, 1)),

@@ -5,8 +5,8 @@ from mesa.nucleo.config import config
 from mesa.agentes import curvas
 from mesa.datos import macro_ar
 a = almacen_por_defecto(); hoy = ahora().date()
-fich = a.get("macro/cer_fichas") or {}
-cer_b = macro_ar.bonos_cer(None, fich); a.put("macro/cer_fichas", fich)
+fich = a.get("macro/cer_fichas2") or {}
+cer_b = macro_ar.bonos_cer(None, fich); a.put("macro/cer_fichas2", fich)
 bc = macro_ar.bcra_ultimos()
 cer = macro_ar.bcra_serie(30, date(2023, 1, 1)); inf = macro_ar.bcra_serie(27, date(2025, 1, 1))
 fut = macro_ar.dolar_futuro(hoy)

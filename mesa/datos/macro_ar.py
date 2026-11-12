@@ -91,10 +91,11 @@ def bonos_cer(panel_bonos: list[dict] | None = None, fichas: dict | None = None)
             continue
         if tk not in fichas:
             d = byma.ficha(tk)
-            fichas[tk] = {k: d.get(k) for k in ("formaAmortizacion", "fechaEmision", "fechaVencimiento")} if d else None
+            fichas[tk] = {k: d.get(k) for k in ("formaAmortizacion", "fechaEmision", "fechaVencimiento", "denominacion")} if d else None
         fi = fichas[tk]
         fa = (fi or {}).get("formaAmortizacion") or ""
-        if not fi or not fi.get("fechaEmision") or "CER" not in fa.upper() or "vencimiento" not in fa.lower() or "cuota" in fa.lower():
+        cer_ok = "CER" in fa.upper() or "CER" in str((fi or {}).get("denominacion") or "").upper()
+        if not fi or not fi.get("fechaEmision") or not cer_ok or "vencimiento" not in fa.lower() or "cuota" in fa.lower():
             continue
         out.append({"ticker": tk, "precio": float(f["ultimo"]), "emision": fi["fechaEmision"][:10], "vence": fi["fechaVencimiento"][:10]})
     return out
