@@ -1142,6 +1142,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "proyeccion_cartera": proy_cartera,
         "opciones": mesa_opciones,
         "ws_vivo": _ws_vivo(ctx, almacen, cartera, ya, hoy, simular),
+        "asimetria": _asimetria(ctx, cartera, hoy),
         "graficos": _graficos(ctx, cartera, seg_cartera),
         "seguimiento_cartera": seg_cartera,
         "memoria": None if simular else (almacen.get("memoria/papeles") or {}),
@@ -1235,6 +1236,23 @@ def _ws_vivo(ctx, almacen, cartera, ya, hoy, simular) -> dict | None:
         return ws_vivo.lectura(ya, propios, h, tit)
     except Exception as ex:
         print(f"[ws vivo] {ex}")
+        return None
+
+
+def _asimetria(ctx, cartera, hoy) -> dict | None:
+    """12/11: agente asimétrico (bonos en dólares: cuánto ganás si sale bien vs cuánto perdés si sale mal)."""
+    try:
+        from .agentes import asimetria as _asi
+        from .datos.eventos import flujos_bonos
+        panel = {}
+        for b in _asi.BASES:
+            for suf in ("C", "D"):
+                t = ctx.titulo(b + suf) or {}
+                if t.get("ultimo"):
+                    panel[b + suf] = [t["ultimo"]]
+        return _asi.tabla(panel, flujos_bonos(), hoy, {str(c.get("ticker") or "").upper() for c in cartera})
+    except Exception as ex:
+        print(f"[asimetria] {ex}")
         return None
 
 

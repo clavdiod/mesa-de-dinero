@@ -1,5 +1,10 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
+- fecha: '2026-11-12'
+  caso: Nace el agente asimétrico
+  que_paso: 'Clau trajo el posteo de Franco Tealdi (IEB): la asimetría de un trade es cuánto ganás si la tesis se cumple contra cuánto perdés si falla; se busca mucho para ganar y poco para perder (ganar 30 y perder 10 es 3 a 1: una ganancia compensa tres pérdidas). En bonos en dólares: comprar hoy y vender el 29/10/2027, después de las elecciones, con paridad de salida pesimista 35%, reestructuración 50% u optimista 90%, sumando lo que se cobra en el medio.'
+  leccion: 'Antes de cualquier compra hay que mirar las dos puntas: cuánto puedo ganar y cuánto puedo perder. Cuanto más bajan los bonos, menos queda para perder y la asimetría mejora sola. Lo que nos faltó en CEPU, TRAN e YPFD.'
+  cambio: 'Agente asimétrico: tabla en vivo de los bonos soberanos en dólares (AO27, AO28, AO29, AN29, GD/AL 29-46) con los tres escenarios y la relación gana/pierde; 3 a 1 o más es asimétrico. Solo información (no hay historia para probar un evento): no vota ni propone. Verificado contra la tabla de Tealdi.'
 - fecha: '2026-11-06'
   caso: 'Compras grandes en todo el mercado: ¿cuándo valen?'
   que_paso: 'Clau: ''quiero volumen atípico de todo el mercado para la compra, es alguien grande comprando y si no me avisás me lo pierdo''. Se probó la compra fuerte (2,5 veces el volumen, +2%, cerca del máximo del día) por situación, 66 acciones, 10 años, en dólares, neto. En general: 49 de cada 100 suben a un mes (+2,2%). Después de caer 20%+ en 3 meses: 54 de cada 100, +4,5%, mediana +2%, 1 de cada 3 sube más de 10%. Con 4 veces el volumen: +3,0% pero 48 de cada 100. En tendencia alcista: 46. En el máximo del año: 44.'
