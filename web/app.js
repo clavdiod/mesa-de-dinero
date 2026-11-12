@@ -932,9 +932,10 @@ function pintarAsimetria() {
   const filas = [...r.filas].sort((a, b) => (b.ratio || 0) - (a.ratio || 0));
   el.innerHTML = `<details class="card eco"><summary><div class="fila"><b>⚖️ Asimetría en bonos en dólares</b><span class="tenue">${esc(r.resumen)}</span></div></summary>
     <p class="tenue">Comprás hoy y vendés el ${esc(fecha(r.salida))}, después de las elecciones de 2027. Contás lo que cobrás en el medio más el precio de venta según la paridad de salida: pesimista ${num(r.escenarios.pesimista * 100, 0)}%, reestructuración ${num(r.escenarios.reestructuracion * 100, 0)}%, optimista ${num(r.escenarios.optimista * 100, 0)}%. Retorno en dólares.</p>
-    <div class="tabla-scroll"><table><tr><th>Bono</th><th class="n">Precio</th><th class="n">Paridad</th><th class="n">Pesimista</th><th class="n">Reestruct.</th><th class="n">Optimista</th><th class="n">Gana/pierde</th></tr>
+    <div class="tabla-scroll"><table><tr><th>Bono</th><th class="n">Precio</th><th class="n">Paridad</th><th class="n">Pesimista</th><th class="n">Reestruct.</th><th class="n">Optimista</th><th class="n">Crisis 2022</th><th class="n">Gana/pierde</th></tr>
     ${filas.map((f) => `<tr><td><b>${esc(f.ticker)}</b>${f.lo_tenes ? " ⭐" : ""}</td><td class="n">${num(f.precio, 2)}</td><td class="n">${f.paridad == null ? "—" : num(f.paridad, 1) + "%"}</td>
-      ${c(f.escenarios.pesimista)}${c(f.escenarios.reestructuracion)}${c(f.escenarios.optimista)}<td class="n"><span class="chip ${f.color}">${f.ratio ? num(f.ratio, 1) + " a 1" : "sin riesgo"}</span></td></tr>`).join("")}</table></div>
+      ${c(f.escenarios.pesimista)}${c(f.escenarios.reestructuracion)}${c(f.escenarios.optimista)}${c(f.escenarios.crisis)}<td class="n"><span class="chip ${f.color}">${f.ratio ? num(f.ratio, 1) + " a 1" : "sin riesgo"}</span></td></tr>`).join("")}</table></div>
+    <p class="tenue"><b>Con la historia:</b> ${esc(r.historia || "")} La columna "Crisis 2022" es lo que pasaría si vuelve el piso real de julio de 2022 (paridad 20%).</p>
     <p class="tenue">⭐ = lo tenés. La regla: buscar mucho para ganar y poco para perder; 3 a 1 o más es asimétrico (una ganancia compensa tres pérdidas). Cuanto más bajan los bonos, mejor se pone. Solo información: no vota ni propone compras.</p></details>`;
 }
 

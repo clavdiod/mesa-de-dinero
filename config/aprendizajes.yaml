@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-12'
+  caso: ¿Funciona el agente asimétrico? Prueba con las elecciones 2021, 2023 y 2025
+  que_paso: 'Se simuló comprar cada mes desde un año antes de cada elección y vender 5 ruedas después, con precios reales (IOL, dólar MEP) y los cronogramas de los bonos (216 casos, 6 bonos). Con relación 3 a 1 o más: ganó 53 de cada 100 veces, +8,6% promedio, mediana +1,8%, peor -21,6%. En 2021 el agente decía ''sin riesgo'' (los bonos ya estaban en paridad ~35%) y se perdió 7,8%; en 2023 se ganó 25%; en 2025 la relación era baja (0,7 a 1) y aun así se ganó 11,6%. La paridad mínima real fue 17-22% en julio de 2022, muy debajo del 35% pesimista; la máxima, 79-94% a mediados de 2026.'
+  leccion: 'Mirar las dos puntas sirve, pero el piso del escenario pesimista estaba mal calibrado: la crisis real llegó a paridad 20%. Y con solo 3 elecciones el número de la relación no alcanza para decidir solo.'
+  cambio: 'El agente muestra también el escenario ''Crisis 2022'' (paridad 20%) y la relación contra ese piso, más el resultado de la prueba con historia. Sigue siendo solo información: no vota ni propone.'
+- fecha: '2026-11-12'
   caso: Nace el agente asimétrico
   que_paso: 'Clau trajo el posteo de Franco Tealdi (IEB): la asimetría de un trade es cuánto ganás si la tesis se cumple contra cuánto perdés si falla; se busca mucho para ganar y poco para perder (ganar 30 y perder 10 es 3 a 1: una ganancia compensa tres pérdidas). En bonos en dólares: comprar hoy y vender el 29/10/2027, después de las elecciones, con paridad de salida pesimista 35%, reestructuración 50% u optimista 90%, sumando lo que se cobra en el medio.'
   leccion: 'Antes de cualquier compra hay que mirar las dos puntas: cuánto puedo ganar y cuánto puedo perder. Cuanto más bajan los bonos, menos queda para perder y la asimetría mejora sola. Lo que nos faltó en CEPU, TRAN e YPFD.'
