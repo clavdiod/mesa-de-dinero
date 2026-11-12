@@ -1582,15 +1582,26 @@ async function registrarPush(pedirPermiso) {
 $("#btn-push").addEventListener("click", async () => {
   try { toast((await registrarPush(true)) ? "Avisos activados" : "Permiso de avisos denegado"); } catch (e) { toast(`No se pudo: ${e.message}`); }
 });
-// 11/11: el registro del celular se había perdido y no llegó ningún aviso. Cada vez que abrís la app, si ya diste permiso,
-// se vuelve a registrar sola (el servidor no duplica). Si no hay permiso, se avisa arriba.
-setTimeout(async () => {
+// 12/11: el registro se hace DESPUÉS de desbloquear (antes se intentaba con la app bloqueada y el servidor lo rechazaba).
+// Si no hay permiso, queda un cartel fijo arriba con el botón para activarlos (un toast se perdía).
+let PUSH_REVISADO = false;
+async function revisarPush() {
+  if (PUSH_REVISADO) return; PUSH_REVISADO = true;
+  const cartel = (txt, boton) => {
+    let el = $("#push-cartel");
+    if (!el) { el = document.createElement("div"); el.id = "push-cartel"; el.className = "card"; el.style.borderColor = "#d29922"; $("#v-propuestas").prepend(el); }
+    el.innerHTML = `<b>🔕 ${esc(txt)}</b>${boton ? ' <button class="prim chico" id="push-activar">Activar avisos</button>' : ""}`;
+    if (boton) $("#push-activar").onclick = async () => {
+      try { if (await registrarPush(true)) { el.remove(); toast("✅ Avisos activados en este celular"); } else toast("El celular no dio permiso: activalo en Ajustes del celular › Notificaciones"); }
+      catch (e) { toast(`No se pudo: ${e.message}`); }
+    };
+  };
   try {
-    if (typeof Notification !== "undefined" && Notification.permission !== "granted")
-      toast("⚠️ Los avisos al celular están apagados: activalos en Ajustes › Avisos en el celular");
-    else await registrarPush(false);
-  } catch (_) {}
-}, 4000);
+    if (typeof Notification === "undefined" || !("PushManager" in window)) return cartel("Este navegador no puede recibir avisos. Abrí la mesa desde la app instalada (pantalla de inicio).", false);
+    if (Notification.permission !== "granted") return cartel("Los avisos al celular están apagados: te estás perdiendo las alertas.", true);
+    await registrarPush(false);
+  } catch (e) { cartel(`No se pudieron registrar los avisos (${e.message}).`, true); }
+}
 $("#btn-analizar").addEventListener("click", async () => {
   try { const r = await post("analizar", {}); toast(r.mensaje || "Ronda pedida"); } catch (e) { toast(`No se pudo: ${e.message}`); }
 });
@@ -1605,6 +1616,7 @@ async function cargar() {
       USUARIO.decisiones = Array.isArray(dc) ? {} : dc || {}; USUARIO.operaciones = Array.isArray(op) ? op : []; } catch (_) {}
     pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes(); pintarAnticipos(); try { pintarRentaFija(); } catch (_) {} try { pintarOpciones(); } catch (_) {} pintarRadar(); pintarAviso();
     setTimeout(abrirDecisionPendiente, 600);
+    revisarPush();
     $("#login").style.display = "none"; $("#bloqueo").style.display = "none"; document.querySelector("main").style.display = "";
   } catch (e) {
     if (String(e.message).includes("bloqueada")) { mostrarBloqueo(); return; }
