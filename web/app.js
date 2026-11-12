@@ -1203,9 +1203,13 @@ function pintarLicitaciones(lim) {
   const fila = (e, conDia) => {
     const cab = `<span class="ev-ic">🏦</span><span>${conDia ? `<b>${diaTxt(e.fecha)}</b> · ` : ""}<span class="chip ${CHIP_LIC[e.clase] || ""}">${esc(e.clase)}</span> ${esc(e.nombre)}
       ${e.emisor ? `<span class="tenue"> · Emisor: ${esc(e.emisor)}</span>` : ""} ${e.fecha === hoy ? estado(e) : ""}</span>`;
-    const det = detalle(e);
-    return det ? `<details class="lic"><summary class="evento">${cab}<span class="tenue lic-mas">ver condiciones ›</span></summary><div class="lic-det">${det}</div></details>`
-      : `<div class="evento">${cab}</div>`;
+    // 12/11: toda licitación se puede abrir; si todavía no hay aviso publicado, se muestra lo que dio el MAE
+    const basico = [["Emisor", e.emisor], ["Moneda", e.moneda], ["Monto a licitar", e.monto ? num(e.monto, 0) : null], ["Qué se licita", e.licita],
+      ["Horario", e.hora_cierre ? `${e.hora_inicio} a ${e.hora_cierre} h` : null], ["Liquida", e.liquidacion ? fecha(e.liquidacion) : null],
+      ["Modalidad", e.modalidad], ["Colocadores", e.colocador], ["Estado", e.estado]].filter(([, v]) => v);
+    const det = detalle(e) || `${basico.length ? `<div class="tabla-scroll"><table class="ficha">${basico.map(([t, v]) => `<tr><td><b>${t}</b></td><td>${esc(v)}</td></tr>`).join("")}</table></div>` : ""}
+      <p class="tenue">${basico.length ? "Datos del calendario del MAE." : "El MAE todavía no publicó el detalle ni el aviso de esta licitación."} ${e.clase === "Provincia" || e.clase === "Tesoro" ? "Las condiciones completas salen en la resolución de llamado a licitación del emisor." : "Las condiciones completas salen en el aviso de suscripción."}</p>`;
+    return `<details class="lic"><summary class="evento">${cab}<span class="tenue lic-mas">ver detalle ›</span></summary><div class="lic-det">${det}</div></details>`;
   };
   $("#licitaciones-hoy").innerHTML = `<h2>🏦 Licitaciones${deHoy.length ? " de hoy" : " de la semana"}</h2><div class="card">` +
     (deHoy.length ? deHoy.map((e) => fila(e, false)).join("") : '<p class="tenue">Hoy no hay licitaciones.</p>') +

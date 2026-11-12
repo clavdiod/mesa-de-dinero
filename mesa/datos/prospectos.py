@@ -108,9 +108,11 @@ def resumen(ev: dict, fi: dict | None) -> str:
     """Una o dos frases para entender la licitación de un vistazo."""
     fi = fi or {"campos": {}, "extra": {}}
     ex, ca = fi.get("extra") or {}, fi.get("campos") or {}
-    clase = {"ON": "Obligación negociable", "Fideicomiso": "Fideicomiso financiero", "VCP": "Valor de corto plazo"}.get(ev.get("clase"), "Emisión")
+    clase = {"ON": "Obligación negociable", "Fideicomiso": "Fideicomiso financiero", "VCP": "Valor de corto plazo",
+             "Provincia": "Deuda provincial"}.get(ev.get("clase"), "Emisión")
     mon = "en dólares" if "USD" in str(ev.get("moneda") or "").upper() else "en pesos" if ev.get("moneda") else ""
-    partes = [f"{clase} de {ev.get('emisor') or 'la empresa'} {mon}".strip()]
+    quien = ev.get("emisor") or ((("la Provincia de " + _clave_provincia(ev.get("titulo") or "").title()) if _clave_provincia(ev.get("titulo") or "") else None) if ev.get("clase") == "Provincia" else None) or "la empresa"
+    partes = [f"{clase} de {quien} {mon}".strip()]
     if ex.get("tasa_fija"):
         partes.append(f"tasa fija de {ex['tasa_fija']}% anual")
     elif ex.get("referencias"):
@@ -148,8 +150,19 @@ def clave_emisor(titulo: str) -> str | None:
     return palabras[0] if palabras else None
 
 
+def _clave_provincia(titulo: str) -> str | None:
+    """'LETRAS DE TESORERIA DE LA PROVINCIA DEL CHACO CLASE 15' -> 'CHACO' (12/11)."""
+    m = re.search(r"PROVINCIA\s+(?:DE\s+LA\s+|DEL\s+|DE\s+)?([A-ZÁÉÍÓÚÑ]+(?:\s+(?:DEL\s+)?[A-ZÁÉÍÓÚÑ]+)?)", titulo.upper())
+    if not m:
+        return None
+    w = [x for x in m.group(1).split() if x not in ("CLASE", "SERIE", "DEL")]
+    if not w:
+        return None
+    return " ".join(w[:2]) if w[0] in ("SANTA", "SAN", "BUENOS", "TIERRA", "ENTRE", "RIO", "LA") and len(w) > 1 else w[0]
+
+
 def documentos_de(ev: dict, docs: list[dict]) -> list[dict]:
-    k = clave_emisor(ev.get("titulo") or "")
+    k = (_clave_provincia(ev.get("titulo") or "") if ev.get("clase") == "Provincia" else None) or clave_emisor(ev.get("titulo") or "")
     if not k:
         return []
     out = [{"fecha": (d.get("fecha") or "")[:10], "titulo": re.sub(r"^MP\s*A3\s*-\s*(RES|ANU|ADE)\s*-\s*|\.pdf$", "", d.get("titulo") or "", flags=re.I).strip(),
@@ -163,7 +176,7 @@ def completar(evs: list[dict], docs: list[dict], fichas: dict, hoy_iso: str, dia
     lim = (date.fromisoformat(hoy_iso) + timedelta(days=dias)).isoformat()
     bajados, cambio = 0, False
     for ev in evs:
-        if ev.get("clase") not in ("ON", "Fideicomiso", "VCP", "Otra") or not (hoy_iso <= ev.get("fecha", "") <= lim):
+        if ev.get("clase") not in ("ON", "Fideicomiso", "VCP", "Otra", "Provincia") or not (hoy_iso <= ev.get("fecha", "") <= lim):
             continue
         dd = documentos_de(ev, docs)
         ev["documentos"] = [{"fecha": d["fecha"], "titulo": d["titulo"], "url": d["url"]} for d in dd]

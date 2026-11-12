@@ -343,7 +343,7 @@ def _hora_art(iso: str | None) -> tuple[str, str]:
     return d.date().isoformat(), d.strftime("%H:%M")
 
 
-def licitaciones_mae(desde, hasta, detalle_dias: int = 10, max_detalles: int = 25) -> list[dict]:
+def licitaciones_mae(desde, hasta, detalle_dias: int = 10, max_detalles: int = 45) -> list[dict]:
     """Calendario público de licitaciones del MAE (gratis, no usa consultas de IOL).
     Para las cercanas trae el detalle: emisor, moneda, monto, qué se licita (tasa/precio), liquidación."""
     r = _S.get(_MAE + "mercado/licitaciones", headers=_MAE_H, timeout=30,
@@ -361,7 +361,7 @@ def licitaciones_mae(desde, hasta, detalle_dias: int = 10, max_detalles: int = 2
         ev = {"fecha": fecha, "tipo": "licitacion", "clase": clase, "id": e.get("id"), "titulo": titulo,
               "hora_inicio": hora_ini if clase not in ("Tesoro", "Provincia") else "",
               "hora_cierre": hora_fin if clase not in ("Tesoro", "Provincia") else ""}
-        if clase not in ("Tesoro", "Provincia") and fecha <= lim_det and pedidos < max_detalles:
+        if fecha <= lim_det and pedidos < max_detalles:  # 12/11: también provincias y Tesoro (antes no se podía abrir el detalle)
             pedidos += 1
             try:
                 d = {}
