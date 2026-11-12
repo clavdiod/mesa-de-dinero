@@ -114,7 +114,7 @@ def replantear_plazo(tk: str, vence: str | None, compra: date | None, hoy: date,
 
 def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict], libreta: list[dict],
           ayer: dict, avisados: dict, hoy: date, hora: str, eventos: list[dict] | None = None,
-          noticias: dict[str, list[dict]] | None = None, marcados: set | None = None) -> tuple[dict, list[dict]]:
+          noticias: dict[str, list[dict]] | None = None, marcados: set | None = None, analizar_salida=None) -> tuple[dict, list[dict]]:
     """ayer: la foto que guardó el cierre de ayer ({tk: {...}}). avisados: {tk: "fecha|sugerida"} (se modifica).
     Devuelve (seguimiento por ticker, avisos para el celular)."""
     out, avisos = {}, []
@@ -212,7 +212,26 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         if ou:
             ou = float(ou)
             if precio >= ou:
-                sug, por_que = "vender_todo", f"Llegó a tu precio de salida con ganancia ({_p(ou)}): es lo que esperabas."
+                # 12/11: al llegar no se vende "para sacarla de encima": los agentes analizan si conviene vender o dejarla correr
+                an = None
+                if analizar_salida:
+                    try:
+                        an = analizar_salida(tk, precio, compra_p, ou, opinion.get(tk) or {})
+                    except Exception as ex_s:
+                        print(f"[salida] {tk}: {ex_s}")
+                if an:
+                    detalle = (" A favor de seguir: " + "; ".join(an["a_favor"]) + "." if an["a_favor"] else "") + \
+                              (" En contra: " + "; ".join(an["en_contra"]) + "." if an["en_contra"] else "")
+                    por_que = an["texto"] + detalle
+                    sug = {"dejar_correr": "subir_stop", "vender_mitad": "vender_mitad", "vender_todo": "vender_todo"}[an["accion"]]
+                    if an["accion"] != "vender_todo":
+                        ops = [o for o in ops if o["accion"] != "subir_stop"]
+                        ops.insert(1, {"accion": "subir_stop", "nivel": an["alarma"], "texto": f"Subir la alarma de venta a {_p(an['alarma'])} (con ganancia asegurada) y dejar correr hacia {_p(an['objetivo'])}."})
+                        nuevo_stop = an["alarma"]
+                else:
+                    sug, por_que = "vender_todo", f"Llegó a tu precio de salida con ganancia ({_p(ou)}): es lo que esperabas."
+            elif piso and compra_p and piso >= compra_p and precio <= piso:
+                sug, por_que = "vender_todo", f"Tocó la alarma que asegura tu ganancia ({_p(piso)}): vendé con ganancia."
             elif piso and precio <= piso:
                 sug, por_que = "vender_todo", f"Tocó la alarma de revisión ({_p(piso)}): algo grave cambió, revisemos si seguir esperando."
             else:
@@ -247,7 +266,7 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
             ]
             a_vender = sum(1 for v, _ in puntos if v)
             revision = [("✔ " if v else "✖ ") + t for v, t in puntos]
-            if a_vender * 2 <= len(puntos) and not devolviendo and sug == "vender_mitad":
+            if a_vender * 2 <= len(puntos) and not devolviendo and sug == "vender_mitad" and not (ou and precio >= ou):
                 # la mayoría de lo que mira la mesa sigue a favor: no hace falta vender; se protege lo ganado
                 lvl = round(max(compra_p or 0, (x.get("objetivo_idea") or 0) * 0.97, (mx or precio) * 0.94), 2) if compra_p else None
                 if lvl and lvl < precio:
@@ -299,8 +318,10 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         fv = (lambda f: f"{f[8:10]}/{f[5:7]}" + (f"/{f[2:4]}" if f[:4] != hoy_s[:4] else "")) if vence else None
         resto = (total - dias) if (total is not None and dias is not None) else None
         stop_txt = next((o for o in ops if o["accion"] == "subir_stop"), None)
-        if ou and sug == "vender_todo" and precio >= ou:
-            titular, color = f"VENDER CON GANANCIA · llegó a tu precio ({_p(ou)})", "verde"
+        if ou and precio >= ou:
+            titular, color = {"subir_stop": f"LLEGÓ A TU GANANCIA · dejala correr, alarma en {_p(nuevo_stop or ou)}",
+                              "vender_mitad": "LLEGÓ A TU GANANCIA · vendé la mitad y dejá correr el resto",
+                              "vender_todo": f"LLEGÓ A TU GANANCIA · vendé ({_p(ou)})"}.get(sug, "LLEGÓ A TU GANANCIA"), "verde"
         elif ou and sug == "mantener":
             titular, color = f"ESPERAR · vender en {_p(ou)} con ganancia (faltan {_m((ou / precio - 1) * 100, 1)}%)", "verde"
         elif sug == "vender_todo":

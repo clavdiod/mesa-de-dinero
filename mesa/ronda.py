@@ -1053,7 +1053,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
 
     seg_cartera, avisos_cartera = {}, []
     try:  # seguimiento diario de cada cosa que tenés: plazo, qué cambió hoy y opciones (la decisión es tuya)
-        from .agentes import seguimiento_cartera as segc
+        from .agentes import seguimiento_cartera as segc, salida as _salida
         foto = {} if simular else (almacen.get("cartera/foto") or {})
         ayer_f = foto if (foto.get("fecha") or "") < hoy.isoformat() else (foto.get("previa") or {})
         avis = {} if simular else (almacen.get("cartera/avisados") or {})
@@ -1064,7 +1064,11 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                                                  {tk: [{"dir": s_.direccion, "fuerza": s_.fuerza, "texto": s_.texto, "agente": s_.agente} for s_ in ss if s_.agente in ("mundo", "hechos_emisor", "noticias")]
                                                   for tk, ss in por_ticker.items()},
                                                  {x_["ticker"] for l_ in [ctx.extra.get("anticipo_lista") or {}] + list((ctx.extra.get("anticipo_listas") or {}).values())
-                                                  for x_ in (l_.get("lista") or [])})
+                                                  for x_ in (l_.get("lista") or [])},
+                                                 # 12/11: al llegar a tu precio con ganancia, los agentes analizan si vender o dejar correr
+                                                 lambda tk_, pr_, co_, ou_, op_: _salida.analizar(
+                                                     tk_, pr_, co_, ou_, [v_ for v_ in (ctx.cache.velas(tk_) if ctx.cache else []) if v_.get("fecha") != hoy.isoformat()],
+                                                     ctx.titulo(tk_), (ctx.titulo(tk_) or {}).get("grupo"), op_.get("a_favor"), op_.get("en_contra"), ctx.hora))
         # 02/11: si hoy decidiste MANTENER un papel, la mesa no te vuelve a pedir que lo vendas por la misma razón el
         # mismo día. Solo vuelve a avisar si toca su alarma de venta (eso es una razón nueva).
         dec_ = {} if simular else (almacen.get("usuario/decisiones_cartera") or {})
