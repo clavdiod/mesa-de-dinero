@@ -1,5 +1,10 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
+- fecha: '2026-11-13'
+  caso: 'La mala racha ya no frena las propuestas: las achica'
+  que_paso: 'Con clima bueno el Comité no proponía nada: la protección ''mala racha'' (propuestas cerradas en 10 días con -3,4R: stops de ALUA, LRCX, VIST, YPFD, XLE y MSFT) pausaba todo. Clau: ''no quiero que lo frenes''.'
+  leccion: La pausa total hace perder oportunidades cuando el mercado mejora. Se puede seguir operando con menos riesgo en vez de no operar.
+  cambio: Con mala racha el Comité propone igual, con la mitad de la cantidad sugerida, y lo dice en la propuesta y en el cartel de Hoy. Siguen el filtro de 'todos los números acompañan' y la penitencia por papel (un papel con sus 2 últimas propuestas perdiendo queda afuera 7 días).
 - fecha: '2026-11-12'
   caso: Dólar, tasas e inflación esperada (idea de El Dashboard)
   que_paso: 'Clau compartió El Dashboard (eldashboard.com.ar). No tiene API y pide cuenta, así que no se usa como fuente; se sumaron los mismos datos desde las fuentes públicas: BCRA (API v4: dólar mayorista, CER, inflación, TAMAR, BADLAR, plazo fijo), A3 Mercados (dólar futuro) y BYMA/data912 (bonos CER). Al revisar se vio que la mesa usaba la API v3 del BCRA, que ya no devolvía datos (las reservas podían estar viejas). Primer resultado (12/11): el dólar mayorista está 27% debajo del techo de la banda; el mercado espera 1,7-2% de inflación por mes (igual que el REM) y 1,95% de devaluación por mes; la LECAP S29E7 paga 2,00%: casi no hay premio por quedarse en pesos.'

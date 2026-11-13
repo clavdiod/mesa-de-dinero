@@ -840,9 +840,10 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         castigados = [e["ticker"] for e in debatidos if e["ticker"] in prot["penitencia"]]
         debatidos = [e for e in debatidos if e["ticker"] not in prot["penitencia"]]
         if prot["pausa"]:
-            for e in debatidos:
-                descartes[e["ticker"]] = e["puntaje"]
-            debatidos = []
+            # 13/11: Clau no quiere que la mala racha frene las propuestas. Se propone igual, con la MITAD del tamaño.
+            prot["mitad"] = True
+            prot["pausa"] = False
+            prot["motivos"] = [m + " Por decisión de Clau no se frena: se propone con la mitad del tamaño." for m in prot["motivos"]]
         prot["frenados_hoy"] = castigados
     except Exception as ex:
         print(f"[protecciones] {ex}")
@@ -928,8 +929,11 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
             continue  # si los números en frío no acompañan, no llega a vos
         riesgo_unit = pl["entrada"] - pl["stop"]
         cantidad = int(un_r * pl["tamano_r"] / riesgo_unit) if riesgo_unit > 0 and un_r else None
+        mitad = bool(prot.get("mitad"))
+        if mitad and cantidad:
+            cantidad = max(1, cantidad // 2)  # mala racha: se compra la mitad
         nuevas.append({**e, "fecha": hoy.isoformat(), "hora": ctx.hora, "decision": "pendiente",
-                       "cantidad_sugerida": cantidad, "seguimiento": {"estado": "pendiente"}})
+                       "cantidad_sugerida": cantidad, "tamano_mitad": mitad, "seguimiento": {"estado": "pendiente"}})
     reg.nuevas(nuevas)
 
     # --- simulación en papel: 1.000 nominales de cada oportunidad/propuesta, medida en pesos ---

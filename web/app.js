@@ -59,7 +59,7 @@ function tarjeta(p) {
       <div class="met"><span>Stop</span><b style="color:var(--rojo)">${num(pl.stop)}</b></div>
       <div class="met"><span>Tamaño · R neto</span><b>${num(pl.tamano_r, 1)}R · ${num(p.riesgo?.r_neto, 2)}</b></div>
     </div>
-    <p class="tenue">${p.cantidad_sugerida ? `Cantidad sugerida: ${num(p.cantidad_sugerida, 0)} (≈ $${num(p.cantidad_sugerida * pl.entrada, 0)}). ` : ""}Arriesga ${num(pl.riesgo_pct, 1)}% para ganar ${num(pl.recompensa_pct, 1)}%. ${p.principal ? `Plazo ${p.ruedas >= 40 ? "~" + Math.round(p.ruedas / 20) + " meses" : p.ruedas + " ruedas"} (idea de ${esc(nombreAg(p.principal))}): vence ${esc(fecha(pl.vence))}.` : `Vence ${esc(pl.vence)}.`} ${esc((p.riesgo?.avisos || []).join(" "))}</p>
+    <p class="tenue">${p.cantidad_sugerida ? `Cantidad sugerida: ${num(p.cantidad_sugerida, 0)} (≈ $${num(p.cantidad_sugerida * pl.entrada, 0)})${p.tamano_mitad ? " — la mitad de lo normal por la mala racha" : ""}. ` : ""}Arriesga ${num(pl.riesgo_pct, 1)}% para ganar ${num(pl.recompensa_pct, 1)}%. ${p.principal ? `Plazo ${p.ruedas >= 40 ? "~" + Math.round(p.ruedas / 20) + " meses" : p.ruedas + " ruedas"} (idea de ${esc(nombreAg(p.principal))}): vence ${esc(fecha(pl.vence))}.` : `Vence ${esc(pl.vence)}.`} ${esc((p.riesgo?.avisos || []).join(" "))}</p>
     ${p.debate ? `<div class="debate"><b>Alcista:</b> ${esc(p.debate.alcista)}</div><div class="debate baj"><b>Bajista:</b> ${esc(p.debate.bajista)}</div>` : ""}
     <details><summary>Lo que dijo cada agente</summary>${sen || '<p class="tenue">Sin detalle.</p>'}</details>
     <button class="chico" data-abrir-debate="${esc(p.ticker)}">Ver debate completo</button>
@@ -268,7 +268,7 @@ function pintarResumenHoy() {
   const ops = Object.values(est.oportunidades || {}).reduce((n, l) => n + l.length, 0);
   const clima = est.clima || "—", t = SIM_RES?.total || {};
   const pr = est.fecha === HOY() ? est.protecciones || {} : {}, pens = Object.entries(pr.penitencia || {});
-  const freno = pr.pausa || pens.length ? `<div class="card" style="border-color:var(--rojo)"><b>🛑 ${pr.pausa ? "Protección activa: hoy el Comité no propone compras" : "Papeles en penitencia"}</b>
+  const freno = pr.pausa || pr.mitad || pens.length ? `<div class="card" style="border-color:${pr.mitad ? "#d29922" : "var(--rojo)"}"><b>${pr.pausa ? "🛑 Protección activa: hoy el Comité no propone compras" : pr.mitad ? "⚠️ Mala racha: el Comité propone con la mitad del tamaño" : "🛑 Papeles en penitencia"}</b>
     ${(pr.motivos || []).map((m) => `<p class="tenue" style="margin:4px 0 0">${esc(m)}</p>`).join("")}
     ${pens.length ? `<p class="tenue" style="margin:6px 0 0">${pens.map(([tk, x]) => `<b class="link" data-abrir-debate="${esc(tk)}">${esc(tk)}</b> hasta el ${esc(fecha(x.hasta))}`).join(" · ")} <span>(perdieron sus 2 últimas propuestas)</span></p>` : ""}</div>` : "";
   $("#resumen-hoy").innerHTML = freno + `<div class="card resumen">
