@@ -927,6 +927,13 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
             e["ficha_txt"] = _ff.texto(e["ficha_frio"])
         except Exception as ex_:
             print(f"[ficha en frío] {e['ticker']}: {ex_}")
+        # 13/11: el acta del Comité guarda qué dijo la revisión en frío, para que la app muestre solo lo que pasó todo
+        ff_ = e.get("ficha_frio") or {}
+        for a_ in (comite_estado.get("acta") or []) + ((comite_estado.get("historial") or {}).get(hoy.isoformat()) or []):
+            if a_.get("ticker") == e["ticker"]:
+                a_["frio"] = ff_.get("veredicto") or "sin datos"
+                a_["frio_motivo"] = "; ".join((ff_.get("entrada_cara") or []) + (ff_.get("alertas") or []))[:300]
+                a_["propuesta"] = ff_.get("veredicto") == "acompañan"
         if (e.get("ficha_frio") or {}).get("veredicto") != "acompañan":  # 04/11: solo pasa si TODOS los números acompañan (antes pasaba con 1 en contra)
             print(f"[ficha en frío] {e['ticker']} no se propone: {e['ficha_txt']}")
             continue  # si los números en frío no acompañan, no llega a vos

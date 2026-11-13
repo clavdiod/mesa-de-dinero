@@ -141,8 +141,9 @@ let PLEG_ABIERTOS = new Set();
 try { PLEG_ABIERTOS = new Set(JSON.parse(localStorage.getItem("mesa_plegables") || "[]")); } catch (_) {}
 const guardarPleg = () => { try { localStorage.setItem("mesa_plegables", JSON.stringify([...PLEG_ABIERTOS])); } catch (_) {} };
 const RESUMEN_PLEG = {
-  "comite": () => { const c = ESTADO.estado?.comite || {}, a = c.fecha === HOY() ? c.acta || [] : []; const ok = a.filter((x) => x.aprobada);
-    return ok.length ? "aprobado: " + ok.map((x) => x.ticker).join(", ") + (a.length > ok.length ? ` · ${a.length - ok.length} filtradas` : "") : `ninguno aprobado hoy${a.length ? ` · ${a.length} filtradas` : ""}`; },
+  "comite": () => { const c = ESTADO.estado?.comite || {}, a = c.fecha === HOY() ? c.acta || [] : []; const ok = a.filter((x) => x.aprobada && x.propuesta);
+    const n = a.length - ok.length;
+    return ok.length ? "✅ para comprar: " + ok.map((x) => x.ticker).join(", ") + (n ? ` · ${n} descartadas` : "") : `ninguna para comprar hoy${n ? ` · ${n} descartadas` : ""}`; },
   "radar-ganadores": () => radarGanadores().slice(0, 3).map((x) => `${x.ticker} (${x.n})`).join(" · "),
   "cobros-hoy": () => { const c = (ESTADO.estado?.cobros || []).filter((x) => x.fecha >= HOY()).sort((a, b) => a.fecha.localeCompare(b.fecha))[0];
     return c ? `próximo ${diaTxt(c.fecha)} · ${c.ticker}${c.total != null ? " " + plataMon(c.total, c.moneda) : ""}` : ""; },
@@ -1030,14 +1031,17 @@ function pintarComite() {
     <span class="tenue">· a favor ${num(a.favor, 1)} · en contra ${num(a.contra, 1)}${a.ruedas ? ` · plazo ${a.ruedas} ruedas` : ""}</span>
     <div class="tiras" style="margin-top:4px">${(a.votos || []).map((v) => `<span class="chip chico2 ${v.voto > 0 ? "verde" : "rojo"}" title="${esc(v.texto || "")}">${v.voto > 0 ? "▲" : "▼"} ${esc(v.nombre)} ${x(v.peso)}</span>`).join("")}</div>
     ${a.aprobada ? "" : `<div class="tenue" style="font-size:13px;margin-top:2px">${esc(a.motivo || "")}</div>`}</div></div>`;
-  const bloque = (acta) => { const ok = acta.filter((a) => a.aprobada), no = acta.filter((a) => !a.aprobada);
-    return (ok.length ? ok.map(fila).join("") : '<p class="tenue">Ninguna aprobada.</p>')
-      + (no.length ? `<details><summary>Filtradas · ${no.length}</summary>${no.map(fila).join("")}</details>` : ""); };
+  // 13/11: arriba solo lo que pasó TODO (votos + revisión en frío del precio de entrada). Lo demás, plegado y con el motivo.
+  const bloque = (acta) => { const ok = acta.filter((a) => a.aprobada && a.propuesta), frio = acta.filter((a) => a.aprobada && !a.propuesta), no = acta.filter((a) => !a.aprobada);
+    const filaFrio = (a) => fila(a).replace(/<\/div><\/div>$/, `<div class="tenue" style="font-size:13px;margin-top:2px">❌ ${a.frio ? "Revisión en frío: " + esc(a.frio) + (a.frio_motivo ? " — " + esc(a.frio_motivo) : "") : "No llegó a revisarse: el cupo del día ya estaba cubierto"}</div></div></div>`);
+    return (ok.length ? ok.map(fila).join("") : '<p><b>Ninguna para comprar hoy.</b> <span class="tenue">Ninguna pasó la revisión del precio de entrada.</span></p>')
+      + (frio.length ? `<details><summary>Votadas a favor pero descartadas por el precio de entrada · ${frio.length}</summary>${frio.map(filaFrio).join("")}</details>` : "")
+      + (no.length ? `<details><summary>Filtradas en la votación · ${no.length}</summary>${no.map(fila).join("")}</details>` : ""); };
   const pes = Object.entries(c.pesos || {}).sort((a, b) => b[1].peso - a[1].peso);
   box.innerHTML = `<h2>🗳️ Comité <span class="hora">· ${esc(c.hora || "")}</span></h2><div class="card">
-    <p class="tenue" style="margin-top:0">Solo se muestran las que el Comité aprobó (2 o más a favor y al menos 1,6 veces más peso a favor). Cada voto pesa según cuánto acertó de verdad.</p>
+    <p class="tenue" style="margin-top:0">Arriba solo aparecen las que pasaron TODO: la votación (2 o más a favor y al menos 1,6 veces más peso a favor) y la revisión en frío del precio de entrada. Cada voto pesa según cuánto acertó de verdad.</p>
     ${hoyActa.length ? bloque(hoyActa) : '<p class="tenue">Hoy todavía no votó nada.</p>'}
-    ${hist.length ? `<details><summary>Días anteriores</summary>${hist.map(([f, acta]) => `<details class="dia-pron"><summary><b>${esc(tituloDia(f))}</b> <span class="tenue">· ${acta.filter((a) => a.aprobada).length} aprobada${acta.filter((a) => a.aprobada).length === 1 ? "" : "s"} · ${acta.filter((a) => !a.aprobada).length} filtradas</span></summary>${bloque(acta)}</details>`).join("")}</details>` : ""}
+    ${hist.length ? `<details><summary>Días anteriores</summary>${hist.map(([f, acta]) => `<details class="dia-pron"><summary><b>${esc(tituloDia(f))}</b> <span class="tenue">· ${acta.filter((a) => a.aprobada && a.propuesta).length} para comprar · ${acta.filter((a) => !(a.aprobada && a.propuesta)).length} descartadas</span></summary>${bloque(acta)}</details>`).join("")}</details>` : ""}
     ${pes.length ? `<details><summary>Peso de cada analista hoy</summary>${pes.map(([k, p]) => `<div class="evento"><span class="ev-ic">⚖️</span><span><b>${esc(nombreAg(k))}</b> ${x(p.peso)} <span class="tenue">· acertó ${p.acierto}% de ${p.casos} (${esc(p.fuente)})</span></span></div>`).join("")}</details>` : ""}</div>`;
 }
 
