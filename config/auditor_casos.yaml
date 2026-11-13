@@ -85,3 +85,13 @@
   hora: "14:20"
   precio: 7430
   stop: 7470
+- caso: "COST 13/11: 'vendé la mitad' a los 12 minutos de comprar, sin ganancia, por estar cerca del máximo del año"
+  esperado: no_avisar
+  ticker: COST
+  compra: 38620
+  fecha_compra: "2026-11-13"
+  hoy: "2026-11-13"
+  hora: "13:01"
+  precio: 38520
+  maximo_dia: 38720
+  maximo_previo: 38720

@@ -197,7 +197,9 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
             sug, por_que = ("subir_stop" if nuevo_stop else "mantener"), x.get("motivo")
         elif cons.startswith("Vender"):
             sug, por_que = "vender_todo", x.get("motivo")
-        elif cons.startswith("Tomar"):
+        elif cons.startswith("Tomar") and (res or 0) >= 1.5 and (dias or 0) >= 1:
+            # 13/11: "tomar ganancia" solo si HAY ganancia (más que las comisiones) y no el mismo día de la compra
+            # (COST: a los 12 minutos de comprarla, en -0,3%, decía "vendé la mitad: la mayor parte de la suba ya se dio")
             sug, por_que = "vender_mitad", x.get("motivo")
         elif plazo_cumplido:
             sug = "vender_mitad" if (res or 0) > 1.2 else "vender_todo"
@@ -239,6 +241,8 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
                                             "Mientras tanto la mesa no te pide vender, salvo que toque la alarma de revisión"
                                             + (f" en {_p(piso)}." if piso else "."))
                 ops = [o for o in ops if o["accion"] != "subir_stop"]
+        if sug in ("vender_mitad", "vender_todo") and (dias or 0) < 1 and not (piso and precio <= piso):
+            sug, por_que = "mantener", "Recién comprada: el mismo día la mesa no pide vender, salvo que toque la alarma de venta."
         # --- antes de decir "vendé", se revisa TODO (no una sola regla) ---
         revision = []
         if sug in ("vender_mitad", "vender_todo"):
