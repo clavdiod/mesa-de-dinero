@@ -862,7 +862,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                 e_["grupo"] = t_.get("grupo")
             except Exception:
                 pass
-        elegidos, acta = _com.decidir(debatidos, pesos_v, cupo)
+        # 13/11: se revisan TODOS los aprobados en frío; el cupo del día cuenta solo los que pasan (antes KO y ERIC quedaban sin revisar)
+        elegidos, acta = _com.decidir(debatidos, pesos_v, max(cupo, 0) and 12)
         previo_c = {} if simular else (almacen.get("ui/estado") or {}).get("comite") or {}
         actas = [a for a in (previo_c.get("acta") or []) if previo_c.get("fecha") == hoy.isoformat() and a["ticker"] not in {x["ticker"] for x in acta}]
         comite_estado = {"fecha": hoy.isoformat(), "hora": ctx.hora, "pesos": pesos_v, "acta": (acta + actas)[:20]}
@@ -911,6 +912,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     nuevas = []
     from .agentes import ficha_frio as _ff, fundamentos as _fu
     for e in elegidos:
+        if len(nuevas) >= max(cupo, 0):
+            break  # cupo del día cubierto con propuestas que pasaron la revisión en frío
         pl = e["plan"]
         try:  # 02/11: la ficha en frío va con la propuesta, ANTES de que decidas
             t_ = ctx.titulo(e["ticker"]) or {}
