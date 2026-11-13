@@ -27,7 +27,7 @@ jobs:
         run: sed -i "s/REEMPLAZAR_CON_KV_ID/${{ secrets.CF_KV_ID }}/" worker/wrangler.toml
       - name: Publicar
         working-directory: worker
-        run: npx --yes wrangler@4 deploy
+        run: npx --yes wrangler@3 deploy
       - name: Cargar secretos del Worker (solo los que existen)
         working-directory: worker
         env:
@@ -40,7 +40,7 @@ jobs:
         run: |
           for s in INGESTA_TOKEN EMAIL_PERMITIDO VAPID_PUBLICA GITHUB_TOKEN WEB_CLAVE ANTHROPIC_API_KEY; do
             if [ -n "${!s}" ]; then
-              printf '%s' "${!s}" | npx --yes wrangler@4 secret put "$s" >/dev/null && echo "secreto $s cargado"
+              printf '%s' "${!s}" | npx --yes wrangler@3 secret put "$s" >/dev/null && echo "secreto $s cargado"
             else
               echo "secreto $s sin valor (se omite)"
             fi
