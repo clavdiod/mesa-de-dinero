@@ -51,6 +51,9 @@ jobs:
           IOL_USUARIO: ${{ secrets.IOL_USUARIO }}
           IOL_CLAVE: ${{ secrets.IOL_CLAVE }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          VAPID_PRIVADA: ${{ secrets.VAPID_PRIVADA }}
+          VAPID_PUBLICA: ${{ secrets.VAPID_PUBLICA }}
+          VAPID_CONTACTO: ${{ secrets.VAPID_CONTACTO }}
           RESPALDO: ${{ github.event_name == 'schedule' && '1' || '' }}
         run: |
           if [ "${{ steps.t.outputs.tarea }}" = "mensual" ]; then

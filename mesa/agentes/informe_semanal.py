@@ -98,7 +98,8 @@ def armar(a, hoy: date, panel: dict, velas, sector, flujos: dict, macro: dict, a
             sube = sum(1 for r, _ in papeles if r > 0)
             lin = [f"{sube} de {len(papeles)} acciones subieron. Promedio del panel: {_p(st.mean(r for r, _ in papeles))}."]
             if sec:
-                lin.append("Mejores sectores: " + ", ".join(f"{s} {_p(r)}" for r, s in sec[:3]) + ". Peores: " + ", ".join(f"{s} {_p(r)}" for r, s in sec[-3:][::-1]) + ".")
+                k = min(3, len(sec) // 2) or 1
+                lin.append("Mejores sectores: " + ", ".join(f"{s} {_p(r)}" for r, s in sec[:k]) + ". Peores: " + ", ".join(f"{s} {_p(r)}" for r, s in sec[-k:][::-1]) + ".")
             lin.append("Más subieron: " + ", ".join(f"{tk} {_p(r)}" for r, tk in papeles[:3]) + ". Más bajaron: " + ", ".join(f"{tk} {_p(r)}" for r, tk in papeles[-3:][::-1]) + ".")
             secciones.append({"titulo": "📊 Acciones argentinas en la semana", "lineas": lin})
     except Exception as ex:
@@ -123,7 +124,7 @@ def armar(a, hoy: date, panel: dict, velas, sector, flujos: dict, macro: dict, a
             tot_ops = sum(o.get("ganancia") or 0 for o in ops)
             lin.append("Operaciones cerradas en la semana: " + ", ".join(f"{o['ticker']} {'+' if (o.get('ganancia') or 0) >= 0 else '−'}${_n(abs(o.get('ganancia') or 0))}" for o in ops)
                        + f". Total {'+' if tot_ops >= 0 else '−'}${_n(abs(tot_ops))}.")
-            destacado.append(f"cerraste {len(ops)} operación{'es' if len(ops) > 1 else ''} ({'+' if tot_ops >= 0 else '−'}${_n(abs(tot_ops))})")
+            destacado.append(f"cerraste {len(ops)} {'operaciones' if len(ops) > 1 else 'operación'} ({'+' if tot_ops >= 0 else '−'}${_n(abs(tot_ops))})")
         if lin:
             secciones.append({"titulo": "💼 Tu cartera", "lineas": lin})
     except Exception as ex:
