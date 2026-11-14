@@ -225,6 +225,7 @@ function pintarEstado() {
   pintarWsVivo();
   pintarAsimetria();
   pintarCurvas();
+  pintarInforme();
   pintarMinistro();
   pintarGanadores();
   pintarProfesionales();
@@ -956,6 +957,17 @@ function pintarCurvas() {
     ${(r.breakeven || []).length ? `<p class="tenue" style="margin-top:8px"><b>Inflación que espera el mercado</b> (LECAP contra bono CER de plazo parecido)</p><div class="tabla-scroll"><table><tr><th>Vence</th><th>LECAP</th><th class="n">Tasa por mes</th><th>CER</th><th class="n">Tasa real por mes</th><th class="n">Inflación implícita</th></tr>
       ${r.breakeven.map((p) => `<tr><td>${esc(fecha(p.vence))}</td><td>${esc(p.lecap)}</td><td class="n">${num(p.tem_lecap, 2)}%</td><td>${esc(p.cer)}</td><td class="n">${num(p.tem_real_cer, 2)}%</td><td class="n"><b>${num(p.inflacion_implicita_mensual, 2)}%</b></td></tr>`).join("")}</table></div>` : ""}
     <p class="tenue">Fuentes públicas y gratis: BCRA (dólar mayorista, CER, inflación, tasas), A3 Mercados (dólar futuro), BYMA y data912 (bonos). Se actualiza al cierre de cada día. Solo información: no vota.</p></details>`;
+}
+
+// 14/11: informe de la semana (se arma el viernes después de reentrenar a los analistas)
+function pintarInforme() {
+  const r = ESTADO.informe, el = $("#informe-semana");
+  if (!el) return;
+  if (!r || !(r.secciones || []).length) { el.innerHTML = ""; return; }
+  const dias = (new Date(HOY()) - new Date(r.fecha)) / 86400000;
+  el.innerHTML = `<details class="card eco" ${dias <= 3 ? "open" : ""}><summary><div class="fila"><b>📰 ${esc(r.titulo)}</b></div><span class="tenue">${esc(r.resumen)}</span></summary>
+    ${r.secciones.map((x) => `<p style="margin:10px 0 4px"><b>${esc(x.titulo)}</b></p>${x.lineas.map((l) => `<p style="margin:2px 0">${esc(l)}</p>`).join("")}`).join("")}
+    <p class="tenue" style="margin-top:8px">Se arma el último día hábil de cada semana, después de que los analistas se reentrenan con la historia.</p></details>`;
 }
 
 function pintarWallStreet() {

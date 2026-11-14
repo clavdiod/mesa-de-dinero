@@ -174,6 +174,10 @@ async function textoAviso(env) {
   const [estado, alertas, props] = await Promise.all([leer(env, "ui/estado", {}), leer(env, "ui/alertas", []), leer(env, "registro/propuestas", [])]);
   const nuevas = estado.nuevas || [], p = props.find((x) => nuevas.includes(x.id));
   // 02/11: solo un aviso de ESTA ronda (antes tomaba el último guardado, aunque fuera viejo: VIST a las 10:36)
+  // 14/11: el informe de la semana (después del cierre del viernes) también avisa
+  const inf = alertas.find((x) => x.tipo === "informe" && x.fecha === hoyBA());
+  if (inf && !(alertas[0] && alertas[0] !== inf && alertas[0].fecha === estado.fecha && alertas[0].hora === estado.hora))
+    return { importante: false, titulo: inf.ticker, cuerpo: inf.texto };
   const a = alertas.find((x) => x.fecha === estado.fecha && x.hora === estado.hora);
   const n = (x) => Number(x).toLocaleString("es-AR", { maximumFractionDigits: 2 });
   if (p) return { importante: true, titulo: `🗳️ Comité: comprar ${p.ticker} con límite ${n(p.plan.entrada)}`,
@@ -263,11 +267,11 @@ async function api(req, env, url) {
 
   if (p === "/api/estado") {
     const renovar = await cookieSesionNueva(req, env);
-    const [estado, cierre, alertas, consumo] = await Promise.all([
+    const [estado, cierre, alertas, consumo, informe] = await Promise.all([
       leer(env, "ui/estado", {}), leer(env, "ui/cierre", {}), leer(env, "ui/alertas", []),
-      leer(env, `consumo/${hoyBA().slice(0, 7)}`, { total: 0 }),
+      leer(env, `consumo/${hoyBA().slice(0, 7)}`, { total: 0 }), leer(env, "informe/semanal", null),
     ]);
-    const r = json({ estado, cierre, alertas, consumo, tope: Number(env.TOPE_IOL || 25000) });
+    const r = json({ estado, cierre, alertas, consumo, informe, tope: Number(env.TOPE_IOL || 25000) });
     if (renovar) r.headers.append("set-cookie", renovar);
     if ((await leer(env, "auth/passkeys", [])).length) r.headers.append("set-cookie", await cookieDesbloqueo(env));  // mientras la app está abierta no se bloquea
     return r;

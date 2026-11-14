@@ -597,7 +597,36 @@ def entrenar() -> dict:
     cal = reg.recalibrar()
     a.put("ranking/tabla", reg.ranking())
     resumen = {ag: f"{c['acierto_pct']}% de {c['casos']} casos ({c['fuente']}) -> voto x{c['factor']}" for ag, c in cal.items()}
+    try:  # 14/11: después de reentrenar, el informe de la semana (con lo que aprendieron los analistas) y aviso al celular
+        informe_semana(a, cache, macro)
+    except Exception as ex:
+        print(f"[entrenar] informe: {ex}")
     return {"series": len(series), "calibracion": resumen, "ensenanza_economista": ens}
+
+
+def informe_semana(a=None, cache=None, macro=None) -> dict:
+    """Arma el informe de la semana, lo guarda (lo muestra la app) y avisa al celular."""
+    import yaml as _y
+    from .agentes import informe_semanal as _inf
+    from .datos.eventos import flujos_bonos
+    from .nucleo.config import RAIZ as _R, sector as _sector
+    from .nucleo import push as _push
+    a = a or almacen_por_defecto()
+    cache = cache or CacheHistorico(a)
+    macro = macro if macro is not None else gratis.series_macro(1)
+    hoy = ahora().date()
+    panel = (a.get("ui/panel") or {}).get("titulos") or {}
+    aps = _y.safe_load((_R / "config" / "aprendizajes.yaml").read_text(encoding="utf-8")) or []
+    inf = _inf.armar(a, hoy, panel, cache.velas, _sector, flujos_bonos(), macro, aps)
+    a.put("informe/semanal", inf)
+    al = a.get("ui/alertas") or []
+    al = [x for x in al if not (x.get("tipo") == "informe" and x.get("fecha") == hoy.isoformat())]
+    a.put("ui/alertas", ([{"fecha": hoy.isoformat(), "hora": ahora().strftime("%H:%M"), "ticker": "📰 Informe de la semana", "tipo": "informe",
+                           "texto": inf["resumen"] + " Abrí la app para ver el informe completo y lo que aprendió la mesa."}] + al)[:60])
+    subs = a.get("push/suscripciones") or []
+    if subs:
+        print(f"[informe] push: {_push.enviar(subs)}")
+    return inf
 
 
 def mensual() -> dict:
@@ -616,7 +645,8 @@ def mensual() -> dict:
 
 if __name__ == "__main__":
     tarea = sys.argv[1] if len(sys.argv) > 1 else "diario"
-    fn = {"diario": diario, "calificadoras": calificadoras, "semanal": semanal, "mensual": mensual, "entrenar": entrenar}[tarea]
+    fn = {"diario": diario, "calificadoras": calificadoras, "semanal": semanal, "mensual": mensual, "entrenar": entrenar,
+          "informe": informe_semana}[tarea]
     import os
     import traceback
     _a = almacen_por_defecto()
