@@ -204,7 +204,8 @@ def armar(a, hoy: date, panel: dict, velas, sector, flujos: dict, macro: dict, a
             tuyas = [(r, tk) for r, tk, _ in rend if tk in mias]
             if tuyas:
                 lin.append("Las tuyas: " + ", ".join(f"{tk} {_p(r, 1, False)} anual en dividendos" for r, tk in tuyas) + ".")
-            lin.append("Un dividendo pasado no garantiza el próximo: sirve para ver qué empresas pagan seguido.")
+            lin.append("Ojo: rendimientos de 15% o más suelen ser dividendos extraordinarios de una sola vez (por ejemplo TRAN en septiembre, tras el cambio de dueños), "
+                       "y el precio baja ese día por lo que se reparte. Un dividendo pasado no garantiza el próximo: sirve para ver qué empresas pagan seguido (varios pagos al año).")
             secciones.append({"titulo": "💰 Dividendos", "lineas": lin})
     except Exception as ex:
         print(f"[informe] dividendos: {ex}")
