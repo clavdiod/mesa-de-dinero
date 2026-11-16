@@ -1,20 +1,36 @@
-"""16/11: tablero.bymaeduca.com.ar es un HTML de 2,8 MB con los datos adentro. ¿Qué trae?"""
+"""16/11: estructura del JSON del tablero BYMA Educa."""
 import re, json
-from collections import Counter
 from mesa.datos.gratis import _S
-H = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64)"}
-html = _S.get("https://tablero.bymaeduca.com.ar", headers=H, timeout=60).text
+html = _S.get("https://tablero.bymaeduca.com.ar", headers={"User-Agent": "Mozilla/5.0"}, timeout=60).text
 scripts = re.findall(r"<script[^>]*>(.*?)</script>", html, re.S)
-print(f"::notice::{len(scripts)} scripts inline; tamaños: {[len(s) for s in scripts][:15]}")
-grande = max(scripts, key=len) if scripts else ""
-print("::notice::inicio del script grande: " + grande[:700].replace("\n", " "))
-fechas = re.findall(r"20[12]\d-[01]\d-[0-3]\d", html)
-print(f"::notice::fechas: {len(fechas)} · desde {min(fechas) if fechas else None} hasta {max(fechas) if fechas else None}")
-claves = Counter(re.findall(r'"([a-zA-Z_][a-zA-Z0-9_]{2,30})"\s*:', html))
-print("::notice::claves JSON más comunes: " + ", ".join(f"{k}({n})" for k, n in claves.most_common(45)))
-for pal in ("balance", "Balance", "dividend", "Dividend", "hecho", "calendario", "Calendario", "EECC", "estados contables", "vencim"):
-    i = html.find(pal)
-    if i >= 0:
-        print(f"::notice::'{pal}': …{html[max(0, i - 200):i + 300]}…".replace("\n", " ")[:600])
-tks = Counter(re.findall(r'"(?:symbol|ticker|simbolo|especie)"\s*:\s*"([A-Z0-9.]{2,10})"', html))
-print(f"::notice::{len(tks)} especies: " + ", ".join(list(tks)[:80]))
+out = []
+for s in sorted(scripts, key=len, reverse=True)[:4]:
+    s2 = s.strip()
+    try:
+        d = json.loads(s2)
+    except Exception:
+        m = re.search(r"=\s*(\{.*\})\s*;?\s*$", s2, re.S)
+        try:
+            d = json.loads(m.group(1)) if m else None
+        except Exception:
+            d = None
+    if not isinstance(d, dict):
+        out.append(f"script {len(s2)} no es JSON: {s2[:120]!r}"); continue
+    for k, v in d.items():
+        if isinstance(v, dict):
+            sub = {kk: (f"lista {len(vv)}" if isinstance(vv, list) else type(vv).__name__) for kk, vv in v.items()}
+            filas = v.get("rows") or []
+            ej = filas[0] if filas and isinstance(filas[0], dict) else None
+            out.append(f"[{k}] {sub} · campos fila: {list(ej.keys())[:60] if ej else ''}")
+            for kk, vv in v.items():
+                if isinstance(vv, list) and vv and isinstance(vv[0], (list, dict)) and kk != "rows":
+                    out.append(f"   {k}.{kk}[0] = {json.dumps(vv[0], ensure_ascii=False)[:300]}")
+            if ej:
+                for kk, vv in ej.items():
+                    if isinstance(vv, list) and vv:
+                        out.append(f"   fila.{kk} = lista de {len(vv)}: {json.dumps(vv[:3], ensure_ascii=False)[:250]}")
+        elif isinstance(v, list):
+            out.append(f"[{k}] lista {len(v)}: {json.dumps(v[0], ensure_ascii=False)[:300] if v else ''}")
+        else:
+            out.append(f"[{k}] = {str(v)[:120]}")
+print("::notice::" + " ## ".join(out)[:12000])
