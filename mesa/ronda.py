@@ -1029,7 +1029,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     try:
         from .datos import cobros as cob
         tks_cart = [c.get("ticker", "").upper() for c in cartera if c.get("ticker")]
-        propios = {**{k: v for k, v in eventos_mod.flujos_bonos().items() if k in tks_cart},
+        propios = {**{k: v for k, v in eventos_mod.flujos_bonos(almacen).items() if k in tks_cart},
                    **{k: {**v, "fuente": "cargado"} for k, v in (ctx.extra.get("ons_usuario") or {}).items() if k in tks_cart}}
         mae_f = {} if simular else cob.asegurar_flujos(almacen, tks_cart, hoy, ya_tienen=set(propios))
         flujos_cartera = {**mae_f, **propios}
@@ -1160,7 +1160,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "proyeccion_cartera": proy_cartera,
         "opciones": mesa_opciones,
         "ws_vivo": _ws_vivo(ctx, almacen, cartera, ya, hoy, simular),
-        "asimetria": _asimetria(ctx, cartera, hoy),
+        "asimetria": _asimetria(ctx, cartera, hoy, None if simular else almacen),
         "curvas": None if simular else almacen.get("macro/curvas"),
         "graficos": _graficos(ctx, cartera, seg_cartera),
         "seguimiento_cartera": seg_cartera,
@@ -1258,18 +1258,22 @@ def _ws_vivo(ctx, almacen, cartera, ya, hoy, simular) -> dict | None:
         return None
 
 
-def _asimetria(ctx, cartera, hoy) -> dict | None:
+def _asimetria(ctx, cartera, hoy, almacen=None) -> dict | None:
     """12/11: agente asimétrico (bonos en dólares: cuánto ganás si sale bien vs cuánto perdés si sale mal)."""
     try:
         from .agentes import asimetria as _asi
         from .datos.eventos import flujos_bonos
+        fl_ = flujos_bonos(almacen)
+        # 16/11: además de la lista fija, todos los soberanos en dólares que trae BYMA (provincias incluidas)
+        bases = list(dict.fromkeys(_asi.BASES + sorted(k for k, v in fl_.items() if v.get("fuente") == "BYMA" and not v.get("base")
+                                                       and v.get("segmento") == "sob" and str(v.get("moneda") or "").upper() == "USD")))
         panel = {}
-        for b in _asi.BASES:
+        for b in bases:
             for suf in ("C", "D"):
                 t = ctx.titulo(b + suf) or {}
                 if t.get("ultimo"):
                     panel[b + suf] = [t["ultimo"]]
-        return _asi.tabla(panel, flujos_bonos(), hoy, {str(c.get("ticker") or "").upper() for c in cartera})
+        return _asi.tabla(panel, fl_, hoy, {str(c.get("ticker") or "").upper() for c in cartera}, bases)
     except Exception as ex:
         print(f"[asimetria] {ex}")
         return None

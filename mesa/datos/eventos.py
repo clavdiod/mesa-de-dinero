@@ -27,8 +27,21 @@ def _yaml(nombre: str, defecto):
         return defecto
 
 
-def flujos_bonos() -> dict[str, dict]:
-    """ticker -> {emisor, moneda, flujos}. Incluye los Bonares (AL) y las variantes D/C de cada bono."""
+def flujos_bonos(almacen=None) -> dict[str, dict]:
+    """ticker -> {emisor, moneda, flujos}. Incluye los Bonares (AL) y las variantes D/C de cada bono.
+    16/11: con el almacén, primero los cronogramas oficiales de BYMA (todos los títulos públicos); el yaml queda de respaldo."""
+    base = _flujos_yaml()
+    if almacen is not None:
+        try:
+            from .bymaeduca import flujos_guardados
+            by = {k: v for k, v in flujos_guardados(almacen).items() if v.get("grupo") == "soberanos" and v.get("flujos")}
+            return {**base, **by}
+        except Exception as ex:
+            print(f"[flujos bonos] BYMA: {ex}")
+    return base
+
+
+def _flujos_yaml() -> dict[str, dict]:
     doc = _yaml("bonos_flujos.yaml", {})
     bonos = dict(doc.get("bonos") or {})
     for al, gd in (doc.get("equivalentes") or {}).items():

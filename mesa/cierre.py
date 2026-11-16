@@ -258,6 +258,14 @@ def diario(simular: bool = False) -> dict:
         except Exception as ex:
             print(f"[cierre] anticipador arg: {ex}")
 
+    # 16/11: cronogramas oficiales de bonos y ONs y dividendos, de BYMA Educa (una vez por día)
+    if not simular:
+        try:
+            from .datos import bymaeduca as _be
+            print(f"[cierre] BYMA Educa: {_be.actualizar(a)}")
+        except Exception as ex:
+            print(f"[cierre] BYMA Educa: {ex}")
+
     # Renta fija para cobrar: ONs y bonos en dólares con pagos periódicos y su cronograma (29/10)
     if not simular:
         try:
@@ -270,7 +278,7 @@ def diario(simular: bool = False) -> dict:
             cal_rf = a.get("calificadoras/ultimo") or {}
             malas_rf = {str(c.get("ticker") or "").upper() for c in cal_rf.get("cambios", []) if int(c.get("dir", 0)) < 0}
             tengo_rf = {str(x.get("ticker", "")).upper() for x in (a.get("usuario/cartera") or [])}
-            prop_rf = _rf.proponer(pan_rf, fl_rf, _ev.flujos_bonos(), hoy, malas_rf, tengo_rf)
+            prop_rf = _rf.proponer(pan_rf, fl_rf, _ev.flujos_bonos(a), hoy, malas_rf, tengo_rf)
             try:  # LECAP y BONCAP (pago único) contra la inflación esperada del REM
                 import yaml as _y
                 from .nucleo.config import RAIZ as _R
@@ -617,7 +625,7 @@ def informe_semana(a=None, cache=None, macro=None) -> dict:
     hoy = ahora().date()
     panel = (a.get("ui/panel") or {}).get("titulos") or {}
     aps = _y.safe_load((_R / "config" / "aprendizajes.yaml").read_text(encoding="utf-8")) or []
-    inf = _inf.armar(a, hoy, panel, cache.velas, _sector, flujos_bonos(), macro, aps)
+    inf = _inf.armar(a, hoy, panel, cache.velas, _sector, flujos_bonos(a), macro, aps)
     a.put("informe/semanal", inf)
     al = a.get("ui/alertas") or []
     al = [x for x in al if not (x.get("tipo") == "informe" and x.get("fecha") == hoy.isoformat())]

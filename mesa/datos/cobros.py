@@ -46,9 +46,21 @@ def asegurar_flujos(almacen, tickers: list[str], hoy: date, maximo: int = 10, ya
     """Baja de MAE los flujos que falten (o tengan más de 7 días). Devuelve {ticker: flujo}."""
     guardado = almacen.get("cobros/flujos") or {}
     cambio, bajados = False, 0
+    try:  # 16/11: primero los cronogramas oficiales de BYMA (gratis, todos los títulos); MAE queda para lo que falte
+        from .bymaeduca import flujos_guardados
+        by = flujos_guardados(almacen)
+    except Exception:
+        by = {}
     for tk in tickers:
         tk = tk.upper()
         if ya_tienen and tk in ya_tienen:
+            continue
+        b = by.get(tk)
+        if b and b.get("flujos"):
+            if (guardado.get(tk) or {}).get("fuente") != "BYMA" or guardado[tk].get("bajado") != hoy.isoformat():
+                guardado[tk] = {"especie": tk, "moneda": b.get("moneda"), "descripcion": f"{b.get('emisor') or ''} {b.get('descripcion') or ''}".strip(),
+                                "fuente": "BYMA", "flujos": b["flujos"], "bajado": hoy.isoformat()}
+                cambio = True
             continue
         g = guardado.get(tk)
         viejo = not g or (date.fromisoformat(g.get("bajado", "2000-01-01")) + timedelta(days=7)) < hoy

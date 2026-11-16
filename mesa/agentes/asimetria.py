@@ -60,10 +60,10 @@ def _p(x: float) -> str:
     return f"{'+' if x > 0 else ''}{x:.1f}%".replace(".", ",")
 
 
-def tabla(panel: dict, flujos: dict, hoy: date, tengo: set[str] | None = None) -> dict:
+def tabla(panel: dict, flujos: dict, hoy: date, tengo: set[str] | None = None, bases: list[str] | None = None) -> dict:
     """panel: {ticker: [ultimo, ...]} (ui/panel). Usa el precio en dólar cable (C) y si no hay, el MEP (D)."""
     filas = []
-    for b in BASES:
+    for b in bases or BASES:
         fl = (flujos.get(b) or {}).get("flujos")
         x = panel.get(b + "C") or panel.get(b + "D")
         if not fl or not x or not x[0]:
