@@ -33,4 +33,4 @@ for s in sorted(scripts, key=len, reverse=True)[:4]:
             out.append(f"[{k}] lista {len(v)}: {json.dumps(v[0], ensure_ascii=False)[:300] if v else ''}")
         else:
             out.append(f"[{k}] = {str(v)[:120]}")
-print("::notice::" + " ## ".join(out)[:12000])
+[print("EDU| " + o) for o in out]
