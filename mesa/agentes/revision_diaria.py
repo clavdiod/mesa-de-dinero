@@ -27,9 +27,14 @@ def armar(a, hoy: date, panel: dict) -> list[str]:
         from .revision import nombre
     except Exception:
         nombre = lambda k: k
+    vistos = set()
     for x in a.get("pronosticos/libreta") or []:
         if x.get("fecha_cierre") != h or str(x.get("ticker") or "").upper() not in mios and _base(x.get("ticker")) not in mios:
             continue
+        clave = (_base(x.get("ticker")), x.get("origen"), x.get("estado"))
+        if clave in vistos:
+            continue  # el mismo pronóstico anotado en pesos y en dólares (YPFD / YPFDD)
+        vistos.add(clave)
         est = {"se_dio": "✅ se cumplió", "fallo": "❌ falló (tocó el stop)", "no_se_dio": "⌛ venció sin cumplirse"}.get(x.get("estado"), x.get("estado"))
         puntos.append(f"{x.get('ticker')}: el pronóstico de {nombre(x.get('origen') or '')} {est}"
                       + (f" (iba a {'+' if (x.get('objetivo_pct') or 0) >= 0 else ''}{str(x.get('objetivo_pct')).replace('.', ',')}%)" if x.get("objetivo_pct") is not None else "") + ".")
