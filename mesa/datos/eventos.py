@@ -29,13 +29,14 @@ def _yaml(nombre: str, defecto):
 
 def flujos_bonos(almacen=None) -> dict[str, dict]:
     """ticker -> {emisor, moneda, flujos}. Incluye los Bonares (AL) y las variantes D/C de cada bono.
-    16/11: con el almacén, primero los cronogramas oficiales de BYMA (todos los títulos públicos); el yaml queda de respaldo."""
+    16/11: con el almacén se suman los cronogramas de BYMA (todos los títulos públicos). Para los que están en el yaml
+    (revisados con IOL) manda el yaml: BYMA no aplica los aumentos de cupón (step-up) de GD30, GD35, GD41, GD46."""
     base = _flujos_yaml()
     if almacen is not None:
         try:
             from .bymaeduca import flujos_guardados
             by = {k: v for k, v in flujos_guardados(almacen).items() if v.get("grupo") == "soberanos" and v.get("flujos")}
-            return {**base, **by}
+            return {**by, **base}  # el yaml (revisado con IOL) manda: BYMA no aplica los aumentos de cupón
         except Exception as ex:
             print(f"[flujos bonos] BYMA: {ex}")
     return base

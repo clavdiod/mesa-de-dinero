@@ -9,7 +9,7 @@ def test_bonares_pagan_como_globales_y_se_corre_al_lunes():
     ev = eventos.cobros(date(2026, 12, 20), 30, {}, {"AL30"})
     pagos = [e for e in ev if e["ticker"] == "AL30"]
     # el 09/01/2027 es sábado: se cobra el lunes 11
-    assert pagos and pagos[0]["fecha"] == "2027-01-11" and pagos[0]["monto_c100"] == 8.345
+    assert pagos and pagos[0]["fecha"] == "2027-01-11" and pagos[0]["monto_c100"] == 8.24  # 16/11: corregido con IOL (antes 8,345, con cupón de más)
     assert any(e["ticker"] == "AL/GD" for e in ev)
 
 
