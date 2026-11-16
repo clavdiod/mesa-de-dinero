@@ -181,6 +181,34 @@ def armar(a, hoy: date, panel: dict, velas, sector, flujos: dict, macro: dict, a
     except Exception as ex:
         print(f"[informe] bonos: {ex}")
 
+    # 5b. dividendos (BYMA Educa): quién pagó en el último año y cuánto rinde en dólares al precio de hoy
+    try:
+        filas = (a.get("bymaeduca/dividendos") or {}).get("filas") or []
+        mep = ((estado.get("indicadores") or {}).get("mep_al30")) or None
+        hace_un_anio = (hoy - timedelta(days=365)).isoformat()
+        por = {}
+        for d_ in filas:
+            if (d_.get("fecha") or "") >= hace_un_anio and d_.get("por_accion_usd"):
+                x = por.setdefault(d_["ticker"], {"usd": 0.0, "pagos": 0, "ult": ""})
+                x["usd"] += float(d_["por_accion_usd"]); x["pagos"] += 1; x["ult"] = max(x["ult"], d_["fecha"])
+        rend = []
+        for tk, x in por.items():
+            pr = (panel.get(tk) or [None])[0]
+            if pr and mep:
+                rend.append((x["usd"] / (float(pr) / float(mep)) * 100, tk, x))
+        rend.sort(reverse=True)
+        if rend:
+            mias = {str(c.get("ticker") or "").upper() for c in a.get("usuario/cartera") or []}
+            lin = [f"En el último año pagaron dividendos {len(por)} empresas argentinas. Las que más rinden en dólares al precio de hoy: "
+                   + ", ".join(f"{tk}{' ⭐' if tk in mias else ''} {_p(r, 1, False)} ({x['pagos']} pago{'s' if x['pagos'] > 1 else ''}, último {x['ult'][8:10]}/{x['ult'][5:7]})" for r, tk, x in rend[:6]) + "."]
+            tuyas = [(r, tk) for r, tk, _ in rend if tk in mias]
+            if tuyas:
+                lin.append("Las tuyas: " + ", ".join(f"{tk} {_p(r, 1, False)} anual en dividendos" for r, tk in tuyas) + ".")
+            lin.append("Un dividendo pasado no garantiza el próximo: sirve para ver qué empresas pagan seguido.")
+            secciones.append({"titulo": "💰 Dividendos", "lineas": lin})
+    except Exception as ex:
+        print(f"[informe] dividendos: {ex}")
+
     # 6. lo que viene
     try:
         lim = (hoy + timedelta(days=9)).isoformat()
