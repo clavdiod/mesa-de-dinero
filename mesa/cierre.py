@@ -392,6 +392,13 @@ def diario(simular: bool = False) -> dict:
     consumo.guardar()
     a.put("ui/cierre", {"fecha": hoy.isoformat(), "velas_agregadas": agregadas, "cambios": len(cambios),
                         "esperanza": reg.esperanza_mesa(), "consumo_iol": consumo.resumen()})
+    try:  # 16/11: revisión diaria: avisa SOLO si pasó algo que valga la pena (si no, no escribe)
+        from .agentes import revision_diaria as _rd
+        _pts = _rd.armar(a, hoy, (a.get("ui/panel") or {}).get("titulos") or {})
+        print(f"[cierre] revisión del día: {len(_pts)} puntos" + (": " + " | ".join(_pts) if _pts else " (sin novedades, no se avisa)"))
+        _rd.avisar(a, hoy, _pts)
+    except Exception as ex:
+        print(f"[cierre] revisión del día: {ex}")
     return {"corrio": True, "velas": agregadas, "cambios": len(cambios), "consumo": consumo.resumen()}
 
 

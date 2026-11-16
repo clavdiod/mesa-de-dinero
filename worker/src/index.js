@@ -175,9 +175,10 @@ async function textoAviso(env) {
   const nuevas = estado.nuevas || [], p = props.find((x) => nuevas.includes(x.id));
   // 02/11: solo un aviso de ESTA ronda (antes tomaba el último guardado, aunque fuera viejo: VIST a las 10:36)
   // 14/11: el informe de la semana (después del cierre del viernes) también avisa
-  const inf = alertas.find((x) => x.tipo === "informe" && x.fecha === hoyBA());
-  if (inf && !(alertas[0] && alertas[0] !== inf && alertas[0].fecha === estado.fecha && alertas[0].hora === estado.hora))
-    return { importante: false, titulo: inf.ticker, cuerpo: inf.texto };
+  // y la revisión diaria del cierre: si lo último que se anotó es uno de estos, es lo que se avisa
+  const ult = alertas[0];
+  if (ult && ["informe", "revision"].includes(ult.tipo) && ult.fecha === hoyBA())
+    return { importante: false, titulo: ult.ticker, cuerpo: ult.texto };
   const a = alertas.find((x) => x.fecha === estado.fecha && x.hora === estado.hora);
   const n = (x) => Number(x).toLocaleString("es-AR", { maximumFractionDigits: 2 });
   if (p) return { importante: true, titulo: `🗳️ Comité: comprar ${p.ticker} con límite ${n(p.plan.entrada)}`,
