@@ -19,7 +19,8 @@ for tk in ("ECOG",):
         c = cart.get(tk) or {}
         vivo = gratis.yahoo_vivo(tk + ".BA")
         pr = vivo.get("precio")
-        ent = float(c.get("precio_compra") or c.get("precio") or 0)
+        ent = float(c.get("precio_compra") or c.get("precio") or 0) or None
+        ent = ent or pr
         h = gratis.yahoo(tk + ".BA", "10y")
         s = [(f, usd(f, p)) for f, p in h if usd(f, p)]
         cs = np.array([x for _, x in s])
