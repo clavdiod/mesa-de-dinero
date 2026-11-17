@@ -1180,7 +1180,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         "renta_fija": None if simular else almacen.get("renta_fija/propuestas"),
         "reglas": yaml.safe_load((RAIZ / "config" / "reglas.yaml").read_text(encoding="utf-8")) if (RAIZ / "config" / "reglas.yaml").exists() else [],
     }
-    almacen.put("ui/estado", {**estado_ui, **resumen, "dia": dia})
+    # (17/11: ui/estado se guarda más abajo, después de los avisos, para llevar el parte de la ronda sin otra escritura)
     # foto compacta de TODOS los paneles para el Asistente (sin gastar consultas extra)
     if cada30 or ya.minute % 15 < 5:
       almacen.put("ui/panel", {"fecha": hoy.isoformat(), "hora": ctx.hora, "titulos": {
@@ -1210,11 +1210,25 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
             almacen.put("avisos/buen_dia", hoy.isoformat())
     except Exception as ex:
         print(f"[buen dia] {ex}")
+    # 17/11: parte de cada ronda ("Ronda 14:05: sin cambios" o "Atención: ..."). Va dentro de ui/estado, que ya se
+    # guarda en cada ronda: no suma escrituras de KV. El Worker lo usa para el aviso al celular cuando no hay otro.
+    try:
+        parte = _parte_ronda(ctx, hoy, nuevas, avisos_cartera, alertas_lista, evaluados, debatidos, elegidos, cupo, cartera)
+        prev_p = estado_ui.get("partes") if (estado_ui.get("partes") or [{}])[0].get("fecha") == hoy.isoformat() else []
+        modo = (almacen.get("usuario/aviso_ronda") or {}).get("modo") or "cada_ronda"
+        ult_push = next((x["hora"] for x in prev_p if x.get("push")), "")
+        parte["push"] = bool(not simular and (parte["nivel"] != "sin_cambios" or modo == "cada_ronda"
+                                              or (modo == "cada_hora" and ult_push[:2] != (ctx.hora or "")[:2])))
+        estado_ui_partes = ([parte] + list(prev_p or []))[:90]
+    except Exception as ex:
+        print(f"[parte] {ex}")
+        parte, estado_ui_partes = None, estado_ui.get("partes") or []
+    almacen.put("ui/estado", {**estado_ui, **resumen, "dia": dia, "parte": parte, "partes": estado_ui_partes})
     if alertas_lista:
         almacen.put("ui/alertas", (alertas_lista + previas)[:60])
     consumo.guardar()
 
-    if (nuevas or alertas_lista) and not simular:
+    if (nuevas or alertas_lista or (parte or {}).get("push")) and not simular:
         subs = almacen.get("push/suscripciones") or []
         res = push.enviar(subs)
         print(f"[push] {len(subs)} suscripciones, enviadas {res['enviadas']}: {res.get('codigos')}")  # 11/11: para saber si llegan
@@ -1263,6 +1277,51 @@ def _ws_vivo(ctx, almacen, cartera, ya, hoy, simular) -> dict | None:
     except Exception as ex:
         print(f"[ws vivo] {ex}")
         return None
+
+
+def _parte_ronda(ctx, hoy, nuevas, avisos_cartera, alertas, evaluados, debatidos, elegidos, cupo, cartera) -> dict:
+    """17/11: una línea por ronda: qué se decidió (incluido "no invertir") y por qué, en criollo."""
+    hora = ctx.hora or ""
+    corto = lambda t, n=150: (t if len(t) <= n else t[: n - 1].rsplit(" ", 1)[0] + "…")
+    n_mira = len(ctx.por_simbolo or {})
+    if nuevas:
+        tks = ", ".join(n["ticker"] for n in nuevas[:3])
+        return {"fecha": hoy.isoformat(), "hora": hora, "nivel": "atencion",
+                "titulo": f"🟢 Ronda {hora}: atención, propuesta de compra",
+                "texto": f"El Comité propone comprar {tks}. Entrá a ver el plan y decidir vos (la mesa no opera sola)."}
+    if avisos_cartera:
+        a = avisos_cartera[0]
+        return {"fecha": hoy.isoformat(), "hora": hora, "nivel": "atencion",
+                "titulo": f"🟠 Ronda {hora}: atención con tu cartera",
+                "texto": corto(f"{a.get('ticker', '')}: {a.get('texto', '')}".strip(": "))
+                         + (f" (+{len(avisos_cartera) - 1} más)" if len(avisos_cartera) > 1 else "")}
+    otras = [a for a in alertas if a.get("tipo") != "buen_dia"]
+    if otras:
+        a = otras[0]
+        return {"fecha": hoy.isoformat(), "hora": hora, "nivel": "novedad",
+                "titulo": f"🔔 Ronda {hora}: novedad en lo tuyo",
+                "texto": corto(f"{a.get('ticker', '')}: {a.get('texto', '')}".strip(": "))
+                         + (f" (+{len(otras) - 1} más)" if len(otras) > 1 else "")}
+    # sin cambios: se decidió no invertir; el porqué en una línea
+    if cupo <= 0:
+        porque = "ya se usó el cupo de propuestas de hoy"
+    elif not debatidos:
+        ok = sum(1 for e in evaluados if (e.get("riesgo") or {}).get("ok"))
+        porque = (f"de {len(evaluados)} candidatos, ninguno juntó votos suficientes para ir al Comité" if evaluados
+                  else "ningún papel dio señales de compra claras") if not ok else \
+                 f"{ok} candidato{'s' if ok > 1 else ''} pasaron el filtro de riesgo pero ya se habían descartado hoy"
+    elif not elegidos:
+        tks = ", ".join(e["ticker"] for e in debatidos[:3])
+        porque = f"el Comité votó {tks} y no aprobó ninguno"
+    else:
+        tks = ", ".join(e["ticker"] for e in elegidos[:3])
+        porque = f"el Comité aprobó {tks} pero la revisión en frío no acompañó (precio o números)"
+    clima = ctx.extra.get("clima_estado")
+    rp = (ctx.riesgo_pais or {}).get("valor")
+    marco = ", ".join(x for x in [f"clima {clima}" if clima else "", f"riesgo país {rp:,.0f}".replace(",", ".") if rp else ""] if x)
+    texto = f"Se decidió no invertir: {porque}." + (" Lo tuyo, sin alarmas." if cartera else "") \
+            + (f" Miró {n_mira} papeles" + (f"; {marco}." if marco else ".") if n_mira else "")
+    return {"fecha": hoy.isoformat(), "hora": hora, "nivel": "sin_cambios", "titulo": f"✅ Ronda {hora}: sin cambios", "texto": corto(texto, 220)}
 
 
 def _buen_dia(ctx, cartera, eventos, hoy) -> dict:

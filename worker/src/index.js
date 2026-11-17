@@ -12,7 +12,7 @@ const json = (d, s = 200) => new Response(JSON.stringify(d), { status: s, header
 const nope = (m, s = 403) => json({ error: m }, s);
 
 // Claves que la web puede escribir (todo lo demás es de solo lectura para el navegador)
-const ESCRIBIBLES_WEB = new Set(["usuario/lista", "usuario/cartera", "usuario/ons", "usuario/capital", "usuario/operaciones", "usuario/decisiones_cartera", "usuario/feedback_avisos"]);
+const ESCRIBIBLES_WEB = new Set(["usuario/lista", "usuario/cartera", "usuario/ons", "usuario/capital", "usuario/operaciones", "usuario/decisiones_cartera", "usuario/feedback_avisos", "usuario/aviso_ronda"]);
 
 function iguales(a, b) {
   if (!a || !b || a.length !== b.length) return false;
@@ -183,6 +183,12 @@ async function textoAviso(env) {
   const n = (x) => Number(x).toLocaleString("es-AR", { maximumFractionDigits: 2 });
   if (p) return { importante: true, titulo: `🗳️ Comité: comprar ${p.ticker} con límite ${n(p.plan.entrada)}`,
     cuerpo: `Objetivo ${n(p.plan.objetivo)} · stop ${n(p.plan.stop)}${p.ruedas ? ` · plazo ${p.ruedas} ruedas` : ""}. ${nuevas.length > 1 ? `(+${nuevas.length - 1} más) ` : ""}Entrá para ver los votos y decidir.` };
+  // 17/11: el parte de cada ronda ("Ronda 14:05: sin cambios" / "atención ..."); el "sin cambios" llega sin sonar y se pisa solo
+  const pt = estado.parte;
+  if (pt && pt.push && pt.fecha === estado.fecha && pt.hora === estado.hora && !(a && a.tipo === "buen_dia")) {
+    const imp = pt.nivel !== "sin_cambios" && /salir|stop|balance|cancel|vend|🚨|compra/i.test(pt.texto + pt.titulo);
+    return { importante: imp, titulo: pt.titulo, cuerpo: pt.texto, tag: pt.nivel === "sin_cambios" ? "mesa-ronda" : "mesa", silencioso: pt.nivel === "sin_cambios" };
+  }
   if (a) { const imp = a.tipo !== "buen_dia" && /salir|stop|balance|cancel|vend|🚨/i.test(a.texto); return { importante: imp, titulo: `${imp ? "⚠️ " : ""}${a.ticker}`, cuerpo: a.texto }; }
   return { importante: false, titulo: "Mesa de dinero", cuerpo: "Hay novedades en la mesa." };
 }

@@ -273,7 +273,13 @@ function pintarResumenHoy() {
   const freno = pr.pausa || pr.mitad || pens.length ? `<div class="card" style="border-color:${pr.mitad ? "#d29922" : "var(--rojo)"}"><b>${pr.pausa ? "🛑 Protección activa: hoy el Comité no propone compras" : pr.mitad ? "⚠️ Mala racha: el Comité propone con la mitad del tamaño" : "🛑 Papeles en penitencia"}</b>
     ${(pr.motivos || []).map((m) => `<p class="tenue" style="margin:4px 0 0">${esc(m)}</p>`).join("")}
     ${pens.length ? `<p class="tenue" style="margin:6px 0 0">${pens.map(([tk, x]) => `<b class="link" data-abrir-debate="${esc(tk)}">${esc(tk)}</b> hasta el ${esc(fecha(x.hasta))}`).join(" · ")} <span>(perdieron sus 2 últimas propuestas)</span></p>` : ""}</div>` : "";
-  $("#resumen-hoy").innerHTML = freno + `<div class="card resumen">
+  // 17/11: el parte de cada ronda (lo más nuevo arriba): la mesa dice qué decidió, incluido "no invertir"
+  const partes = (est.partes || []).filter((x) => x && x.fecha === est.fecha);
+  const colP = (x) => x.nivel === "atencion" ? "var(--rojo)" : x.nivel === "novedad" ? "#d29922" : "var(--verde)";
+  const partesHtml = partes.length ? `<details class="card"><summary><b style="color:${colP(partes[0])}">${esc(partes[0].titulo)}</b>
+      <span class="tenue">· ${partes.length} ronda${partes.length > 1 ? "s" : ""} hoy</span><p style="margin:4px 0 0">${esc(partes[0].texto)}</p></summary>
+      ${partes.slice(1).map((x) => `<div class="av-item"><span class="av-hora">${esc(x.hora)}</span><b style="color:${colP(x)}">${esc(String(x.titulo).replace(/^\S+\s+Ronda\s+\S+\s*/, ""))}</b> ${esc(x.texto)}</div>`).join("")}</details>` : "";
+  $("#resumen-hoy").innerHTML = freno + partesHtml + `<div class="card resumen">
     <div class="tiras" style="margin-top:0"><button class="chip ir ${clima === "malo" ? "rojo" : clima === "bueno" ? "verde" : "amar"}" data-ir="mercado|#economista">Clima ${esc(clima)} ›</button>
       <button class="chip ir" data-ir="mercado|#indicadores">Riesgo país ${num(rp.valor, 0)} ›</button><button class="chip ir" data-ir="mercado|#indicadores">MEP ${num(ind.mep_al30, 0)} ›</button>${licChip()}${cobChip()}</div>
     <div class="grilla" style="margin-top:10px">
@@ -1636,6 +1642,15 @@ async function revisarPush() {
     await registrarPush(false);
   } catch (e) { cartel(`No se pudieron registrar los avisos (${e.message}).`, true); }
 }
+// 17/11: cada cuánto llega el parte "sin cambios" (las de atención llegan siempre)
+async function pintarAvisoRonda() {
+  let m = "cada_ronda";
+  try { m = (await api("usuario/aviso_ronda"))?.modo || m; } catch (_) {}
+  document.querySelectorAll("#aviso-ronda [data-modo]").forEach((b) => {
+    b.classList.toggle("prim", b.dataset.modo === m);
+    b.onclick = async () => { try { await put("usuario/aviso_ronda", { modo: b.dataset.modo }); toast("Guardado"); pintarAvisoRonda(); } catch (e) { toast(`No se pudo: ${e.message}`); } };
+  });
+}
 $("#btn-analizar").addEventListener("click", async () => {
   try { const r = await post("analizar", {}); toast(r.mensaje || "Ronda pedida"); } catch (e) { toast(`No se pudo: ${e.message}`); }
 });
@@ -1650,7 +1665,7 @@ async function cargar() {
       USUARIO.decisiones = Array.isArray(dc) ? {} : dc || {}; USUARIO.operaciones = Array.isArray(op) ? op : []; } catch (_) {}
     pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes(); pintarAnticipos(); try { pintarRentaFija(); } catch (_) {} try { pintarOpciones(); } catch (_) {} pintarRadar(); pintarAviso();
     setTimeout(abrirDecisionPendiente, 600);
-    revisarPush();
+    revisarPush(); pintarAvisoRonda();
     $("#login").style.display = "none"; $("#bloqueo").style.display = "none"; document.querySelector("main").style.display = "";
   } catch (e) {
     if (String(e.message).includes("bloqueada")) { mostrarBloqueo(); return; }
