@@ -1203,6 +1203,13 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     alertas_lista += alertas_niv  # las de nivel avisan siempre (cada una una sola vez)
     alertas_lista += avisos_cobro  # cobros de hoy / mañana / la semana (una vez por día)
     alertas_lista += avisos_cartera  # la sugerencia sobre algo que tenés cambió: decidir en la app
+    # 17/11: "buen día": la primera ronda con el mercado abierto avisa que la mesa arrancó, con lo principal del día
+    try:
+        if not simular and "11:00" <= (ctx.hora or "") <= "12:30" and (almacen.get("avisos/buen_dia") or "") != hoy.isoformat():
+            alertas_lista.append(_buen_dia(ctx, cartera, eventos_cal, hoy))
+            almacen.put("avisos/buen_dia", hoy.isoformat())
+    except Exception as ex:
+        print(f"[buen dia] {ex}")
     if alertas_lista:
         almacen.put("ui/alertas", (alertas_lista + previas)[:60])
     consumo.guardar()
@@ -1256,6 +1263,30 @@ def _ws_vivo(ctx, almacen, cartera, ya, hoy, simular) -> dict | None:
     except Exception as ex:
         print(f"[ws vivo] {ex}")
         return None
+
+
+def _buen_dia(ctx, cartera, eventos, hoy) -> dict:
+    """Aviso de arranque: la mesa ya está mirando el mercado, cómo abrió lo tuyo y qué hay hoy."""
+    ar = lambda x, d=0: f"{x:,.{d}f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    p = []
+    rp, rpa = (ctx.riesgo_pais or {}).get("valor"), ctx.riesgo_pais_ayer
+    clima = ctx.extra.get("clima_estado")
+    p.append(f"Clima {clima}" if clima else "")
+    if rp:
+        p.append(f"riesgo país {ar(rp)}" + (f" (ayer {ar(rpa)})" if rpa else ""))
+    linea1 = ", ".join(x for x in p if x)
+    mios = []
+    for c in cartera or []:
+        t = ctx.titulo(str(c.get("ticker") or "").upper()) or {}
+        if t.get("grupo") in ("acciones", "cedears") and t.get("variacion") is not None:
+            mios.append(f"{c['ticker']} {'+' if t['variacion'] >= 0 else ''}{ar(t['variacion'], 1)}%")
+    hoy_ev = [e for e in eventos or [] if e.get("fecha") == hoy.isoformat() and e.get("tipo") in ("balance", "dato", "licitacion", "cobro", "dividendo")]
+    ev_txt = "; ".join(str(e.get("nombre") or e.get("ticker") or e.get("tipo"))[:70] for e in hoy_ev[:4])
+    texto = (f"Arrancó la mesa: ya está mirando el mercado. {linea1}." if linea1 else "Arrancó la mesa: ya está mirando el mercado.") \
+        + (f" Lo tuyo al abrir: {', '.join(mios)}." if mios else "") \
+        + (f" Hoy: {ev_txt}." if ev_txt else "") \
+        + " Revisa cada 5 a 10 minutos hasta las 17 y te avisa si hay algo."
+    return {"fecha": hoy.isoformat(), "hora": ctx.hora, "ticker": "☀️ Buen día", "tipo": "buen_dia", "texto": texto}
 
 
 def _asimetria(ctx, cartera, hoy, almacen=None) -> dict | None:
