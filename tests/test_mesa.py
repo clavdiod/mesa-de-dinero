@@ -98,6 +98,8 @@ def test_ronda_simulada_completa(almacen):
         if e["ticker"] in ("GGAL", "BMA"):
             assert not e["riesgo"]["ok"]                 # filtro de riesgo país
     assert almacen.get("ui/alertas")[0]["ticker"] == "CRES"   # tocó tu precio 1820
+    assert est["parte"]["titulo"].startswith(("✅ Ronda", "🔔 Ronda", "🟢 Ronda", "🟠 Ronda")) and est["partes"][0] == est["parte"]
+    assert est["parte"]["push"] is False  # simulando no avisa
     props = almacen.get("registro/propuestas") or []
     assert len(props) <= 3
     for p in props:
