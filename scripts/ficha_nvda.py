@@ -26,4 +26,4 @@ print("::notice::GRAFICO " + estructura.frase(est))
 print("::notice::FICHA " + ficha_frio.texto(f).replace("\n", " ")[:3500])
 if len(r20) >= 8:
     print(f"::notice::HISTORIA NVDA {len(r20)} casos: 20r mediana {np.median(r20)*100:+.1f}% suben {np.mean(r20>0)*100:.0f}% caen>10% {np.mean(r20<-.1)*100:.0f}% · 60r mediana {np.median(r60)*100:+.1f}% suben {np.mean(r60>0)*100:.0f}% peor10% {np.percentile(r60,10)*100:+.1f}%")
-print(f"::notice::FUND {fundamentos.de(a, 'MU')}")
+print(f"::notice::FUND {fundamentos.de(a, 'NVDA')}")
