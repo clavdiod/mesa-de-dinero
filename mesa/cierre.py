@@ -612,6 +612,12 @@ def entrenar() -> dict:
     cal = reg.recalibrar()
     a.put("ranking/tabla", reg.ranking())
     resumen = {ag: f"{c['acierto_pct']}% de {c['casos']} casos ({c['fuente']}) -> voto x{c['factor']}" for ag, c in cal.items()}
+    try:  # 19/11: control semanal de la revisión en frío (¿alguna regla se volvió demasiado severa?)
+        from .agentes import control_frio
+        cf = control_frio.medir(a, ahora().date())
+        ens["control_frio"] = cf.get("alertas") or "todas las reglas en orden"
+    except Exception as ex:
+        print(f"[entrenar] control frío: {ex}")
     try:  # 14/11: después de reentrenar, el informe de la semana (con lo que aprendieron los analistas) y aviso al celular
         informe_semana(a, cache, macro)
     except Exception as ex:

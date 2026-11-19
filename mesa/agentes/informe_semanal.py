@@ -156,6 +156,17 @@ def armar(a, hoy: date, panel: dict, velas, sector, flujos: dict, macro: dict, a
         if nuevos:
             lin.append(f"{len(nuevos)} aprendizajes nuevos esta semana:")
             lin += [f"• {x.get('caso')}: {x.get('cambio') or x.get('leccion')}"[:260] for x in nuevos]
+        cf = a.get("revision/frio") or {}  # 19/11: control semanal de la revisión en frío
+        if cf.get("fecha") and cf["fecha"] >= lunes.isoformat():
+            if cf.get("alertas"):
+                lin.append("🧊 Control de la revisión en frío (10 años):")
+                lin += cf["alertas"]
+            else:
+                ms = cf.get("mercados") or {}
+                det = "; ".join(f"{m}: lo que pasa rinde {_n((r.get('todos') or {}).get('pasa', {}).get('neto_pct'), 2)}% neto contra "
+                                f"{_n((r.get('todos') or {}).get('frena', {}).get('neto_pct'), 2)}% de lo que frena" for m, r in ms.items()
+                                if (r.get("todos") or {}).get("pasa", {}).get("casos"))
+                lin.append("🧊 Revisión en frío controlada con 10 años: ninguna regla está frenando oportunidades buenas" + (f" ({det})." if det else "."))
         if lin:
             secciones.append({"titulo": "🧠 Lo que aprendieron los analistas", "lineas": lin})
     except Exception as ex:

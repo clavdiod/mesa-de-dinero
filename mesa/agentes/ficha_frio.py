@@ -13,6 +13,13 @@ import math
 import statistics as st
 
 
+# 19/11 (probado con 10 años, pedido de Clau): frenar una compra SOLO por estar 6% arriba de su promedio de 20 ruedas
+# hacía perder oportunidades: esos casos rindieron +1,3% neto en CEDEARs (contra -0,2% de lo que pasaba) y -0,6% contra
+# -1,3% en acciones argentinas. Queda como dato, no frena. Las demás reglas sí frenan peores casos y siguen.
+# control_frio.py lo vuelve a medir cada viernes y avisa si alguna regla se vuelve demasiado severa o si conviene volver a prender esta.
+REGLAS_APAGADAS = {"E"}
+
+
 def _ema(x: list[float], n: int) -> list[float]:
     k, out = 2 / (n + 1), [x[0]]
     for v in x[1:]:
@@ -93,7 +100,10 @@ def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None,
     estirado = entrada / m20 - 1
     caro = []
     if estirado >= 0.06:
-        caro.append(f"la entrada está {estirado * 100:.0f}% arriba de su promedio de 20 ruedas (estirada)".replace(".", ","))
+        if "E" in REGLAS_APAGADAS:  # 19/11: solo informativo (ver REGLAS_APAGADAS)
+            out["estirada_pct"] = round(estirado * 100)
+        else:
+            caro.append(f"la entrada está {estirado * 100:.0f}% arriba de su promedio de 20 ruedas (estirada)".replace(".", ","))
     if pos60 >= 0.85:
         caro.append(f"la entrada está en el {pos60 * 100:.0f}% más alto de su rango de 3 meses")
     if len(subidas) >= 8 and stop:
@@ -220,6 +230,8 @@ def texto(f: dict | None) -> str:
         p.append(f["fundamentos"])
     if (f.get("volumen_rel") or 0) >= 2:
         p.append(f"Hoy opera {str(f['volumen_rel']).replace('.', ',')} veces su volumen normal (en acciones argentinas eso rindió +2,8% a un mes contra +0,5%).")
+    if f.get("estirada_pct"):
+        p.append(f"Está {f['estirada_pct']}% arriba de su promedio de 20 ruedas (dato: probado el 19/11, por sí solo no frena la compra).")
     if f.get("contra"):
         p.append("En contra: " + ", ".join(f["contra"]) + ".")
     p.append({"cara": "❌ Entrada cara: " + "; ".join(f.get("entrada_cara") or []) + (f". Precio razonable: {n(f['entrada_mejor'])} o menos." if f.get("entrada_mejor") else "."),

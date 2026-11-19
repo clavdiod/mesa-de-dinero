@@ -1,5 +1,10 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
+- fecha: '2026-11-19'
+  caso: '¿La revisión en frío es demasiado severa?'
+  que_paso: 'Dos días seguidos el Comité aprobó papeles (TIMB, IBN, COST, HDB, AMZN, HSY) y la revisión en frío frenó todos. Clau preguntó si no estaba siendo demasiado severa. Se probó cada regla con 10 años (60.644 casos en acciones argentinas y 91.366 en CEDEARs), operando como la mesa y con 1,2% de comisiones. En general, lo que frena rinde igual o peor que lo que deja pasar (CEDEARs: -0,6% contra -0,2% neto). Pero los casos frenados SOLO por estar 6% arriba del promedio de 20 ruedas rindieron mejor que el promedio: +1,3% neto y ganan 47 de cada 100 en CEDEARs; -0,6% contra -1,6% en acciones argentinas.'
+  leccion: 'Una regla de control también hay que probarla con historia: puede frenar oportunidades buenas. Y con 1,2% de comisión, comprar por comprar da negativo: hace falta una ventaja real, no solo un papel que viene subiendo.'
+  cambio: 'La regla «estirada» queda como dato en la ficha y ya no frena la compra. Siguen frenando: techo de 3 meses, no paga el riesgo, sin lugar hasta el máximo del año y (CEDEARs) 20% más alto del año. Cada viernes, en el reentrenamiento, se vuelve a medir cada regla con 10 años y el informe de la semana avisa si alguna se volvió demasiado severa o si conviene volver a prender la apagada.'
 - fecha: '2026-11-16'
   caso: 'Cronogramas de bonos: BYMA Educa, IOL y lo cargado a mano no coincidían'
   que_paso: 'Clau sugirió el tablero de BYMA Educa. Trae gratis el cronograma de pagos de 887 títulos (bonos y ONs), con TIR, paridad y liquidez, y el historial de dividendos desde 2018. Al compararlo con los cronogramas cargados a mano el 20/10 aparecieron diferencias en GD30, AL30 y GD46. Desempate con IOL: BYMA no aplica los aumentos de cupón (step-up) y lo cargado a mano tenía cupones de más (GD30: 1,92 de interés hasta 2030, no 1,08 ni 3,60).'
