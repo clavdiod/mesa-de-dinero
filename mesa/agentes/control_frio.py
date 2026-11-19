@@ -128,14 +128,17 @@ def alertas(res: dict) -> list[str]:
     lin = []
     for mercado, r in res.items():
         for k, nom in NOMBRES.items():
-            ok_sev, ok_vol = True, True
+            # 19/11: se juzga con cada grupo que tenga casos suficientes (algunas reglas, como 'gráfico cayendo', no tienen
+            # casos entre los que vienen subiendo) y todos los que alcanzan tienen que coincidir
+            ok_sev = ok_vol = None
             for grupo in ("todos", "subiendo"):
                 g = r.get(grupo) or {}
                 s, p = (g.get("reglas") or {}).get(k) or {}, g.get("pasa") or {}
                 if s.get("casos", 0) < MIN_CASOS or p.get("casos", 0) < MIN_CASOS:
-                    ok_sev = ok_vol = False; break
-                ok_sev &= s["neto_pct"] >= p["neto_pct"] + MARGEN * 100
-                ok_vol &= s["neto_pct"] <= p["neto_pct"] - MARGEN * 100
+                    continue
+                sev, vol = s["neto_pct"] >= p["neto_pct"] + MARGEN * 100, s["neto_pct"] <= p["neto_pct"] - MARGEN * 100
+                ok_sev = sev if ok_sev is None else ok_sev and sev
+                ok_vol = vol if ok_vol is None else ok_vol and vol
             g = (r.get("todos") or {})
             s, p = (g.get("reglas") or {}).get(k) or {}, g.get("pasa") or {}
             if k not in REGLAS_APAGADAS and ok_sev:
