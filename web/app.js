@@ -1652,6 +1652,29 @@ async function revisarPush() {
     $("#push-cartel")?.remove();
   } catch (e) { cartel(`No se pudieron registrar los avisos (${e.message}).`, true); }
 }
+// 19/11: canal de respaldo (ntfy, gratis): un tema propio y secreto, guardado en usuario/ntfy (el repo es público: no va al código)
+async function pintarRespaldo() {
+  const el = $("#respaldo-avisos"); if (!el) return;
+  let cfg = {}; try { cfg = await api("usuario/ntfy"); if (Array.isArray(cfg)) cfg = {}; } catch (_) {}
+  if (!cfg.tema) {
+    el.innerHTML = '<button class="prim chico" id="ntfy-activar">Activar respaldo</button>';
+    $("#ntfy-activar").onclick = async () => {
+      const r = new Uint8Array(8); crypto.getRandomValues(r);
+      const tema = "mesa-clau-" + Array.from(r, (b) => b.toString(16).padStart(2, "0")).join("");
+      try { await put("usuario/ntfy", { tema, alta: new Date().toISOString().slice(0, 10) }); pintarRespaldo(); } catch (e) { toast(`No se pudo: ${e.message}`); }
+    };
+    return;
+  }
+  el.innerHTML = `<p>✅ Respaldo activo. En la app <b>ntfy</b> (gratis, Play Store), tocá <b>+</b> y suscribite a este tema:</p>
+    <p><code id="ntfy-tema" style="user-select:all">${esc(cfg.tema)}</code> <button class="chico" id="ntfy-copiar">Copiar</button> <button class="chico" id="ntfy-probar">Probar</button></p>`;
+  $("#ntfy-copiar").onclick = async () => { try { await navigator.clipboard.writeText(cfg.tema); toast("Tema copiado"); } catch (_) { toast(cfg.tema); } };
+  $("#ntfy-probar").onclick = async () => {
+    try {
+      const r = await fetch("https://ntfy.sh", { method: "POST", body: JSON.stringify({ topic: cfg.tema, title: "✅ Mesa de dinero", message: "El respaldo de avisos funciona.", priority: 4 }) });
+      toast(r.ok ? "Enviado: te tiene que llegar en ntfy" : `ntfy contestó ${r.status}`);
+    } catch (e) { toast(`No se pudo: ${e.message}`); }
+  };
+}
 // 17/11: cada cuánto llega el parte "sin cambios" (las de atención llegan siempre)
 async function pintarAvisoRonda() {
   let m = "cada_ronda";
@@ -1675,7 +1698,7 @@ async function cargar() {
       USUARIO.decisiones = Array.isArray(dc) ? {} : dc || {}; USUARIO.operaciones = Array.isArray(op) ? op : []; } catch (_) {}
     pintarEstado(); pintarPropuestas(); pintarUsuario(); pintarAprendizajes(); pintarAnticipos(); try { pintarRentaFija(); } catch (_) {} try { pintarOpciones(); } catch (_) {} pintarRadar(); pintarAviso();
     setTimeout(abrirDecisionPendiente, 600);
-    revisarPush(); pintarAvisoRonda();
+    revisarPush(); pintarAvisoRonda(); pintarRespaldo();
     $("#login").style.display = "none"; $("#bloqueo").style.display = "none"; document.querySelector("main").style.display = "";
   } catch (e) {
     if (String(e.message).includes("bloqueada")) { mostrarBloqueo(); return; }
