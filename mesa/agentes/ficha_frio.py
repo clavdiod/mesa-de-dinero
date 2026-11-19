@@ -17,7 +17,10 @@ import statistics as st
 # hacía perder oportunidades: esos casos rindieron +1,3% neto en CEDEARs (contra -0,2% de lo que pasaba) y -0,6% contra
 # -1,3% en acciones argentinas. Queda como dato, no frena. Las demás reglas sí frenan peores casos y siguen.
 # control_frio.py lo vuelve a medir cada viernes y avisa si alguna regla se vuelve demasiado severa o si conviene volver a prender esta.
-REGLAS_APAGADAS = {"E"}
+# 19/11 (auditoría de todas las reglas): 'el gráfico sigue cayendo' tampoco frena más. Lo frenado solo por eso rindió
+# +1,0% neto en CEDEARs (3.125 casos) y +0,1% en acciones argentinas (749), contra -0,2% y -0,9% de lo que pasaba.
+# Una caída de verdad la siguen frenando el MACD negativo (acciones argentinas), la historia de casos parecidos y 'no paga'.
+REGLAS_APAGADAS = {"E", "GC"}
 
 
 def _ema(x: list[float], n: int) -> list[float]:
@@ -191,7 +194,10 @@ def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None,
     if out["rango_1m"] and obj and obj > out["rango_1m"][1] * 1.05:
         malas.append("el objetivo queda fuera del rango normal de un mes")
     if (estructura or {}).get("estado") == "cayendo":
-        malas.append("el gráfico sigue cayendo")
+        if "GC" in REGLAS_APAGADAS:
+            out["cayendo_dato"] = True
+        else:
+            malas.append("el gráfico sigue cayendo")
     if len(contra) >= 2:
         malas.append(f"{len(contra)} analistas en contra")
     out["alertas"] = malas
@@ -232,6 +238,8 @@ def texto(f: dict | None) -> str:
         p.append(f"Hoy opera {str(f['volumen_rel']).replace('.', ',')} veces su volumen normal (en acciones argentinas eso rindió +2,8% a un mes contra +0,5%).")
     if f.get("estirada_pct"):
         p.append(f"Está {f['estirada_pct']}% arriba de su promedio de 20 ruedas (dato: probado el 19/11, por sí solo no frena la compra).")
+    if f.get("cayendo_dato"):
+        p.append("El gráfico viene cayendo (dato: probado el 19/11, por sí solo no frena la compra).")
     if f.get("contra"):
         p.append("En contra: " + ", ".join(f["contra"]) + ".")
     p.append({"cara": "❌ Entrada cara: " + "; ".join(f.get("entrada_cara") or []) + (f". Precio razonable: {n(f['entrada_mejor'])} o menos." if f.get("entrada_mejor") else "."),
