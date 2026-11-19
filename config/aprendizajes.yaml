@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-19'
+  caso: 'VXX: ¿hay un momento en que la cobertura paga? Y las velas del 17/11'
+  que_paso: 'Clau preguntó por qué la mesa no vio VXX a 6.145 el 12/11 (subió 24% en una semana). Ese día la mesa estaba en pausa por mala racha y ningún analista mira picos de miedo; VXX llegó al Comité recién el 17/11, ya con +29% en un mes. Se probó con 2018-2026: VXX pierde 4% cada 20 ruedas en promedio (gana 28 de cada 100 veces). Con el VIX bajo respecto del año también pierde (-5,7%); con el VIX debajo de 13 queda cerca de cero (129 días, 4 años); con el VIX en 25 o más (ya hay miedo) pierde 8% a 20 ruedas. Revisando, se encontró que el cierre del 17/11 guardó velas viejas (copiadas del 16/11) en 325 papeles.'
+  leccion: 'No hay un momento que se pueda anticipar en que comprar VXX pague: sirve para cubrir una cartera unos días, no para ganar. Y un panel que llega viejo al cierre arruina los indicadores de todo el mercado sin que nadie lo note.'
+  cambio: 'No se suma un analista de coberturas. Las velas del 17/11 se corrigieron con data912 (147) o se borraron si no había dato real (178). El cierre ya no arma la vela del día si el panel llega sin volumen y con la misma apertura, máximo y mínimo que la rueda anterior.'
+- fecha: '2026-11-19'
   caso: 'VXX: propuesta con límite 6% debajo del precio y stop dentro del ruido'
   que_paso: 'A las 12:40 el Comité propuso VXX con límite 7.111,59 cuando cotizaba ~7.600 (subía 4,8%: la regla de no perseguir baja el límite). Clau pensó que el precio estaba mal. Además el stop quedó 2,5% debajo de la entrada, cuando VXX se mueve mucho más que eso en un día normal.'
   leccion: 'Un límite debajo del precio tiene que decirse como lo que es: comprar solo si baja. Y un stop más cerca que el movimiento normal de un día salta por ruido, aunque la idea sea buena.'
