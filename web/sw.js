@@ -20,3 +20,15 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil(self.clients.matchAll({ type: "window" }).then((ws) => (ws[0] ? ws[0].focus() : self.clients.openWindow("/"))));
 });
+
+// 19/11: si el navegador renueva o da de baja la suscripción, se pide una nueva y se registra sola (sin abrir la app)
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil((async () => {
+    try {
+      const { clave } = await (await fetch("/api/push/clave", { credentials: "include" })).json();
+      const pad = "=".repeat((4 - (clave.length % 4)) % 4), raw = atob((clave + pad).replace(/-/g, "+").replace(/_/g, "/"));
+      const sub = await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: Uint8Array.from(raw, (c) => c.charCodeAt(0)) });
+      await fetch("/api/push/suscribir", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(sub.toJSON()) });
+    } catch (_) { /* se reintenta al abrir la app */ }
+  })());
+});

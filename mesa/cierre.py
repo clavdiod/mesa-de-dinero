@@ -644,9 +644,7 @@ def informe_semana(a=None, cache=None, macro=None) -> dict:
     al = [x for x in al if not (x.get("tipo") == "informe" and x.get("fecha") == hoy.isoformat())]
     a.put("ui/alertas", ([{"fecha": hoy.isoformat(), "hora": ahora().strftime("%H:%M"), "ticker": "📰 Informe de la semana", "tipo": "informe",
                            "texto": inf["resumen"] + " Abrí la app para ver el informe completo y lo que aprendió la mesa."}] + al)[:60])
-    subs = a.get("push/suscripciones") or []
-    if subs:
-        print(f"[informe] push: {_push.enviar(subs)}")
+    _push.avisar(a, "📰 Informe de la semana", inf["resumen"], True)
     return inf
 
 

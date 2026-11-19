@@ -389,9 +389,20 @@ async function api(req, env, url) {
     const sub = await req.json();
     if (!sub?.endpoint?.startsWith("https://")) return nope("suscripción inválida", 400);
     const subs = await leer(env, "push/suscripciones", []);
+    // 19/11: nunca se vuelve a guardar una suscripción que Google ya dio por vencida (410): la app tiene que pedir una nueva
+    const venc = await leer(env, "push/vencidas", []);
+    if (venc.some((v) => v.endpoint === sub.endpoint)) return json({ ok: false, vencida: true });
     if (!subs.some((s) => s.endpoint === sub.endpoint)) subs.push({ endpoint: sub.endpoint, alta: hoyBA() });
     await guardar(env, "push/suscripciones", subs.slice(-10));
+    const corte = await leer(env, "push/corte", {});
+    if (corte && corte.desde) await guardar(env, "push/corte", {});
     return json({ ok: true });
+  }
+  // 19/11: ¿la suscripción de este celular sigue viva en el servidor? (la app lo revisa cada vez que se abre)
+  if (p === "/api/push/estado" && req.method === "POST") {
+    const { endpoint } = await req.json();
+    const [subs, venc, corte] = await Promise.all([leer(env, "push/suscripciones", []), leer(env, "push/vencidas", []), leer(env, "push/corte", {})]);
+    return json({ registrada: subs.some((s) => s.endpoint === endpoint), vencida: venc.some((v) => v.endpoint === endpoint), corte: corte?.desde || null });
   }
   return nope("no encontrado", 404);
 }

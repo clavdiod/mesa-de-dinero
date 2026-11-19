@@ -83,7 +83,5 @@ def avisar(a, hoy: date, puntos: list[str]) -> bool:
     al = [x for x in al if not (x.get("tipo") == "revision" and x.get("fecha") == hoy.isoformat())]
     a.put("ui/alertas", ([{"fecha": hoy.isoformat(), "hora": "17:15", "ticker": "🔎 Revisión del día", "tipo": "revision",
                            "texto": " ".join(puntos)}] + al)[:60])
-    subs = a.get("push/suscripciones") or []
-    if subs:
-        print(f"[revision diaria] push: {push.enviar(subs)}")
+    push.avisar(a, "🔎 Revisión del día", " ".join(puntos), True)
     return True

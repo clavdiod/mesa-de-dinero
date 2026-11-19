@@ -1615,18 +1615,27 @@ async function registrarPush(pedirPermiso) {
   const reg = await navigator.serviceWorker.ready;
   if (pedirPermiso ? (await Notification.requestPermission()) !== "granted" : Notification.permission !== "granted") return false;
   const pad = "=".repeat((4 - (clave.length % 4)) % 4), raw = atob((clave + pad).replace(/-/g, "+").replace(/_/g, "/"));
-  const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: Uint8Array.from(raw, (c) => c.charCodeAt(0)) });
-  await post("push/suscribir", sub.toJSON());
-  return true;
+  const nueva = () => reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: Uint8Array.from(raw, (c) => c.charCodeAt(0)) });
+  let sub = await reg.pushManager.getSubscription();
+  // 19/11: si el servidor dice que esta suscripción venció (Google la dio de baja) o ya no la tiene, se tira y se pide una nueva
+  if (sub) {
+    try { const st = await post("push/estado", { endpoint: sub.endpoint }); if (st && (st.vencida || !st.registrada)) { await sub.unsubscribe(); sub = null; } } catch (_) {}
+  }
+  if (!sub) sub = await nueva();
+  let r = await post("push/suscribir", sub.toJSON());
+  if (r && r.vencida) { await sub.unsubscribe(); sub = await nueva(); r = await post("push/suscribir", sub.toJSON()); }
+  return !!(r && r.ok);
 }
 $("#btn-push").addEventListener("click", async () => {
   try { toast((await registrarPush(true)) ? "Avisos activados" : "Permiso de avisos denegado"); } catch (e) { toast(`No se pudo: ${e.message}`); }
 });
 // 12/11: el registro se hace DESPUÉS de desbloquear (antes se intentaba con la app bloqueada y el servidor lo rechazaba).
 // Si no hay permiso, queda un cartel fijo arriba con el botón para activarlos (un toast se perdía).
-let PUSH_REVISADO = false;
+// 19/11: se revisa cada vez que se abre o se vuelve a la app (como mucho cada 5 minutos), no una sola vez: la app instalada
+// puede quedar abierta días y la suscripción vencerse en el medio (pasó el 19/11 a las 12:10).
+let PUSH_REVISADO = 0;
 async function revisarPush() {
-  if (PUSH_REVISADO) return; PUSH_REVISADO = true;
+  if (Date.now() - PUSH_REVISADO < 5 * 60 * 1000) return; PUSH_REVISADO = Date.now();
   const cartel = (txt, boton) => {
     let el = $("#push-cartel");
     if (!el) { el = document.createElement("div"); el.id = "push-cartel"; el.className = "card"; el.style.borderColor = "#d29922"; $("#v-propuestas").prepend(el); }
@@ -1639,7 +1648,8 @@ async function revisarPush() {
   try {
     if (typeof Notification === "undefined" || !("PushManager" in window)) return cartel("Este navegador no puede recibir avisos. Abrí la mesa desde la app instalada (pantalla de inicio).", false);
     if (Notification.permission !== "granted") return cartel("Los avisos al celular están apagados: te estás perdiendo las alertas.", true);
-    await registrarPush(false);
+    if (!(await registrarPush(false))) return cartel("Los avisos se cortaron y no se pudieron reactivar solos.", true);
+    $("#push-cartel")?.remove();
   } catch (e) { cartel(`No se pudieron registrar los avisos (${e.message}).`, true); }
 }
 // 17/11: cada cuánto llega el parte "sin cambios" (las de atención llegan siempre)

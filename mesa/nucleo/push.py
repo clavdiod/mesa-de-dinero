@@ -67,3 +67,53 @@ def enviar(suscripciones: list[dict]) -> dict:
             codigos.append(f"{u.netloc}:error {type(ex).__name__}")
             continue
     return {"enviadas": ok, "vencidas": vencidas, "codigos": codigos}
+
+
+# ---------- 19/11: que avise SIEMPRE ----------
+# A las 12:10 del 19/11 Google (FCM) contestó 410: la suscripción del celular había vencido y se borró. La propuesta de
+# VXX de las 12:40 no llegó. Ahora:
+# 1) la suscripción vencida se anota (push/vencidas) y queda marcado el corte (push/corte), así la app, al abrirse,
+#    sabe que tiene que pedir una suscripción NUEVA (no reusar la vieja) y la reemplaza sola;
+# 2) si el aviso importante no llegó a ningún celular, va por el canal de respaldo (ntfy, gratis), si está configurado;
+# 3) apenas se detecta el corte, también se avisa por el respaldo que hay que abrir la app.
+def _respaldo(almacen, titulo: str, texto: str, prioridad: int = 4) -> bool:
+    tema = env("NTFY_TEMA") or ((almacen.get("usuario/ntfy") or {}).get("tema") if almacen is not None else None)
+    if not tema:
+        return False
+    try:
+        r = requests.post("https://ntfy.sh", timeout=15, json={"topic": tema, "title": titulo[:120], "message": texto[:900],
+                                                              "priority": prioridad, "tags": ["chart_with_upwards_trend"]})
+        print(f"[push] respaldo ntfy: {r.status_code}")
+        return r.ok
+    except Exception as ex:
+        print(f"[push] respaldo ntfy error: {ex}")
+        return False
+
+
+def avisar(almacen, titulo: str | None = None, texto: str | None = None, importante: bool = False) -> dict:
+    """Manda el push a todos los celulares; maneja las vencidas y usa el respaldo si un aviso importante no llegó."""
+    from ..nucleo.reloj import ahora
+    subs = almacen.get("push/suscripciones") or []
+    res = enviar(subs)
+    print(f"[push] {len(subs)} suscripciones, enviadas {res['enviadas']}: {res.get('codigos')}")
+    t = ahora()
+    if res["vencidas"]:
+        almacen.put("push/suscripciones", [s for s in subs if s.get("endpoint") not in res["vencidas"]])
+        venc = (almacen.get("push/vencidas") or []) + [{"endpoint": e, "fecha": t.date().isoformat(), "hora": t.strftime("%H:%M")} for e in res["vencidas"]]
+        almacen.put("push/vencidas", venc[-20:])
+    if res["enviadas"] == 0:
+        corte = almacen.get("push/corte") or {}
+        nuevo = not corte.get("desde")
+        if nuevo:
+            corte = {"desde": f"{t.date().isoformat()} {t.strftime('%H:%M')}", "avisado": False}
+        if not corte.get("avisado"):
+            av = _respaldo(almacen, "🔕 Se cortaron los avisos de la mesa",
+                           "El celular dejó de recibir las notificaciones. Abrí la app de la mesa para reactivarlas (es automático).", 5)
+            if av or nuevo:
+                corte["avisado"] = av
+                almacen.put("push/corte", corte)
+        if importante and titulo:
+            res["respaldo"] = _respaldo(almacen, titulo, texto or "Entrá a la mesa para ver el detalle.")
+    elif (almacen.get("push/corte") or {}).get("desde"):
+        almacen.put("push/corte", {})  # volvió a andar
+    return res

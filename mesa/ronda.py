@@ -1229,11 +1229,18 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     consumo.guardar()
 
     if (nuevas or alertas_lista or (parte or {}).get("push")) and not simular:
-        subs = almacen.get("push/suscripciones") or []
-        res = push.enviar(subs)
-        print(f"[push] {len(subs)} suscripciones, enviadas {res['enviadas']}: {res.get('codigos')}")  # 11/11: para saber si llegan
-        if res["vencidas"]:
-            almacen.put("push/suscripciones", [s for s in subs if s.get("endpoint") not in res["vencidas"]])
+        # 19/11: push.avisar maneja las suscripciones vencidas y, si un aviso importante no llega, usa el respaldo
+        if nuevas:
+            n0 = nuevas[0]; pl = n0.get("plan") or {}
+            f_ = lambda x: f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if isinstance(x, (int, float)) else str(x)
+            tit, txt, imp = (f"🗳️ Comité: comprar {n0['ticker']} con límite {f_(pl.get('entrada'))}",
+                             f"Objetivo {f_(pl.get('objetivo'))} · stop {f_(pl.get('stop'))}. Entrá a la mesa para ver los votos y decidir.", True)
+        elif parte:
+            tit, txt, imp = parte.get("titulo"), parte.get("texto"), parte.get("nivel") != "sin_cambios"
+        else:
+            a0 = alertas_lista[0] if alertas_lista else {}
+            tit, txt, imp = a0.get("ticker"), a0.get("texto"), a0.get("tipo") != "buen_dia"
+        push.avisar(almacen, tit, txt, imp)
     return {"corrio": True, "nuevas": len(nuevas), "senales": len(senales), "consumo": consumo.resumen(),
             "diagnostico": {"anticipo": ctx.extra.get("anticipo_diag"), "kv_escrituras": getattr(almacen, "escrituras", None), "kv_omitidas": getattr(almacen, "omitidas", None),
                             "kv_claves": [k.split("/")[0] + "/" + k.split("/")[1][:12] for k in getattr(almacen, "escritas", [])],
