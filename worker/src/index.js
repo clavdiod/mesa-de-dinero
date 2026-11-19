@@ -181,7 +181,9 @@ async function textoAviso(env) {
     return { importante: false, titulo: ult.ticker, cuerpo: ult.texto };
   const a = alertas.find((x) => x.fecha === estado.fecha && x.hora === estado.hora);
   const n = (x) => Number(x).toLocaleString("es-AR", { maximumFractionDigits: 2 });
-  if (p) return { importante: true, titulo: `🗳️ Comité: comprar ${p.ticker} con límite ${n(p.plan.entrada)}`,
+  // 19/11: si el límite está debajo del precio de ese momento, se dice claro: "solo si baja a X (hoy Y)"
+  const baja = p && p.precio_al_proponer && p.precio_al_proponer > p.plan.entrada * 1.005;
+  if (p) return { importante: true, titulo: baja ? `🗳️ Comité: comprar ${p.ticker} solo si baja a ${n(p.plan.entrada)} (hoy ${n(p.precio_al_proponer)})` : `🗳️ Comité: comprar ${p.ticker} con límite ${n(p.plan.entrada)}`,
     cuerpo: `Objetivo ${n(p.plan.objetivo)} · stop ${n(p.plan.stop)}${p.ruedas ? ` · plazo ${p.ruedas} ruedas` : ""}. ${nuevas.length > 1 ? `(+${nuevas.length - 1} más) ` : ""}Entrá para ver los votos y decidir.` };
   // 17/11: el parte de cada ronda ("Ronda 14:05: sin cambios" / "atención ..."); el "sin cambios" llega sin sonar y se pisa solo
   const pt = estado.parte;

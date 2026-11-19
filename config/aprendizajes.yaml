@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-19'
+  caso: 'VXX: propuesta con límite 6% debajo del precio y stop dentro del ruido'
+  que_paso: 'A las 12:40 el Comité propuso VXX con límite 7.111,59 cuando cotizaba ~7.600 (subía 4,8%: la regla de no perseguir baja el límite). Clau pensó que el precio estaba mal. Además el stop quedó 2,5% debajo de la entrada, cuando VXX se mueve mucho más que eso en un día normal.'
+  leccion: 'Un límite debajo del precio tiene que decirse como lo que es: comprar solo si baja. Y un stop más cerca que el movimiento normal de un día salta por ruido, aunque la idea sea buena.'
+  cambio: 'La propuesta guarda el precio al proponer y el aviso y la tarjeta dicen "comprar solo si baja a X (hoy Y)". El stop nunca queda más cerca que un movimiento diario normal (la cantidad se ajusta sola). Las coberturas (VXX, SH y parecidas) se pueden proponer, pero la ficha avisa que pierden valor con el tiempo y sirven para pocos días.'
+- fecha: '2026-11-19'
   caso: 'Auditoría de todas las reglas de la revisión en frío'
   que_paso: 'Se midieron con 10 años las 13 reglas que se pueden probar con precios (más de 150.000 casos, 1,2% de comisión). Sirven: tocó más el stop que el objetivo, MACD negativo en acciones argentinas (lo frenado rinde -1,9%, y -4,3% entre las que vienen subiendo), 20% más alto del año en CEDEARs, no paga el riesgo, techo de 3 meses, caso típico negativo y objetivo fuera del rango. No sirve: el gráfico sigue cayendo (lo frenado solo por eso rindió +1,0% en CEDEARs y +0,1% en acciones argentinas, mejor que lo que pasaba). Sin conclusión: sin lugar hasta el máximo del año (pocos casos). No se pueden probar con precios: analistas en contra, noticias en contra y pegada a un piso.'
   leccion: 'Las acciones argentinas dan negativo en operaciones cortas aun pasando todos los controles (-0,9% neto con 1,2% de comisión): ahí la ventaja está en el volumen, no en estas reglas. En CEDEARs, lo que viene subiendo y pasa el frío es lo único positivo (+0,7% neto).'

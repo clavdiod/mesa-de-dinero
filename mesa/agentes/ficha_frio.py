@@ -21,6 +21,8 @@ import statistics as st
 # +1,0% neto en CEDEARs (3.125 casos) y +0,1% en acciones argentinas (749), contra -0,2% y -0,9% de lo que pasaba.
 # Una caída de verdad la siguen frenando el MACD negativo (acciones argentinas), la historia de casos parecidos y 'no paga'.
 REGLAS_APAGADAS = {"E", "GC"}
+# Coberturas: suben cuando el mercado cae o hay miedo. Se pueden proponer (es especular con cobertura), pero la ficha lo dice.
+COBERTURAS = {"VXX", "UVXY", "VIXY", "SH", "PSQ", "SDS", "SQQQ", "SPXU", "DOG", "RWM"}
 
 
 def _ema(x: list[float], n: int) -> list[float]:
@@ -159,6 +161,8 @@ def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None,
     except Exception:
         pass
     out["contexto"] = contexto
+    if str(plan.get("ticker") or "").upper().rstrip("D") in COBERTURAS:  # 19/11: Clau: cubrirse está bien, pero que se sepa qué es
+        out["cobertura"] = True
     if fundamentos and grupo == "cedears":  # 04/11: solo informativo, no suma ni resta al veredicto
         from .fundamentos import frase as _fr
         out["fundamentos"] = _fr(fundamentos) or None
@@ -236,6 +240,8 @@ def texto(f: dict | None) -> str:
         p.append(f["fundamentos"])
     if (f.get("volumen_rel") or 0) >= 2:
         p.append(f"Hoy opera {str(f['volumen_rel']).replace('.', ',')} veces su volumen normal (en acciones argentinas eso rindió +2,8% a un mes contra +0,5%).")
+    if f.get("cobertura"):
+        p.append("🛡️ Es una cobertura: sube cuando el mercado cae o hay miedo, y con el tiempo pierde valor sola (sobre todo VXX). Sirve para unos días, no para quedársela.")
     if f.get("estirada_pct"):
         p.append(f"Está {f['estirada_pct']}% arriba de su promedio de 20 ruedas (dato: probado el 19/11, por sí solo no frena la compra).")
     if f.get("cayendo_dato"):

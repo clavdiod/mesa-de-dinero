@@ -942,7 +942,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         mitad = bool(prot.get("mitad"))
         if mitad and cantidad:
             cantidad = max(1, cantidad // 2)  # mala racha: se compra la mitad
-        nuevas.append({**e, "fecha": hoy.isoformat(), "hora": ctx.hora, "decision": "pendiente",
+        t_ = ctx.titulo(e["ticker"]) or {}  # 19/11: precio al proponer, para mostrar cuánto tiene que bajar hasta el límite
+        nuevas.append({**e, "fecha": hoy.isoformat(), "hora": ctx.hora, "decision": "pendiente", "precio_al_proponer": t_.get("ultimo"),
                        "cantidad_sugerida": cantidad, "tamano_mitad": mitad, "seguimiento": {"estado": "pendiente"}})
     reg.nuevas(nuevas)
 
@@ -1233,8 +1234,12 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         if nuevas:
             n0 = nuevas[0]; pl = n0.get("plan") or {}
             f_ = lambda x: f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if isinstance(x, (int, float)) else str(x)
-            tit, txt, imp = (f"🗳️ Comité: comprar {n0['ticker']} con límite {f_(pl.get('entrada'))}",
-                             f"Objetivo {f_(pl.get('objetivo'))} · stop {f_(pl.get('stop'))}. Entrá a la mesa para ver los votos y decidir.", True)
+            px = n0.get("precio_al_proponer")
+            if px and pl.get("entrada") and px > pl["entrada"] * 1.005:
+                tit = f"🗳️ Comité: comprar {n0['ticker']} solo si baja a {f_(pl.get('entrada'))} (hoy {f_(px)})"
+            else:
+                tit = f"🗳️ Comité: comprar {n0['ticker']} con límite {f_(pl.get('entrada'))}"
+            tit, txt, imp = (tit, f"Objetivo {f_(pl.get('objetivo'))} · stop {f_(pl.get('stop'))}. Entrá a la mesa para ver los votos y decidir.", True)
         elif parte:
             tit, txt, imp = parte.get("titulo"), parte.get("texto"), parte.get("nivel") != "sin_cambios"
         else:

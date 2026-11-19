@@ -54,7 +54,7 @@ function tarjeta(p) {
     <p>${esc(p.resumen_jefe || "")} <span class="chip ${p.confianza === "alta" ? "verde" : "amar"}">confianza ${esc(p.confianza)}</span></p>
     ${p.ficha_txt ? `<div class="ficha-frio ${p.ficha_frio?.veredicto === "acompañan" ? "ok" : ["en contra", "cara"].includes(p.ficha_frio?.veredicto) ? "mal" : "duda"}"><b>🧊 En frío, antes de comprar:</b> ${esc(p.ficha_txt)}</div>` : ""}
     <div class="grilla">
-      <div class="met"><span>Compra límite</span><b>${num(pl.entrada)}</b></div>
+      <div class="met"><span>${p.precio_al_proponer && p.precio_al_proponer > pl.entrada * 1.005 ? `Compra solo si baja a (al proponer: ${num(p.precio_al_proponer)})` : "Compra límite"}</span><b>${num(pl.entrada)}</b></div>
       <div class="met"><span>Objetivo</span><b style="color:var(--verde)">${num(pl.objetivo)}</b></div>
       <div class="met"><span>Stop</span><b style="color:var(--rojo)">${num(pl.stop)}</b></div>
       <div class="met"><span>Tamaño · R neto</span><b>${num(pl.tamano_r, 1)}R · ${num(p.riesgo?.r_neto, 2)}</b></div>
@@ -780,9 +780,10 @@ function pintarAviso() {
   const box = $("#aviso-global");
   if (!nuevas.length && !consejos.length && !radarAltas.length) { box.style.display = "none"; document.title = "Mesa de dinero"; return; }
   const items = nuevas.map((p) => {
-    const pl = p.plan, ult = precios[p.ticker]?.ultimo, min = minutosDesde(p.fecha, p.hora);
+    const pl = p.plan, ult = precios[p.ticker]?.ultimo || p.precio_al_proponer, min = minutosDesde(p.fecha, p.hora);
     const lejos = ult && ult > pl.entrada * 1.01;
-    return `<div class="aviso-item"><div><b>🔔 El Comité sugiere COMPRAR ${esc(p.ticker)}</b> con límite <b>${num(pl.entrada)}</b>
+    // 19/11: si el límite está debajo del precio, que quede claro que es "comprá solo si baja" (VXX: límite 7.111 con el precio en 7.600)
+    return `<div class="aviso-item"><div><b>🔔 El Comité sugiere COMPRAR ${esc(p.ticker)}</b> ${lejos ? `<b>solo si baja a ${num(pl.entrada)}</b> (hoy está ${num((ult / pl.entrada - 1) * 100, 1)}% arriba; si no baja, no se compra)` : `con límite <b>${num(pl.entrada)}</b>`}
         · objetivo ${num(pl.objetivo)} · stop ${num(pl.stop)}${p.cantidad_sugerida ? ` · ${num(p.cantidad_sugerida, 0)} unidades` : ""}</div>
       <div class="tenue">${min !== null ? (min < 1 ? "recién" : `hace ${min} min`) : esc(p.hora)} · válida hoy${ult ? ` · ahora ${num(ult)}` : ""}${lejos ? " · <b>el precio se alejó: no lo persigas, dejá la orden límite</b>" : ""}</div>
       <div class="fila-form" style="margin-top:6px"><button class="chico prim" data-ir-prop="${esc(p.id)}">Ver y decidir</button><button class="chico" data-visto="${esc(p.id)}">Entendido</button></div></div>`;

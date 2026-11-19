@@ -53,6 +53,9 @@ def armar_plan(ctx: Contexto, ticker: str, ruedas: int | None = None) -> Plan | 
     escala = max(1.0, (ruedas / 10) ** 0.5)  # 60 ruedas ≈ 2,4 veces más aire que 10
     base_stop = sop["desde"] if sop and entrada - sop["desde"] <= 2 * a * escala else entrada - 1.5 * a * escala
     stop = round(min(base_stop - 0.25 * a, entrada - 1.5 * a * escala) if escala > 1 else base_stop - 0.25 * a, 4)
+    # 19/11: el stop nunca más cerca que un movimiento diario normal (1 ATR): VXX salió con stop a 2,5% y se mueve ~10% por día;
+    # así salta por ruido aunque la idea sea buena. La cantidad se ajusta sola al riesgo (cuanto más lejos el stop, menos unidades).
+    stop = round(min(stop, entrada - a), 4)
     riesgo = entrada - stop
     minimo_obj = 2.5 if ruedas <= 10 else 3.0
     objetivo = res["nivel"] if res and res["nivel"] - entrada >= minimo_obj * riesgo else entrada + minimo_obj * riesgo
