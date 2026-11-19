@@ -19,8 +19,21 @@ from .ficha_frio import REGLAS_APAGADAS
 COM = 0.012
 NOMBRES = {"E": "estirada (6% arriba del promedio de 20 ruedas)", "R": "en el techo de su rango de 3 meses",
            "P": "lo que suele subir no paga 1,5 veces el riesgo", "M": "sin lugar hasta el máximo del año",
-           "T": "en el 20% más alto del año (CEDEARs)"}
+           "T": "en el 20% más alto del año (CEDEARs)",
+           # 19/11 (auditoría): también las alertas que hacen 'dudosa' una propuesta (con una sola ya no pasa)
+           "HS": "en casos parecidos tocó más el stop que el objetivo", "HM": "en casos parecidos el caso típico terminó en negativo",
+           "OR": "el objetivo queda fuera del rango normal de un mes", "OX": "el objetivo está arriba del máximo del año",
+           "GC": "el gráfico sigue cayendo", "MN": "MACD negativo (acciones argentinas)", "MX": "MACD cruzó hacia abajo (acciones argentinas)",
+           "RS": "RSI arriba de 70 (CEDEARs)"}
+CARA = {"E", "R", "P", "M", "T"}
 MARGEN, MIN_CASOS = 0.005, 200
+
+
+def _ema(x, n):
+    k = 2 / (n + 1); out = np.empty(len(x)); out[0] = x[0]
+    for i in range(1, len(x)):
+        out[i] = x[i] * k + out[i - 1] * (1 - k)
+    return out
 
 
 def _sma(x, n):
@@ -39,9 +52,15 @@ def casos(ser: dict, cedear: bool) -> list[tuple]:
             continue
         m20 = _sma(c, 20); d = c / m20 - 1
         r20 = np.full(n, np.nan); r20[20:] = c[20:] / c[:-20] - 1
-        mxf = np.full(n, np.nan)
+        mxf = np.full(n, np.nan); mnf = np.full(n, np.nan); f20 = np.full(n, np.nan)
         for i in range(n - 20):
-            mxf[i] = c[i + 1:i + 21].max() / c[i] - 1
+            mxf[i] = c[i + 1:i + 21].max() / c[i] - 1; mnf[i] = c[i + 1:i + 21].min() / c[i] - 1; f20[i] = c[i + 20] / c[i] - 1
+        lr = np.r_[0, np.diff(np.log(c))]
+        ema = lambda x, k: _ema(x, k)
+        dd = np.r_[0, np.diff(c)]
+        au, ad = _ema(np.maximum(dd, 0), 27), _ema(np.maximum(-dd, 0), 27)
+        rsi = 100 - 100 / (1 + au / np.where(ad == 0, 1e-12, ad))
+        mac = ema(c, 12) - ema(c, 26); hist = mac - ema(mac, 9)
         tr = np.maximum(h - l, np.abs(np.r_[0, h[1:] - c[:-1]]))
         atr = _sma(tr, 14)
         for i in range(400, n - 21, 2):
@@ -57,6 +76,19 @@ def casos(ser: dict, cedear: bool) -> list[tuple]:
             win = c[i - 249:i + 1]
             reglas = {"E": d[i] >= 0.06, "R": pos60 >= 0.85, "P": tip is not None and tip < 1.5 * riesgo,
                       "M": win.max() / c[i] - 1 < 2 * riesgo, "T": cedear and (win < c[i]).mean() >= 0.80}
+            if len(sel) >= 8:
+                reglas["HS"] = np.mean(mnf[sel] <= -riesgo) > np.mean(mxf[sel] >= 2 * riesgo)
+                reglas["HM"] = np.median(f20[sel]) < 0
+            else:
+                reglas["HS"] = reglas["HM"] = False
+            s_ = lr[i - 62:i + 1].std() * np.sqrt(20)
+            reglas["OR"] = 1 + 2 * riesgo > np.exp(s_) * 1.05
+            reglas["OX"] = c[i] * (1 + 2 * riesgo) > win.max() * 1.02
+            reglas["GC"] = bool(c[i] < m20[i] and m20[i] < m20[i - 5] and c[i - 19:i + 1].max() < c[i - 39:i - 19].max()
+                                and c[i - 19:i + 1].min() < c[i - 39:i - 19].min())
+            reglas["MN"] = (not cedear) and hist[i] < 0
+            reglas["MX"] = (not cedear) and hist[i] < 0 <= hist[i - 1]
+            reglas["RS"] = cedear and rsi[i] > 70
             st_, ob = ent * (1 - riesgo), ent * (1 + 2 * riesgo)
             res = None
             for j in range(i + 1, i + 21):
@@ -82,9 +114,11 @@ def resumir(filas: list[tuple]) -> dict:
     for grupo, xs in (("todos", filas), ("subiendo", [x for x in filas if x[2]])):
         activas = lambda rg: any(v for k, v in rg.items() if k not in REGLAS_APAGADAS)
         g = {"todos": _st(xs), "pasa": _st([x for x in xs if not activas(x[0])]), "frena": _st([x for x in xs if activas(x[0])]), "reglas": {}}
-        for k in NOMBRES:
-            solo = [x for x in xs if x[0][k] and sum(x[0].values()) == 1]
-            g["reglas"][k] = _st(solo)
+        act = lambda rg: [k for k, v in rg.items() if v and k not in REGLAS_APAGADAS]
+        for k in NOMBRES:  # frenada SOLO por esta regla (las apagadas no cuentan)
+            g["reglas"][k] = _st([x for x in xs if x[0].get(k) and act(x[0]) in ([k], [])])
+        # 'dudosos': una sola alerta y ninguna regla de entrada cara (hoy no pasan)
+        g["dudosos"] = _st([x for x in xs if len(act(x[0])) == 1 and act(x[0])[0] not in CARA])
         out[grupo] = g
     return out
 
