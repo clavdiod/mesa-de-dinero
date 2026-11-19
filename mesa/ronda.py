@@ -984,6 +984,20 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         hubo = pron.actualizar(libreta, ctx.por_simbolo, hoy, minuto >= 11 * 60) or hubo
         if minuto >= 17 * 60:
             hubo = pron.cerrar_dia(libreta, hoy) or hubo
+            # 19/11 (idea de Clau): operaciones en papel del Anticipador con coberturas o con movimiento esperado de 3% o más.
+            # La libreta guarda 600 pronósticos (~2 semanas); esto se guarda aparte para medir 3-4 semanas antes de usarlo.
+            try:
+                from .agentes.ficha_frio import COBERTURAS
+                papel = almacen.get("papel/anticipo") or []
+                ya_p = {x.get("id") for x in papel}
+                nuevos_pa = [{k: x.get(k) for k in ("id", "fecha", "hora", "ticker", "dir", "objetivo_pct", "estado", "ahora_pct", "mejor", "peor", "ref")}
+                             for x in libreta if x.get("origen") == "anticipo" and x.get("dir") == 1
+                             and x.get("estado") in ("se_dio", "no_se_dio", "fallo") and x.get("id") not in ya_p
+                             and (str(x.get("ticker")).rstrip("D") in COBERTURAS or (x.get("objetivo_pct") or 0) >= 3)]
+                if nuevos_pa:
+                    almacen.put("papel/anticipo", (papel + nuevos_pa)[-2000:])
+            except Exception as ex_:
+                print(f"[papel anticipo] {ex_}")
         if not simular and (hubo or cada30):
             almacen.put("pronosticos/libreta", libreta)
     except Exception as ex:

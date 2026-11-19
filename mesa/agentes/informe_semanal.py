@@ -156,6 +156,25 @@ def armar(a, hoy: date, panel: dict, velas, sector, flujos: dict, macro: dict, a
         if nuevos:
             lin.append(f"{len(nuevos)} aprendizajes nuevos esta semana:")
             lin += [f"• {x.get('caso')}: {x.get('cambio') or x.get('leccion')}"[:260] for x in nuevos]
+        try:  # 19/11: coberturas y avisos fuertes del Anticipador, en papel (comprar a la mañana, vender al cierre)
+            pa = a.get("papel/anticipo") or []
+            if pa:
+                def _res(x):
+                    return ((x.get("objetivo_pct") or 0) if x.get("estado") == "se_dio" else (x.get("ahora_pct") or 0)) - 1.2
+                cob = [x for x in pa if str(x.get("ticker")).rstrip("D") in {"VXX", "UVXY", "VIXY", "SH", "PSQ", "SDS", "SQQQ", "SPXU"}]
+                fue = [x for x in pa if (x.get("objetivo_pct") or 0) >= 3]
+                for nom, xs in (("Coberturas (VXX, SH)", cob), ("Avisos de 3% o más", fue)):
+                    if xs:
+                        r = [_res(x) for x in xs]
+                        lin.append(f"🧪 En papel, Anticipador · {nom}: {len(xs)} casos desde el {min(x['fecha'] for x in xs)[8:10]}/{min(x['fecha'] for x in xs)[5:7]}, "
+                                   f"se dio {round(sum(x.get('estado') == 'se_dio' for x in xs) / len(xs) * 100)}%, neto {_n(sum(r) / len(r), 2)}% por operación. "
+                                   + ("Con 20 casos o más se decide si pasa a propuestas." if len(xs) < 20 else "Ya hay casos suficientes para decidir."))
+            st_m = ((a.get("mundo/stats") or {}).get("miedo_mercado")) or {}
+            if st_m.get("casos"):
+                lin.append(f"🧪 Corresponsal · titulares de miedo: {st_m['casos']} casos medidos, acierta {round(st_m['aciertos'] / st_m['casos'] * 100)}% "
+                           f"({_n(st_m['suma_ret'] / st_m['casos'], 2)}% promedio a una semana). Vota recién con 10 casos y si acierta.")
+        except Exception as ex_:
+            print(f"[informe] papel: {ex_}")
         cf = a.get("revision/frio") or {}  # 19/11: control semanal de la revisión en frío
         if cf.get("fecha") and cf["fecha"] >= lunes.isoformat():
             if cf.get("alertas"):

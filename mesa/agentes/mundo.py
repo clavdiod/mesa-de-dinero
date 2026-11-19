@@ -41,9 +41,9 @@ FUENTES_RSS = [
 # búsquedas en Google Noticias (agrupa Reuters, Bloomberg, AP, FT, WSJ y diarios locales)
 BUSQUEDAS_EN = ["world markets today", "emerging markets selloff", "currency plunges", "election markets reaction", "stocks plunge country",
                 "Latin America markets", "oil prices Middle East", "Strait of Hormuz", "OPEC output", "Federal Reserve rates", "tariffs trade war",
-                "China stimulus", "stock market today", "Reuters business"]
+                "China stimulus", "stock market today", "Reuters business", "VIX volatility spike", "Wall Street selloff fear"]
 BUSQUEDAS_ES = ["mercados internacionales hoy", "mercados emergentes", "elecciones mercados reacción", "se desploma la moneda",
-                "bolsas de América Latina", "petróleo Medio Oriente", "Wall Street hoy", "empresa cierra sucursales Argentina", "despidos empresa Argentina",
+                "bolsas de América Latina", "petróleo Medio Oriente", "Wall Street hoy", "pánico en Wall Street", "empresa cierra sucursales Argentina", "despidos empresa Argentina",
                 "Vaca Muerta inversión", "nuevo desarrollo empresa argentina"]
 FUENTES_GRANDES = ("reuters", "bloomberg", "cnbc", "bbc", "financial times", "wsj", "wall street journal", "ap news", "associated press",
                    "ámbito", "ambito", "cronista", "infobae", "la nación", "lanacion", "clarín", "clarin")
@@ -91,6 +91,13 @@ TEMAS = [
     ("china_estimulo", "Estímulo económico en China",
      [_r(r"china|chin[ao]s|beijing|pek[ií]n"), _r(r"est[ií]mulo|stimulus|rescate|bazooka")], {"VALE": 1, "BABA": 1, "FXI": 1, "RIO": 1}, 0.35,
      "China gasta más: suben metales y acciones chinas."),
+    # 19/11 (idea de Clau): el miedo del mercado se lee en los titulares antes de que suba VXX. Queda EN OBSERVACIÓN:
+    # se anota y se mide solo (mundo/stats), pero no vota hasta tener 10 casos y que haya acertado (ver OBSERVACION).
+    ("miedo_mercado", "Miedo en el mercado (sube la volatilidad)",
+     [_r(r"wall street|stocks?|acciones|bolsas?|nasdaq|s&p|dow|markets?|mercados?|\bvix\b|volatil"),
+      _r(r"\bvix\b|volatility (spike|surge|jump|soar)|fear|panic|p[aá]nico|miedo|sell-?off|rout|plunge|tumble|crash|desplom|derrumb|se hunde|turmoil|jitters")],
+     {"VXX": 1, "SH": 1, "PSQ": 1}, 0.35,
+     "Con miedo en el mercado suben las coberturas (VXX, SH). Ojo: duran poco, VXX pierde valor con el tiempo."),
     ("recesion_eeuu", "Miedo a recesión en EE.UU.",
      [_r(r"recesi[oó]n|recession"), _r(r"ee\.?\s?uu|estados unidos|\bu\.?s\.?\b|american|wall street")],
      {**{t: -1 for t in INDICES}, **{t: 1 for t in ORO}}, 0.3, "Con miedo a recesión bajan las bolsas y sube el oro."),
@@ -308,17 +315,22 @@ def factor_tema(stats: dict, tema: str) -> float:
     return 1.3 if hit >= 0.55 and ret >= 0.5 else 1.0
 
 
+# temas nuevos que se anotan y se miden pero no votan hasta probarse (10 casos o más y factor_tema > 0)
+OBSERVACION = {"miedo_mercado"}
+
+
 def senales(temas: list[dict], empresas: list[dict], existe, stats: dict | None = None) -> list[Senal]:
     out = []
     for t in temas:
         f = factor_tema(stats, t["tema"])
         if f == 0 or t.get("nuevo") is False:  # tema de fondo que se repite todos los días: no es noticia
             continue
+        obs = t["tema"] in OBSERVACION and ((stats or {}).get(t["tema"]) or {}).get("casos", 0) < 10
         tit = t["titulares"][0]["titulo"]
         for tk, d in t["efectos"].items():
             if existe(tk):
-                out.append(Senal("mundo", tk, d, round(min(0.8, t["fuerza"] * f), 2),
-                                 f"{t['nombre']} ({t['n']} titulares, ej.: «{tit[:110]}»). {t['explica']}",
+                out.append(Senal("mundo", tk, d, 0.0 if obs else round(min(0.8, t["fuerza"] * f), 2),
+                                 f"{t['nombre']} ({t['n']} titulares, ej.: «{tit[:110]}»). {t['explica']}" + (" (en observación: se mide, todavía no vota)" if obs else ""),
                                  {"tema": t["tema"], "titulares": t["titulares"][:3]}))
     for e in empresas:
         if not existe(e["ticker"]):

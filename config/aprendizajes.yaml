@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-19'
+  caso: 'Anticipadores y Corresponsal para las coberturas (idea de Clau)'
+  que_paso: 'Clau propuso usar a los anticipadores y al Corresponsal para anticipar el miedo del mercado. En la libreta real, el Anticipador acertó las 5 subidas de VXX y SH que avisó del 13 al 18/11 (+1,3% neto por operación en el día). Pero es una sola semana y un solo episodio de miedo; con todos los papeles, operar sus avisos da -0,9% neto porque el movimiento típico (1,6%) apenas cubre la comisión.'
+  leccion: 'Cinco aciertos en una semana de pánico no alcanzan: hay que medir en semanas tranquilas también antes de poner plata.'
+  cambio: 'En papel por 3-4 semanas: se guardan aparte (papel/anticipo) los avisos del Anticipador de coberturas y los de 3% o más, y el Corresponsal tiene un tema nuevo, «miedo en el mercado» (VXX, SH, PSQ), que se anota y se mide solo pero no vota hasta tener 10 casos y acertar. El informe de los viernes muestra cómo van; con 20 casos se decide.'
+- fecha: '2026-11-19'
   caso: 'VXX: ¿hay un momento en que la cobertura paga? Y las velas del 17/11'
   que_paso: 'Clau preguntó por qué la mesa no vio VXX a 6.145 el 12/11 (subió 24% en una semana). Ese día la mesa estaba en pausa por mala racha y ningún analista mira picos de miedo; VXX llegó al Comité recién el 17/11, ya con +29% en un mes. Se probó con 2018-2026: VXX pierde 4% cada 20 ruedas en promedio (gana 28 de cada 100 veces). Con el VIX bajo respecto del año también pierde (-5,7%); con el VIX debajo de 13 queda cerca de cero (129 días, 4 años); con el VIX en 25 o más (ya hay miedo) pierde 8% a 20 ruedas. Revisando, se encontró que el cierre del 17/11 guardó velas viejas (copiadas del 16/11) en 325 papeles.'
   leccion: 'No hay un momento que se pueda anticipar en que comprar VXX pague: sirve para cubrir una cartera unos días, no para ganar. Y un panel que llega viejo al cierre arruina los indicadores de todo el mercado sin que nadie lo note.'
