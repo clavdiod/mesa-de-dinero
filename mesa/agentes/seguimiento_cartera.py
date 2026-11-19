@@ -221,6 +221,13 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
                         an = analizar_salida(tk, precio, compra_p, ou, opinion.get(tk) or {})
                     except Exception as ex_s:
                         print(f"[salida] {tk}: {ex_s}")
+                if an and pos.get("trailing_pct") and an["accion"] != "vender_todo":
+                    # 19/11 (Clau: "¿por qué estás enfocado en no ganar?"): alarma escalonada que deja correr. Al llegar a la salida
+                    # la alarma pasa al escalón pactado (arriba de la compra) y después sigue al máximo a trailing_pct% de distancia
+                    # (no al 3%: con el movimiento diario normal saltaría enseguida y cortaría a las ganadoras).
+                    tope = max(mx or precio, precio)
+                    an["alarma"] = round(max(float(pos.get("alarma_escalon") or 0), tope * (1 - float(pos["trailing_pct"]) / 100)), 2)
+                    an["objetivo"] = max(float(an.get("objetivo") or 0), round(tope * 1.08, 2))
                 if an:
                     detalle = (" A favor de seguir: " + "; ".join(an["a_favor"]) + "." if an["a_favor"] else "") + \
                               (" En contra: " + "; ".join(an["en_contra"]) + "." if an["en_contra"] else "")
