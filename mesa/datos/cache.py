@@ -162,6 +162,13 @@ class CacheHistorico:
         if not titulo.get("ultimo"):
             return None
         f = (fecha or ahora().date()).isoformat()
+        # 19/11: si el panel viene viejo (sin volumen y con la misma apertura/máximo/mínimo que la última vela), no se arma
+        # la vela: el 17/11 quedaron 100+ papeles con la vela del día anterior copiada (VXX entre ellos)
+        prev = (self.velas(titulo.get("simbolo") or "") or [None])[-1] if titulo.get("simbolo") else None
+        if prev and prev.get("fecha") != f and not titulo.get("volumen") and (
+                (titulo.get("apertura"), titulo.get("maximo"), titulo.get("minimo")) == (prev.get("apertura"), prev.get("maximo"), prev.get("minimo"))
+                or titulo["ultimo"] == prev.get("cierre")):
+            return None
         return {"fecha": f, "apertura": titulo.get("apertura") or titulo["ultimo"],
                 "maximo": titulo.get("maximo") or titulo["ultimo"], "minimo": titulo.get("minimo") or titulo["ultimo"],
                 "cierre": titulo["ultimo"], "volumen": titulo.get("volumen") or 0}
