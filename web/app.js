@@ -48,6 +48,7 @@ function tarjeta(p) {
     : seg.r !== undefined ? `Cerrada (${seg.estado}) · ${num(seg.r_neto, 2)}R neto` : seg.estado;
   return `<div class="card" data-tarjeta="${esc(p.id)}">
     <div class="fila"><div><span class="tenue">${esc(fecha(p.fecha))} ${esc(p.hora)} · ${esc(p.sector || "")}</span>
+      ${rankTxt(p) ? `<div class="chip verde" style="margin:2px 0">${rankTxt(p)}</div>` : ""}
       <div style="font-size:18px;font-weight:600">${esc(p.ticker)}${p.linea === "posicion" ? ` <span class="chip verde">📅 posición ${esc(p.meses)} meses</span>` : ""}</div></div>
       <span class="chip ${p.decision === "aprobada" ? "verde" : p.decision === "rechazada" ? "rojo" : ""}">${esc(p.decision)}</span></div>
     ${seg.consejo ? `<div class="consejo ${CONSEJO_COL[seg.consejo.accion] || ""}"><b>${esc(CONSEJO_TXT[seg.consejo.accion] || seg.consejo.accion)}</b> ${esc(seg.consejo.texto)} <span class="tenue">(${esc(seg.consejo.hora || "")})</span></div>` : ""}
@@ -71,9 +72,17 @@ function tarjeta(p) {
   </div>`;
 }
 
+let ORDEN = new Map();
+const rankTxt = (p) => { const r = p.ranking || {}, o = ORDEN.get(p.id);
+  return (o ? `<b>${o}º</b> ` : "") + (r.ganancia_mes_pct != null ? `~${num(r.ganancia_mes_pct, 1)}% por mes esperado` : "") +
+    (r.llega_5_1m_pct ? ` · llegó a +5% en un mes ${r.llega_5_1m_pct} de cada 100 veces` : ""); };
 function pintarPropuestas() {
   const hoy = ESTADO.estado?.fecha;
-  const activas = PROPS.filter((p) => p.fecha === hoy || p.seguimiento?.estado === "pendiente" || p.seguimiento?.estado === "abierta");
+  // 20/11 (Clau): primero la que más se espera ganar por mes; numeradas 1º, 2º, 3º
+  const gm = (p) => p.ranking?.ganancia_mes_pct ?? -99;
+  const activas = PROPS.filter((p) => p.fecha === hoy || p.seguimiento?.estado === "pendiente" || p.seguimiento?.estado === "abierta")
+    .sort((a, b) => (b.decision === "pendiente") - (a.decision === "pendiente") || gm(b) - gm(a));
+  ORDEN = new Map(activas.filter((p) => p.decision === "pendiente").map((p, i) => [p.id, i + 1]));
   $("#lista-propuestas").innerHTML = activas.length ? activas.map(tarjeta).join("") : '<div class="vacio">Nada para decidir ahora. Elegir no operar también es una decisión de la mesa.</div>';
   const cerradas = PROPS.filter((p) => !activas.includes(p)).slice(0, 40);
   $("#registro").innerHTML = cerradas.length ? `<div class="tabla-scroll"><table><tr><th>Fecha</th><th>Ticker</th><th>Decisión</th><th>Resultado</th><th class="n">R neto</th></tr>
@@ -771,7 +780,8 @@ function sonar() {
 function pintarAviso() {
   const precios = ESTADO.estado?.precios || {};
   // 1) propuestas nuevas del Jefe para decidir  2) consejos de seguimiento importantes de hoy
-  const nuevas = PROPS.filter((p) => p.decision === "pendiente" && p.fecha === HOY() && !VISTOS.has(p.id));
+  const nuevas = PROPS.filter((p) => p.decision === "pendiente" && p.fecha === HOY() && !VISTOS.has(p.id))
+    .sort((a, b) => (b.ranking?.ganancia_mes_pct ?? -99) - (a.ranking?.ganancia_mes_pct ?? -99));
   // 02/11: solo lo tuyo. Las posiciones en papel del Comité y el radar del resto del mercado no te avisan (los usan los agentes).
   const tuyos = new Set([...(USUARIO.cartera || []), ...(USUARIO.lista || [])].map((x) => String(x.ticker || x).toUpperCase()));
   const esTuyo = (tk) => tuyos.has(String(tk).toUpperCase()) || tuyos.has(String(tk).toUpperCase() + "D");
@@ -784,7 +794,7 @@ function pintarAviso() {
     const pl = p.plan, ult = precios[p.ticker]?.ultimo || p.precio_al_proponer, min = minutosDesde(p.fecha, p.hora);
     const lejos = ult && ult > pl.entrada * 1.01;
     // 19/11: si el límite está debajo del precio, que quede claro que es "comprá solo si baja" (VXX: límite 7.111 con el precio en 7.600)
-    if (p.linea === "posicion") return `<div class="aviso-item"><div><b>📅 Posición de ${esc(p.meses)} meses: comprar ${esc(p.ticker)}</b> a <b>${num(pl.entrada)}</b>
+    if (p.linea === "posicion") return `<div class="aviso-item"><div>${rankTxt(p) ? `<span class="chip verde">${rankTxt(p)}</span> ` : ""}<b>📅 Posición de ${esc(p.meses)} meses: comprar ${esc(p.ticker)}</b> a <b>${num(pl.entrada)}</b>
         · alarma ${num(pl.stop)}${p.cantidad_sugerida ? ` · ${num(p.cantidad_sugerida, 0)} unidades (~$${num(p.monto_sugerido, 0)})` : ""}</div>
       <div class="tenue">${min !== null ? (min < 1 ? "recién" : `hace ${min} min`) : esc(p.hora)} · ${esc((p.resumen_jefe || "").slice(0, 220))}</div>
       <div class="fila-form" style="margin-top:6px"><button class="chico prim" data-ir-prop="${esc(p.id)}">Ver y decidir</button><button class="chico" data-visto="${esc(p.id)}">Entendido</button></div></div>`;

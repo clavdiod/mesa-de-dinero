@@ -960,6 +960,13 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                                     noticias_de=lambda tks: _noticias_papeles(ctx, almacen, hoy, tks, simular), vetos=vetos)
         except Exception as ex:
             print(f"[posiciones] {ex}")
+    try:  # 20/11 (Clau): cada propuesta con su ganancia esperada por mes, para ordenarlas 1º, 2º, 3º
+        from .agentes.ranking import puntaje as _pje
+        for e in nuevas:
+            e["ranking"] = _pje(e)
+        nuevas.sort(key=lambda e: -((e.get("ranking") or {}).get("ganancia_mes_pct") or -99))
+    except Exception as ex:
+        print(f"[ranking] {ex}")
     reg.nuevas(nuevas)
 
     # --- simulación en papel: 1.000 nominales de cada oportunidad/propuesta, medida en pesos ---
