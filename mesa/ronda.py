@@ -1135,12 +1135,20 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                 for o_ in g_.get("opciones") or []:
                     o_["sugerida"] = o_["accion"] == "mantener"
                 avisos_cartera = [x_ for x_ in avisos_cartera if not str(x_.get("ticker", "")).startswith(tk_)]
+        compras_rev = []
         try:  # 06/11: analista de volúmenes de tu cartera (compra o venta fuera de lo normal, con lo que dice la historia)
             from .agentes import volumen_cartera as _vc
             avisos_cartera += _vc.avisos(cartera, ctx.titulo, (lambda tk_: ctx.cache.velas(tk_) if ctx.cache else []), hoy.isoformat(), ctx.hora, avis)
             # y compras grandes en cualquier acción argentina (06/11: "si no me avisás me lo pierdo")
-            avisos_cartera += _vc.compras_mercado(ctx.grupo("acciones"), (lambda tk_: ctx.cache.velas(tk_) if ctx.cache else []), hoy.isoformat(), ctx.hora, avis,
-                                                  {str(c_.get("ticker") or "").upper() for c_ in cartera})
+            # 20/11 (Clau: "no me avises; que revise automáticamente el Comité antes y después si entro o no me avisás"):
+            # la compra grande ya no llega cruda: la mesa la revisa (ficha en frío, noticias, punta) y avisa ENTRAR o NO ENTRAR
+            from .agentes import revision_compra as _rc
+            for cg_ in _vc.compras_mercado(ctx.grupo("acciones"), (lambda tk_: ctx.cache.velas(tk_) if ctx.cache else []), hoy.isoformat(), ctx.hora, avis,
+                                           {str(c_.get("ticker") or "").upper() for c_ in cartera}):
+                try:
+                    compras_rev.append(_rc.revisar(ctx, almacen, cg_, noticias_de=lambda tks: _noticias_papeles(ctx, almacen, hoy, tks, simular)))
+                except Exception as ex_rc:
+                    print(f"[revision compra] {ex_rc}")
         except Exception as ex_v:
             print(f"[volumen cartera] {ex_v}")
         fb_ = [] if simular else (almacen.get("usuario/feedback_avisos") or [])
@@ -1240,6 +1248,10 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     alertas_lista += alertas_niv  # las de nivel avisan siempre (cada una una sola vez)
     alertas_lista += avisos_cobro  # cobros de hoy / mañana / la semana (una vez por día)
     alertas_lista += avisos_cartera  # la sugerencia sobre algo que tenés cambió: decidir en la app
+    try:
+        alertas_lista += sorted(compras_rev, key=lambda x: not x.get("entrar"))  # 20/11: compras grandes ya revisadas
+    except NameError:
+        pass
     # 17/11: "buen día": la primera ronda con el mercado abierto avisa que la mesa arrancó, con lo principal del día
     bd_ahora = False
     try:
@@ -1293,7 +1305,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                 tit = f"🗳️ Comité: comprar {n0['ticker']} con límite {f_(pl.get('entrada'))}"
             tit, txt, imp = (tit, f"Objetivo {f_(pl.get('objetivo'))} · stop {f_(pl.get('stop'))}. Entrá a la mesa para ver los votos y decidir.", True)
         elif parte:
-            tit, txt, imp = parte.get("titulo"), parte.get("texto"), parte.get("nivel") != "sin_cambios"
+            tit, txt, imp = parte.get("titulo"), parte.get("texto"), parte.get("importante", parte.get("nivel") != "sin_cambios")
         else:
             a0 = alertas_lista[0] if alertas_lista else {}
             tit, txt, imp = a0.get("ticker"), a0.get("texto"), a0.get("tipo") != "buen_dia"
@@ -1353,12 +1365,23 @@ def _parte_ronda(ctx, hoy, nuevas, avisos_cartera, alertas, evaluados, debatidos
         return {"fecha": hoy.isoformat(), "hora": hora, "nivel": "atencion",
                 "titulo": f"🟢 Ronda {hora}: atención, propuesta de compra",
                 "texto": f"El Comité propone comprar {tks}. Entrá a ver el plan y decidir vos (la mesa no opera sola)."}
+    rev = [a for a in alertas if a.get("tipo") == "compra_grande_rev"]
+    if any(a.get("entrar") for a in rev):
+        a = next(a for a in rev if a.get("entrar"))
+        return {"fecha": hoy.isoformat(), "hora": hora, "nivel": "atencion",
+                "titulo": f"⭐ Ronda {hora}: la mesa dice ENTRAR en {a['ticker'].split(':')[0].replace('⭐', '').strip()}",
+                "texto": corto(a.get("texto", ""), 300)}
     if avisos_cartera:
         a = avisos_cartera[0]
         return {"fecha": hoy.isoformat(), "hora": hora, "nivel": "atencion",
                 "titulo": f"🟠 Ronda {hora}: atención con tu cartera",
                 "texto": corto(f"{a.get('ticker', '')}: {a.get('texto', '')}".strip(": "))
                          + (f" (+{len(avisos_cartera) - 1} más)" if len(avisos_cartera) > 1 else "")}
+    if rev:
+        a = rev[0]
+        return {"fecha": hoy.isoformat(), "hora": hora, "nivel": "novedad", "importante": False,
+                "titulo": f"🔍 Ronda {hora}: {a['ticker']}",
+                "texto": corto(a.get("texto", ""), 260)}
     otras = [a for a in alertas if a.get("tipo") != "buen_dia"]
     if otras:
         a = otras[0]
