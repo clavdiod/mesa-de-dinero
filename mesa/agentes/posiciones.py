@@ -55,6 +55,8 @@ def rebotes(ctx, velas_de, ccl: dict, precio_de) -> list[dict]:
 
 
 CLAVE_KOST = "posiciones/kostolany"
+# ETFs apalancados: pierden valor solos con la volatilidad; no son para posiciones de meses (20/11)
+APALANCADOS = {"TQQQ", "SQQQ", "SPXL", "SPXU", "UPRO", "SOXL", "SOXS", "TNA", "TZA", "LABU", "FAS", "TECL", "NUGT", "UVXY", "SDS", "SSO", "QLD"}
 
 
 def preparar_kostolany(almacen, cache, hoy: date) -> dict:
@@ -71,9 +73,13 @@ def preparar_kostolany(almacen, cache, hoy: date) -> dict:
             return None
         vr = (sum(v[-20:]) / 20) / (sum(v[-60:-20]) / 40)
         r = c[-1] / c[-21] - 1
+        if r < -0.60 or vr > 10:  # más que eso suele ser un cambio de ratio, un agrupamiento o un dato roto (EMBJ, SDA 20/11)
+            return None
         return {"r20": round(r * 100, 1), "vol": round(vr, 1)} if r <= -0.10 and vr >= 1.5 else None
+    from .ficha_frio import COBERTURAS
+    no_va = COBERTURAS | APALANCADOS
     out = []
-    ced = [t for t, x in pan.items() if x and len(x) > 4 and x[4] == "cedears" and t.isalpha() and not t.endswith(("D", "C"))]
+    ced = [t for t, x in pan.items() if x and len(x) > 4 and x[4] == "cedears" and t.isalpha() and not t.endswith(("D", "C")) and t not in no_va]
     with ThreadPoolExecutor(8) as ex:
         for t, v in zip(ced, ex.map(lambda t: gratis.yahoo_ohlcv(t.replace(".", "-"), "6mo"), ced)):
             f = fase([x["c"] for x in v], [x.get("v") or 0 for x in v]) if v else None
