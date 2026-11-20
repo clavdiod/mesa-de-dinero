@@ -9,7 +9,7 @@ confirma son de meses, no de semanas. Esta línea propone solo esas, cada una co
    cercana (13%) saltaba antes del rebote 58% de las veces: el riesgo se maneja con el MONTO (que se banque -30%) y la
    alarma va lejos (debajo del mínimo del año o -25%).
 2. GRAHAM (CEDEARs, 12 meses). Cumple 5+ de los 7 criterios del inversor defensivo y el precio está debajo de su valor
-   según Graham (margen de seguridad). 576 balances 2010-2025: las de 5+ criterios le ganaron al S&P 63 de cada 100 años.
+   según Graham (margen de seguridad). 576 balances 2010-2025: las de 5+ criterios le ganaron al S&P 60 de cada 100 años (+3,3%).
 
 El riesgo se maneja con el tamaño: cantidad = riesgo por operación (1R de la configuración) / distancia a la alarma.
 Cada propuesta dice de dónde puede salir la plata (lo que vence pronto en la cartera). Se mide sola en la simulación.
@@ -62,7 +62,7 @@ def graham(almacen) -> list[dict]:
         if ev.get("cumple", 0) >= 5 and (ev.get("margen_pct") or -1) >= 0:
             out.append({"ticker": tk, "tipo": "graham", "cumple": ev["cumple"], "margen": ev["margen_pct"], "frase": x.get("frase")})
     out = sorted(out, key=lambda c: (-c["cumple"], -c["margen"]))
-    # 20/11 (Lynch, probado a 12 meses): caja neta de más de 10% del precio (+16% contra el S&P, sin bancos ni financieras) o crece + PEG<1 + poca deuda (+5,6%)
+    # 20/11 (Lynch, probado a 12 meses): caja neta de más de 10% del precio (+15% contra el S&P, sin bancos ni financieras) o crece + PEG<1 + poca deuda (+4,2%)
     from .biblioteca import es_combo_lynch
     ya_ = {c["ticker"] for c in out}
     for tk, x in t.items():
@@ -141,15 +141,15 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
             stop = round(entrada * 0.75, 2)
             meses, objetivo = 12, round(entrada * 1.30, 2)
             por_que = ("📅 Posición de 12 meses (Lynch): "
-                       + (f"tiene caja neta por {str(c['caja']).replace('.', ',')}% de su precio: en 2009-2025 las empresas así le ganaron al S&P 500 68 de cada 100 años (+16%). "
+                       + (f"tiene caja neta por {str(c['caja']).replace('.', ',')}% de su precio: en 2009-2025 las empresas así le ganaron al S&P 500 69 de cada 100 años (+15%). "
                           if (c.get("caja") or 0) > 10 else
-                          f"crece, está barata para lo que crece (PEG {str(c['peg']).replace('.', ',')}) y debe poco: en 2009-2025 le ganaron al S&P 500 58 de cada 100 años (+5,6%). "))
+                          f"crece, está barata para lo que crece (PEG {str(c['peg']).replace('.', ',')}) y debe poco: en 2009-2025 le ganaron al S&P 500 56 de cada 100 años (+4,2%). "))
         else:
             stop = round(entrada * 0.75, 2)
             meses, objetivo = 12, round(entrada * 1.30, 2)
             por_que = (f"📅 Posición de 12 meses (Graham): cumple {c['cumple']} de 7 criterios del inversor defensivo y el precio está "
                        f"{c['margen']}% debajo de lo que valdría según su fórmula (margen de seguridad). En 2010-2025, las que cumplían 5 o más "
-                       f"le ganaron al S&P 500 63 de cada 100 años (+4,4%).")
+                       f"le ganaron al S&P 500 60 de cada 100 años (+3,3%).")
         if c["tipo"] == "rebote" and tk in mias:
             por_que += " Ya tenés este papel: esto sería sumar."
         riesgo_u = entrada - stop

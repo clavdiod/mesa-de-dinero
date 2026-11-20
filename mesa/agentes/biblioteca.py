@@ -155,7 +155,7 @@ def frase(ev: dict | None) -> str:
     elif cfg:
         t += ". Su fórmula de valor no se puede calcular (pierde plata o patrimonio negativo)"
     # 20/11, probado con 576 balances de 56 empresas (2010-2025), a 12 meses contra el S&P 500
-    return t + (". Probado: las que cumplen 5 o más le ganaron al S&P 63 de cada 100 años (+4,4%) y las que cumplen 2 o menos quedaron 4% abajo."
+    return t + (". Probado: las que cumplen 5 o más le ganaron al S&P 60 de cada 100 años (+3,3%) y las que cumplen 2 o menos quedaron 4% abajo."
                 " Es una mirada de un año, no de semanas: dato, no voto.")
 
 
@@ -287,16 +287,16 @@ def frase_lynch(ev: dict | None, probado: dict | None = None) -> str:
         p.append(f"caja neta de {str(ev['caja_neta_pct']).replace('.', ',')}% del precio")
     if ev.get("recompra"):
         p.append(f"recompra acciones ({str(ev['acciones_1a_pct']).replace('.', ',')}% en un año)")
-    # 20/11, probado con 1.040 balances de 84 empresas (2009-2025), a 12 meses contra el S&P 500
+    # 20/11 (números con deuda y caja de la etiqueta más reciente), probado con 1.040 balances de 84 empresas (2009-2025), a 12 meses contra el S&P 500
     pr = []
     if (ev.get("caja_neta_pct") or 0) > 10:
-        pr.append("con caja neta así (sin bancos ni financieras) le ganaron al S&P 68 de cada 100 años (+16%)")
+        pr.append("con caja neta así (sin bancos ni financieras) le ganaron al S&P 69 de cada 100 años (+15%)")
     if es_combo_lynch(ev):
-        pr.append("crece, PEG menor a 1 y poca deuda: le ganaron al S&P 58 de cada 100 años (+5,6%)")
+        pr.append("crece, PEG menor a 1 y poca deuda: le ganaron al S&P 56 de cada 100 años (+4,2%)")
     if ev["categoria"] == "ciclica":
         pr.append("las cíclicas quedaron 7% abajo del S&P (le ganaron 39 de cada 100)")
     if (ev.get("deuda_patrimonio") or 0) > 1:
-        pr.append("con mucha deuda quedaron 3% abajo del S&P")
+        pr.append("con mucha deuda quedaron 4% abajo del S&P")
     return ", ".join(p) + "." + (" Probado: " + "; ".join(pr) + "." if pr else "") + " Mirada de un año: dato, no voto."
 
 
