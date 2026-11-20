@@ -35,7 +35,9 @@ def puntaje(p: dict) -> dict:
         meses = max(0.25, float(p.get("ruedas") or 10) / 21)
         if h.get("llega_obj") is not None:
             esp = (h["llega_obj"] / 100 * obj - h["toca_stop"] / 100 * stp - 1.2) / meses
-            return {"ganancia_mes_pct": round(esp, 2), "llega_5_1m_pct": None, "base": "casos parecidos del papel"}
+            n = float(h.get("casos") or 0)
+            esp *= n / (n + 30)  # con pocos casos parecidos el número es poco confiable: se achica hacia cero
+            return {"ganancia_mes_pct": round(esp, 2), "llega_5_1m_pct": None, "base": f"{int(n)} casos parecidos del papel"}
     except Exception:
         pass
     return {"ganancia_mes_pct": None, "llega_5_1m_pct": None, "base": None}
