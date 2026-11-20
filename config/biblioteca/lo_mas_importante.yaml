@@ -1,0 +1,48 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: Lo más importante para invertir con sentido común
+autor: 'Howard Marks (2011), cofundador de Oaktree Capital (mismo autor que "Cómo dominar el ciclo de las inversiones")'
+en_una_frase: 'Para ganarle al mercado hay que pensar distinto y mejor que la mayoría, comprar barato, y sobre todo evitar las grandes pérdidas: si evitás las perdedoras, las ganadoras se encargan solas.'
+ideas:
+  - clave: pensamiento_de_segundo_nivel
+    idea: 'El primer nivel piensa "es una buena empresa, compremos". El segundo nivel piensa "es buena, pero todos lo saben y ya está cara: vendamos". Para ganarle al mercado hay que pensar distinto y además acertar.'
+    en_criollo: 'Si una idea es obvia para todos, ya está en el precio. La pregunta no es si la empresa es buena, sino si es mejor de lo que todos creen.'
+    en_la_mesa: 'Por eso la revisión en frío pregunta siempre por el precio, no solo por la idea.'
+    situaciones: [compra, euforia, elegir_acciones]
+  - clave: riesgo_es_perder_para_siempre
+    idea: 'El riesgo no es que el precio suba y baje: es la posibilidad de perder plata de forma permanente. Más riesgo no garantiza más ganancia; solo abre un abanico más ancho de resultados, incluidos los malos.'
+    en_criollo: 'Una acción que se mueve mucho no es peligrosa por moverse: es peligrosa si te obliga a vender abajo o si la empresa no vuelve.'
+    en_la_mesa: 'Se prueba si las acciones más movedizas rinden más o solo duelen más.'
+    medible: volatilidad
+    situaciones: [recuperar_perdida, caida_fuerte, compra]
+  - clave: el_riesgo_aparece_cuando_nadie_lo_ve
+    idea: 'El momento más peligroso es cuando todos creen que no hay riesgo, porque pagan cualquier precio. Cuando todos ven riesgo, los precios ya lo descuentan.'
+    en_criollo: 'Si todos están tranquilos, preocupate. Si todos están asustados, mirá con atención.'
+    en_la_mesa: 'Coincide con el termómetro del ciclo y con el pánico de Kostolany (probados el 20/11).'
+    situaciones: [euforia, panico, ipo]
+  - clave: comprar_barato
+    idea: 'Las gangas aparecen en lo que nadie quiere: lo que está fuera de moda, lo que tuvo malas noticias, lo que todos venden por miedo. El precio de compra es la mejor protección.'
+    en_criollo: 'Lo barato casi nunca es lindo: si fuera lindo, no estaría barato.'
+    en_la_mesa: 'Rebote en dólares, pánico de Kostolany y margen de seguridad de Graham: las tres buscan precio bajo con historia a favor.'
+    situaciones: [caida_fuerte, panico, compra]
+  - clave: oportunismo_paciente
+    idea: 'No hay que estar siempre haciendo algo. A veces lo mejor es esperar a que el mercado ofrezca una oportunidad clara, y entonces actuar con decisión.'
+    en_criollo: 'No hace falta operar todos los días. Esperá la buena y ahí entrá.'
+    en_la_mesa: 'Las operaciones cortas solo con objetivo de 5% o más; las posiciones solo cuando se cumple una regla probada.'
+    situaciones: [operacion_corta, especulacion]
+  - clave: saber_lo_que_no_sabes
+    idea: 'Nadie sabe qué va a pasar con la economía o las tasas. El inversor que acepta que no sabe se prepara para varios escenarios en vez de apostar a uno.'
+    en_criollo: 'Desconfiá del que te asegura lo que va a pasar. Armá la cartera para que aguante si te equivocás.'
+    en_la_mesa: 'Por eso cada idea tiene alarma y monto chico, y el agente de asimetría mira el escenario malo además del bueno.'
+    situaciones: [cartera, valuacion]
+  - clave: invertir_defensivamente
+    idea: 'Es más importante evitar las grandes pérdidas que buscar las grandes ganancias. Perder 50% obliga a ganar 100% para volver.'
+    en_criollo: 'Si perdés la mitad, después tenés que duplicar para quedar igual. Cuidá primero no caerte.'
+    en_la_mesa: 'Tope de pérdida total de 5-8% del millón y 1,5% por idea.'
+    situaciones: [recuperar_perdida, caida_fuerte, cartera]
+  - clave: el_papel_de_la_suerte
+    idea: 'En el corto plazo, la suerte pesa muchísimo: una buena decisión puede salir mal y una mala salir bien. Hay que juzgar las decisiones por cómo se tomaron, no solo por el resultado.'
+    en_criollo: 'Que una compra haya salido mal no quiere decir que fue mala idea, ni al revés. Mirá muchas, no una.'
+    en_la_mesa: 'Por eso la mesa mide con cientos de casos y no con la última operación.'
+    situaciones: [recuperar_perdida, operacion_corta]
+fuentes_resumen:
+  - https://www.oaktreecapital.com/insights/memos
