@@ -132,7 +132,7 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
         riesgo_u = entrada - stop
         cant = int(un_r / riesgo_u) if riesgo_u > 0 else None
         if cant and max_monto and cant * entrada > max_monto:
-            cant = int(max_monto / entrada)  # tope por posición: no más de 10% del capital en una sola idea
+            cant = int(max_monto / entrada)  # tope por posición (usuario/capital tope_posicion_pct; 25% desde el 20/11)
         f_ = fondeo(almacen, cartera, hoy)
         plan = {"ticker": tk, "lado": "compra", "entrada": round(entrada, 2), "stop": stop, "objetivo": objetivo, "tamano_r": 1.0,
                 "vence": (hoy + timedelta(days=30 * meses)).isoformat(), "riesgo_pct": round(riesgo_u / entrada * 100, 1),

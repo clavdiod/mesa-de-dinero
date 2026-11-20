@@ -951,7 +951,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         try:
             from .agentes import posiciones as _pos
             nuevas += _pos.proponer(ctx, almacen, hoy, cartera or [], reg.propuestas, un_r, ctx.hora,
-                                    max_monto=float(cap.get("monto_ars", 0)) * 0.10 or None)
+                                    max_monto=float(cap.get("monto_ars", 0)) * float(cap.get("tope_posicion_pct", 10)) / 100 or None)
         except Exception as ex:
             print(f"[posiciones] {ex}")
     reg.nuevas(nuevas)
