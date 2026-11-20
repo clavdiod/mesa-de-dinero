@@ -77,7 +77,7 @@ def fondeo(almacen, cartera: list[dict], hoy: date) -> str:
         return ""
 
 
-def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], un_r: float, hora: str) -> list[dict]:
+def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], un_r: float, hora: str, max_monto: float | None = None) -> list[dict]:
     """Hasta 2 por día, una sola vez por día (después de las 11:20, con precios ya asentados)."""
     import hashlib
     from ..nucleo.calc import spread_pct
@@ -97,7 +97,9 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
         almacen.put(CLAVE_CAND, cand)
     mias = {c["ticker"] for c in cartera}
     out = []
-    for c in cand.get("lista") or []:
+    # cuando cae todo el mercado salen muchas: primero las más operadas (entrar y salir sin mover el precio)
+    lista = sorted(cand.get("lista") or [], key=lambda c: (c["tipo"] != "rebote", -((ctx.titulo(c["ticker"]) or {}).get("monto") or 0)))
+    for c in lista:
         if len(out) + sum(1 for p in previas if p.get("linea") == "posicion" and p.get("fecha") == hoy_s) >= MAX_DIA:
             break
         tk = c["ticker"]
@@ -110,7 +112,10 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
             continue  # 19/11 (GCLA): con mucha diferencia entre puntas o poco volumen, la ventaja se la come la entrada
         entrada = float(t.get("venta") or pr) if sp is not None else float(pr)
         if c["tipo"] == "rebote":
-            stop = round(max(c["min_1a"] * 0.98, entrada * 0.75), 2)
+            # alarma lejos: debajo del mínimo del año si eso queda entre -12% y -25%; si no (ya está en el mínimo o muy
+            # arriba), -25%. Nunca pegada: el 58% de las veces una alarma al 13% saltaba antes del rebote (20/11).
+            m_ = c["min_1a"] * 0.98
+            stop = round(m_ if entrada * 0.75 <= m_ <= entrada * 0.88 else entrada * 0.75, 2)
             meses, objetivo = 3, round(entrada * 1.25, 2)
             por_que = (f"📅 Posición de 3 meses (rebote en dólares): cayó {abs(c['dd']):.0f}% en dólares desde su máximo de 3 meses y "
                        f"{abs(c['r20']):.0f}% en el último mes. En 10 años, con 64 acciones argentinas, después de caídas así rindió a 3 meses "
@@ -126,6 +131,8 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
             por_que += " Ya tenés este papel: esto sería sumar."
         riesgo_u = entrada - stop
         cant = int(un_r / riesgo_u) if riesgo_u > 0 else None
+        if cant and max_monto and cant * entrada > max_monto:
+            cant = int(max_monto / entrada)  # tope por posición: no más de 10% del capital en una sola idea
         f_ = fondeo(almacen, cartera, hoy)
         plan = {"ticker": tk, "lado": "compra", "entrada": round(entrada, 2), "stop": stop, "objetivo": objetivo, "tamano_r": 1.0,
                 "vence": (hoy + timedelta(days=30 * meses)).isoformat(), "riesgo_pct": round(riesgo_u / entrada * 100, 1),
