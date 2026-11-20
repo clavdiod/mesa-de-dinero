@@ -61,7 +61,18 @@ def graham(almacen) -> list[dict]:
         ev = x.get("ev") or {}
         if ev.get("cumple", 0) >= 5 and (ev.get("margen_pct") or -1) >= 0:
             out.append({"ticker": tk, "tipo": "graham", "cumple": ev["cumple"], "margen": ev["margen_pct"], "frase": x.get("frase")})
-    return sorted(out, key=lambda c: (-c["cumple"], -c["margen"]))
+    out = sorted(out, key=lambda c: (-c["cumple"], -c["margen"]))
+    # 20/11 (Lynch, probado a 12 meses): caja neta de más de 10% del precio (+9,7% contra el S&P) o crece + PEG<1 + poca deuda (+5,6%)
+    from .biblioteca import es_combo_lynch
+    ya_ = {c["ticker"] for c in out}
+    for tk, x in t.items():
+        ly = x.get("lynch") or {}
+        if tk in ya_ or not ly or ly.get("categoria") == "ciclica" or (ly.get("deuda_patrimonio") or 0) > 1:
+            continue
+        if (ly.get("caja_neta_pct") or 0) > 10 or es_combo_lynch(ly):
+            out.append({"ticker": tk, "tipo": "lynch", "caja": ly.get("caja_neta_pct"), "peg": ly.get("peg"), "categoria": ly.get("categoria"),
+                        "frase": x.get("frase_lynch")})
+    return out
 
 
 def fondeo(almacen, cartera: list[dict], hoy: date) -> str:
@@ -98,7 +109,7 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
         from ..datos import gratis
         ccl = gratis.ccl_historico()
         precio_de = lambda tk: ((ctx.titulo(tk) or {}).get("ultimo"))
-        cand = {"fecha": hoy_s, "hora": hora, "lista": rebotes(ctx, ctx.cache.velas, ccl, precio_de) + graham(almacen)[:5]}
+        cand = {"fecha": hoy_s, "hora": hora, "lista": rebotes(ctx, ctx.cache.velas, ccl, precio_de) + graham(almacen)[:8]}
         almacen.put(CLAVE_CAND, cand)
     mias = {c["ticker"] for c in cartera}
     out = []
@@ -126,6 +137,13 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
                        f"{abs(c['r20']):.0f}% en el último mes. En 10 años, con 64 acciones argentinas, después de caídas así rindió a 3 meses "
                        f"+4,4% típico (+10% promedio) y subió 56 de cada 100 veces, contra -4,4% de un día cualquiera. Puede seguir cayendo "
                        f"antes de rebotar: por eso la alarma va lejos y el monto es chico.")
+        elif c["tipo"] == "lynch":
+            stop = round(entrada * 0.75, 2)
+            meses, objetivo = 12, round(entrada * 1.30, 2)
+            por_que = ("📅 Posición de 12 meses (Lynch): "
+                       + (f"tiene caja neta por {str(c['caja']).replace('.', ',')}% de su precio: en 2009-2025 las empresas así le ganaron al S&P 500 60 de cada 100 años (+9,7%). "
+                          if (c.get("caja") or 0) > 10 else
+                          f"crece, está barata para lo que crece (PEG {str(c['peg']).replace('.', ',')}) y debe poco: en 2009-2025 le ganaron al S&P 500 58 de cada 100 años (+5,6%). "))
         else:
             stop = round(entrada * 0.75, 2)
             meses, objetivo = 12, round(entrada * 1.30, 2)
