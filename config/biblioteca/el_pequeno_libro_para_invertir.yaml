@@ -1,0 +1,43 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: El pequeño libro para invertir con sentido común
+autor: John C. Bogle (2007; edición actualizada 2017), fundador de Vanguard y creador del primer fondo indexado para el público
+en_una_frase: En vez de buscar la aguja en el pajar, comprá el pajar entero (el índice), pagá lo menos posible en costos y quedate quieto muchos años.
+ideas:
+  - clave: comprar_el_pajar
+    idea: Los inversores, todos juntos, son el mercado; antes de costos ganan lo que gana el mercado. Después de costos, el promedio gana menos. La forma segura de quedarse con el rendimiento del mercado es comprarlo entero con un fondo índice barato.
+    en_criollo: Elegir la acción ganadora es difícil y la mayoría falla. Comprando todo el índice no le ganás al mercado, pero tampoco perdés contra él.
+    en_la_mesa: Un núcleo de la cartera en el índice (CEDEAR de SPY) y las ideas de la mesa como satélite chico. Se prueba cuántas acciones sueltas le ganan al índice.
+    medible: indice_vs_eleccion
+    situaciones: [cartera, largo_plazo, elegir_acciones]
+  - clave: los_costos_se_comen_la_ganancia
+    idea: El rendimiento bruto del mercado menos los costos (comisiones, diferencias de precio, impuestos) es lo que queda. Los costos se acumulan año tras año y a largo plazo se comen una parte enorme de la ganancia.
+    en_criollo: Cada vez que comprás y vendés pagás. Si operás mucho, el que gana seguro es el que cobra la comisión.
+    en_la_mesa: Comprar y vender cuesta ~1,2% ida y vuelta (más la diferencia entre puntas). 20 operaciones al año son ~24% que hay que ganarle al mercado solo para empatar. Por eso la mesa pide movimientos grandes antes de operar.
+    medible: costos
+    situaciones: [operacion_corta, especulacion, recuperar_perdida]
+  - clave: vuelta_al_promedio
+    idea: Lo que más subió (fondos, sectores, acciones de moda) tiende a volver al promedio. Perseguir al ganador del año pasado suele salir mal.
+    en_criollo: Lo que estuvo de moda el año pasado no es garantía de nada; muchas veces es lo que más cae después.
+    en_la_mesa: Se mide si las acciones que más subieron en 12 meses le ganan o pierden contra el índice al año siguiente.
+    medible: reversion_media
+    situaciones: [euforia, perseguir, compra]
+  - clave: rendimiento_de_negocio_vs_especulativo
+    idea: A largo plazo la bolsa rinde lo que rinden los negocios (dividendos más crecimiento de las ganancias). Lo demás es especulación (cuánto paga la gente por cada peso de ganancia) y eso va y viene.
+    en_criollo: Si la acción sube porque la empresa gana más, eso queda. Si sube porque todos se entusiasmaron, eso se puede ir.
+    en_la_mesa: Ojo con pagar múltiplos muy altos (como ANT a 34 veces sus ventas): parte de la suba es entusiasmo.
+    situaciones: [ipo, euforia, valuacion]
+  - clave: quedarse_quieto
+    idea: El tiempo juega a favor del que se queda invertido; el que entra y sale según las noticias suele comprar caro y vender barato.
+    en_criollo: No hagas algo, quedate ahí. Las caídas son parte del camino.
+    en_la_mesa: Para la parte de largo plazo: no vender por pánico. Para las operaciones de la mesa: plan con alarma antes de entrar, no decisiones en caliente.
+    situaciones: [panico, caida_fuerte]
+  - clave: bonos_segun_la_edad
+    idea: Repartir entre acciones y bonos según cuánto riesgo podés bancar; una regla simple es tener en bonos un porcentaje parecido a tu edad.
+    en_criollo: Cuanto menos tiempo tenés por delante o menos te bancás los sustos, más bonos.
+    en_la_mesa: La cartera de Clau ya es casi toda renta fija; Bogle diría que la parte en acciones vaya por el índice.
+    situaciones: [cartera, rebalanceo]
+reglas:
+  costos:
+    comision_ida_vuelta_pct: 1.2
+fuentes_resumen:
+  - https://www.bogleheads.org/wiki/The_Little_Book_of_Common_Sense_Investing
