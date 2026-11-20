@@ -285,7 +285,7 @@ def frase_lynch(ev: dict | None, probado: dict | None = None) -> str:
     # 20/11, probado con 1.040 balances de 84 empresas (2009-2025), a 12 meses contra el S&P 500
     pr = []
     if (ev.get("caja_neta_pct") or 0) > 10:
-        pr.append("con caja neta así (sin bancos ni financieras) le ganaron al S&P 64 de cada 100 años (+14,6%)")
+        pr.append("con caja neta así (sin bancos ni financieras) le ganaron al S&P 68 de cada 100 años (+16%)")
     if es_combo_lynch(ev):
         pr.append("crece, PEG menor a 1 y poca deuda: le ganaron al S&P 58 de cada 100 años (+5,6%)")
     if ev["categoria"] == "ciclica":
