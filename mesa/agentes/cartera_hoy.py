@@ -68,7 +68,10 @@ def armar(ctx, almacen, cartera: list[dict], hoy: date, noticias_de=None) -> dic
             partes = [f"{tk} ${_n(pr, 2)}" + (f" ({'+' if res >= 0 else ''}{_n(res, 1)}% contra tu compra)" if res is not None else "")]
             ojo = False
             if d_al is not None:
-                partes.append(f"alarma {_n(al)} a {_n(d_al, 1)}%")
+                if d_al < 0:
+                    partes.append(f"ya está {_n(abs(d_al), 1)}% DEBAJO de tu alarma de {_n(al)}: hay que decidir si seguir o vender (y mover la alarma)")
+                else:
+                    partes.append(f"alarma {_n(al)} a {_n(d_al, 1)}%")
                 ojo |= d_al < 4
             sen = None
             if noticias_de:
@@ -81,7 +84,7 @@ def armar(ctx, almacen, cartera: list[dict], hoy: date, noticias_de=None) -> dic
                 ojo |= sen.direccion < 0
             libros = [x for x in revision_libros(almacen, tk, grupo) if not x.startswith("📗")]
             if libros:
-                partes.append(" ".join(libros)[:400])
+                partes.append(" ".join(x.rstrip(".") + "." for x in libros)[:400].rstrip("."))
             base = tk[:-1] if tk[-1:] in ("D", "C") and grupo == "cedears" else tk
             clave = "rebote" if tk in reb else ("panico_acc" if grupo == "acciones" else "panico_ced") if base in kost else \
                 ("normal_acc" if grupo == "acciones" else "normal_ced")
@@ -91,15 +94,22 @@ def armar(ctx, almacen, cartera: list[dict], hoy: date, noticias_de=None) -> dic
                 if r_:
                     partes.append(r_)
             atencion += ojo
-            lineas.append(("⚠️ " if ojo else "• ") + ". ".join(partes))
+            lineas.append(("⚠️ " if ojo else "• ") + ". ".join(p_.rstrip(".") for p_ in partes) + ".")
         else:
             info = fl.get(tk) or {}
+            compra = float(c.get("precio") or 0)
+            res_b = (pr / compra - 1) * 100 if compra and 0.2 < pr / compra < 5 else None  # si las unidades no coinciden, no se muestra
             fut = [f for f in info.get("flujos") or [] if str(f.get("fecha")) > hoy.isoformat()]
             prox = fut[0] if fut else None
             vence = info.get("vence")
             txt = f"• {tk}" + (f": próximo cobro el {str(prox['fecha'])[8:10]}/{str(prox['fecha'])[5:7]}" if prox else "") \
                 + (f", vence el {str(vence)[8:10]}/{str(vence)[5:7]}/{str(vence)[2:4]}" if vence else "") \
                 + (f", rinde {_n(float(info['tir']), 1)}% anual" if info.get("tir") not in (None, "") else "")
+            if not fut and not vence:
+                txt += f": precio {_n(pr, 2)}" + (f" ({'+' if res_b >= 0 else ''}{_n(res_b, 1)}% contra tu compra)" if res_b is not None else "") \
+                    + " (sin cronograma de pagos cargado)"
+            if str(info.get("moneda") or "").upper() == "USD" and info.get("tir") not in (None, "") and float(info["tir"]) < 5:
+                txt += " → rinde poco para un bono en dólares: el agente de asimetría muestra alternativas (AL35, AL41)"
             if vence and hoy.isoformat() < str(vence) <= (hoy + timedelta(days=15)).isoformat():
                 txt += " → vence en menos de 15 días: queda plata libre para las oportunidades"
             lineas.append(txt + ".")
