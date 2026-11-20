@@ -11,7 +11,7 @@ ideas:
   - clave: riesgo_es_perder_para_siempre
     idea: 'El riesgo no es que el precio suba y baje: es la posibilidad de perder plata de forma permanente. Más riesgo no garantiza más ganancia; solo abre un abanico más ancho de resultados, incluidos los malos.'
     en_criollo: 'Una acción que se mueve mucho no es peligrosa por moverse: es peligrosa si te obliga a vender abajo o si la empresa no vuelve.'
-    en_la_mesa: 'Se prueba si las acciones más movedizas rinden más o solo duelen más.'
+    en_la_mesa: 'Probado el 20/11 con 339 CEDEARs y 10 años: las más movedizas rindieron casi lo mismo a un año (+10,3% contra +7,1% de las tranquilas) pero su peor caída típica fue -44% contra -17%, y perdieron 30% o más en el año 22 de cada 100 veces contra 2. En las posiciones de la mesa, si el papel se mueve más de 60% por año, la cantidad va a la mitad.'
     medible: volatilidad
     situaciones: [recuperar_perdida, caida_fuerte, compra]
   - clave: el_riesgo_aparece_cuando_nadie_lo_ve

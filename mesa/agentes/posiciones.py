@@ -216,6 +216,18 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
             por_que += " Ya tenés este papel: esto sería sumar."
         riesgo_u = entrada - stop
         cant = int(un_r / riesgo_u) if riesgo_u > 0 else None
+        # 20/11 (Marks, Lo más importante): las más movedizas no rinden más, solo duelen más (CEDEARs 10 años: peor caída
+        # típica en un año -44% contra -17% de las tranquilas; pierden 30%+ en el año 22 de cada 100 contra 2). Mitad de monto.
+        try:
+            import numpy as _np
+            cs_ = [x["cierre"] for x in ctx.cache.velas(tk)[-251:] if x.get("cierre")]
+            vol = float(_np.std(_np.diff(_np.log(cs_))) * _np.sqrt(250)) if len(cs_) > 120 else None
+        except Exception:
+            vol = None
+        if vol and vol > 0.60 and cant:
+            cant = max(1, cant // 2)
+            por_que += (f" Ojo: se mueve mucho ({vol * 100:.0f}% anual). Según Marks y la historia, las más movedizas no rinden más,"
+                        " solo duelen más: la cantidad sugerida va a la mitad.")
         if cant and max_monto and cant * entrada > max_monto:
             cant = int(max_monto / entrada)  # tope por posición (usuario/capital tope_posicion_pct; 25% desde el 20/11)
         f_ = fondeo(almacen, cartera, hoy)
