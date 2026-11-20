@@ -255,6 +255,22 @@ def armar(a, hoy: date, panel: dict, velas, sector, flujos: dict, macro: dict, a
     except Exception as ex:
         print(f"[informe] agenda: {ex}")
 
+    # 7. 📚 la lección de la semana (el Bibliotecario): la idea de los libros que mejor explica lo que pasó
+    try:
+        from .biblioteca import leccion
+        sit = []
+        cart = a.get("usuario/cartera") or []
+        for c in cart:
+            x = panel.get(c.get("ticker")) or []
+            if x and x[0] and c.get("precio") and len(x) > 4 and x[4] == "acciones" and float(x[0]) / float(c["precio"]) - 1 <= -0.15:
+                sit.append("caida_fuerte")
+        lec = leccion(sit, hoy.isocalendar()[1])
+        if lec:
+            secciones.append({"titulo": f"📚 La lección de la semana · {lec['libro']}", "lineas": [
+                f"La idea: {lec['idea']}", f"En criollo: {lec['en_criollo']}", f"Cómo la usa la mesa: {lec['en_la_mesa']}"]})
+    except Exception as ex:
+        print(f"[informe] lección: {ex}")
+
     titulo = f"Informe de la semana ({semana})"
     resumen = (destacado[0][:1].upper() + destacado[0][1:] + (", " + ", ".join(destacado[1:]) if destacado[1:] else "") + ".") if destacado else "Mirá cómo te fue y qué aprendió la mesa."
     return {"fecha": hoy.isoformat(), "semana": semana, "titulo": titulo, "resumen": resumen, "secciones": secciones, "pesos": pesos}

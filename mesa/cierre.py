@@ -316,6 +316,11 @@ def diario(simular: bool = False) -> dict:
             _fun.actualizar(a, _universo_cedears(a), hoy)
         except Exception as ex:
             print(f"[cierre] fundamentos: {ex}")
+        try:  # 20/11: el Bibliotecario (Graham: 7 criterios del inversor defensivo y margen de seguridad)
+            from .agentes import biblioteca as _bib
+            _bib.actualizar(a, _universo_cedears(a), hoy)
+        except Exception as ex:
+            print(f"[cierre] biblioteca: {ex}")
 
     # Anticipador: estadística propia (desde el primer precio operable hasta el cierre)
     if not simular:

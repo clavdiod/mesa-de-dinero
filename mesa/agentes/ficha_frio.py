@@ -166,6 +166,7 @@ def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None,
     if fundamentos and grupo == "cedears":  # 04/11: solo informativo, no suma ni resta al veredicto
         from .fundamentos import frase as _fr
         out["fundamentos"] = _fr(fundamentos) or None
+        out["graham"] = fundamentos.get("graham") or None
     # noticias de la empresa (Corresponsal, Hechos del emisor, Calificadoras): explican movimientos raros de los indicadores
     nots = [n for n in noticias or [] if n.get("texto")]
     out["noticias"] = [{"dir": n.get("dir") or 0, "texto": str(n["texto"])[:220]} for n in nots[:3]]
@@ -238,6 +239,8 @@ def texto(f: dict | None) -> str:
                  + (f"; piso más cercano {n(f['piso']['nivel'])} ({f['piso']['toques']} toques)" if f.get("piso") else "") + ".")
     if f.get("fundamentos"):
         p.append(f["fundamentos"])
+    if f.get("graham"):
+        p.append(f["graham"])
     if (f.get("volumen_rel") or 0) >= 2:
         p.append(f"Hoy opera {str(f['volumen_rel']).replace('.', ',')} veces su volumen normal (en acciones argentinas eso rindió +2,8% a un mes contra +0,5%).")
     if f.get("cobertura"):

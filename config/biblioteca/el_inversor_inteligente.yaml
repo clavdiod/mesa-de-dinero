@@ -1,0 +1,62 @@
+# Biblioteca de la mesa (20/11, pedido de Clau): cada libro se resume con palabras propias (sin copiar el texto),
+# en ideas prácticas. Cada idea tiene: qué dice, en criollo, cómo se aplica en la mesa y, si se puede medir con datos,
+# qué regla la prueba. Las reglas medibles se controlan con historia antes de votar (como todo en la mesa).
+titulo: El inversor inteligente
+autor: Benjamin Graham (1949; edición revisada 1973, comentada por Jason Zweig en 2003)
+en_una_frase: Comprá negocios sólidos con un margen de seguridad, no te dejes llevar por el humor del mercado y separá invertir de especular.
+ideas:
+  - clave: invertir_vs_especular
+    idea: Una inversión es una operación que, después de analizarla a fondo, promete cuidar el capital y dar un rendimiento razonable. Lo que no cumple eso es especulación.
+    en_criollo: Si no sabés por qué comprás y cuánto vale, estás apostando. Apostar no está prohibido, pero que sea con plata que podés perder.
+    en_la_mesa: Las operaciones cortas (días o semanas) son especulación. Graham sugiere separar una cuenta chica para especular (no más de 10% del total) y no mezclarla con la inversión.
+    situaciones: [especulacion, operacion_corta, recuperar_perdida]
+  - clave: senor_mercado
+    idea: El mercado es como un socio de humor cambiante que todos los días te ofrece comprar o vender a un precio distinto. A veces eufórico, a veces deprimido. Su precio es una oferta, no una orden.
+    en_criollo: Que una acción caiga no quiere decir que la empresa valga menos. Cuando el mercado está deprimido, puede regalarte buenas empresas; cuando está eufórico, mejor venderle.
+    en_la_mesa: Después de una caída fuerte (rebote en dólares, probado el 20/11) la mesa mira si el negocio cambió o solo cambió el humor. Si es humor, es oportunidad.
+    situaciones: [caida_fuerte, panico, euforia]
+  - clave: margen_de_seguridad
+    idea: El principio central. Comprar bastante por debajo de lo que vale, para que aunque te equivoques en la cuenta, no pierdas.
+    en_criollo: Si algo vale 100, compralo a 70. Así, aunque valga 85, igual ganás.
+    en_la_mesa: Número de Graham (raíz de 22,5 × ganancia por acción × valor libro por acción) contra el precio. Si el precio está bastante debajo, hay margen.
+    medible: numero_graham
+    situaciones: [compra, valuacion]
+  - clave: inversor_defensivo
+    idea: El que no quiere dedicarle mucho tiempo debe buscar empresas grandes, sólidas y que paguen dividendos, a precio moderado, y diversificar (10 a 30 empresas).
+    en_criollo: Si no vas a mirar todos los días, comprá empresas aburridas y firmes, a buen precio, y repartí.
+    en_la_mesa: Los 7 criterios del inversor defensivo (ver reglas). Cuantos más cumple, más 'de Graham' es la empresa.
+    medible: defensivo
+    situaciones: [compra, largo_plazo]
+  - clave: no_salidas_a_bolsa
+    idea: Las acciones nuevas que salen a la bolsa en épocas de entusiasmo suelen venderse caras; la mayoría termina rindiendo peor que el mercado.
+    en_criollo: Cuando todos quieren la acción nueva, el que vende es el que gana. Esperá a que se calme.
+    en_la_mesa: Una salida a bolsa sin historia no se compra el primer día (caso ANT, 19/11).
+    situaciones: [ipo]
+  - clave: diversificar_y_proporcion
+    idea: Repartir entre acciones y bonos, nunca menos de 25% ni más de 75% en cada uno, y rebalancear cuando se desvía.
+    en_criollo: No pongas todos los huevos en la misma canasta y, cuando una canasta crece mucho, pasá algo a la otra.
+    en_la_mesa: La cartera de Clau está casi toda en bonos y ONs en pesos y dólares; las acciones son menos del 5%. Graham diría que hay lugar para más acciones, pero de a poco.
+    situaciones: [cartera, rebalanceo]
+  - clave: promediar_en_el_tiempo
+    idea: Invertir la misma cantidad de plata cada mes, sin importar el precio, evita comprar todo en el peor momento.
+    en_criollo: En vez de adivinar el piso, comprá de a partes iguales en el tiempo.
+    en_la_mesa: Para los rebotes en dólares, la historia dice que entrar de una rinde algo más que esperar el giro (20/11); promediar sirve cuando no sabés si ya tocó el piso.
+    situaciones: [caida_fuerte, entrada]
+  - clave: precio_vs_valor
+    idea: Lo que pagás es el precio; lo que recibís es el valor. Ganancias, activos y dividendos dicen lo que vale; el precio solo dice lo que hoy alguien paga.
+    en_criollo: Una buena empresa comprada carísima puede ser una mala inversión.
+    en_la_mesa: La revisión en frío ya separa buena idea de buen precio (entrada cara).
+    situaciones: [compra, valuacion]
+reglas:
+  # 7 criterios del inversor defensivo (adaptados a datos de la SEC: hay datos desde ~2009, no 20 años)
+  defensivo:
+    - {clave: tamano, texto: "empresa grande (ventas de US$2.000 millones o más)", minimo_ventas_usd: 2000000000}
+    - {clave: solidez, texto: "finanzas sólidas (activo corriente al menos 2 veces el pasivo corriente)", ratio_corriente: 2.0}
+    - {clave: deuda, texto: "deuda de largo plazo menor que el capital de trabajo", deuda_vs_capital_trabajo: 1.0}
+    - {clave: estabilidad, texto: "ganó plata todos los años de los que hay datos (hasta 10)", anios: 10}
+    - {clave: dividendos, texto: "pagó dividendos todos los años de los que hay datos", anios: 10}
+    - {clave: crecimiento, texto: "la ganancia por acción creció un tercio o más en 10 años (promedio de 3 años)", crec_min: 0.33}
+    - {clave: precio, texto: "precio moderado (P/E de 3 años hasta 15 y P/E × precio/libro hasta 22,5)", pe_max: 15, pe_x_pb_max: 22.5}
+fuentes_resumen:
+  - https://medium.com/the-intelligent-investor-series/chapter-14-stock-selection-for-the-defensive-investor-b50f847a2783
+  - https://www.stockopedia.com/content/benjamin-graham-defensive-investor-screen-how-does-it-work-56297

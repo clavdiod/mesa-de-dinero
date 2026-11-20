@@ -103,7 +103,14 @@ def de(a, ticker: str) -> dict | None:
     tabla = a.get(CLAVE) or {}
     t = ticker.upper()
     f = tabla.get(t) or (tabla.get(t[:-1]) if t[-1:] in ("D", "C") else None)
-    return f if f and f.get("eps_12m") is not None else None
+    if not (f and f.get("eps_12m") is not None):
+        return None
+    try:  # 20/11: lo que diría Graham (el Bibliotecario) va junto con los fundamentos
+        from .biblioteca import de as _g
+        g = _g(a, t)
+        return {**f, "graham": g} if g else f
+    except Exception:
+        return f
 
 
 def frase(f: dict | None) -> str:
