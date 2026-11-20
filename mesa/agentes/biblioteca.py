@@ -189,7 +189,7 @@ def actualizar(a, universo: list[str], hoy: date, maximo: int = 25) -> dict:
                     continue
                 pr = (fund.get(t) or {}).get("precio_usd") or px.get(t)
                 ev = evaluar(s, pr) if s and pr else None
-                ly = evaluar_lynch(s, pr) if s and pr else None
+                ly = evaluar_lynch(s, pr, ticker=t) if s and pr else None
                 tabla[t] = {"sec_fecha": hoy.isoformat(), **({"ev": ev, "frase": frase(ev)} if ev else {"sin_datos": True}),
                             **({"lynch": ly, "frase_lynch": frase_lynch(ly)} if ly else {})}
     a.put(CLAVE, tabla)
@@ -218,7 +218,11 @@ def leccion(situaciones: list[str], semana: int) -> dict | None:
 
 
 # ---------------- Peter Lynch (Batiendo a Wall Street) ----------------
-def evaluar_lynch(s: dict, precio: float, hasta: str | None = None) -> dict | None:
+# empresas con financiera propia: su caja y su deuda mezclan las de la financiera (Lynch lo advierte)
+FINANCIERA_PROPIA = {"F", "GM", "HOG", "CAT", "DE", "TM", "HMC", "STLA", "CNH", "PCAR", "AXP"}
+
+
+def evaluar_lynch(s: dict, precio: float, hasta: str | None = None, ticker: str | None = None) -> dict | None:
     """PEG, deuda sobre patrimonio, caja neta, recompra de acciones y la categoría de Lynch, con lo publicado hasta `hasta`."""
     h = hasta or "9999"
     pub = lambda k: [(e, v) for e, f, v in s.get(k) or [] if f <= h]
@@ -237,7 +241,7 @@ def evaluar_lynch(s: dict, precio: float, hasta: str | None = None) -> dict | No
     dpat = dlp / pat if pat and pat > 0 else None
     # caja neta por acción / precio. Solo con balance clasificado (activo y pasivo corriente): bancos, brokers y las
     # automotrices con financiera propia (IBKR, F, GM) mezclan la plata de los clientes y la deuda de la financiera (20/11)
-    caja_neta = ((caja or 0) - dlp) / acc / precio if caja is not None and ult("act_corr") and ult("pas_corr") else None
+    caja_neta = ((caja or 0) - dlp) / acc / precio if caja is not None and ult("act_corr") and ult("pas_corr") and (ticker or "").upper() not in FINANCIERA_PROPIA else None
     # recompra: acciones de hace ~1 año contra hoy (se ignoran saltos de más de 40%: desdoblamientos)
     a_ = pub("acciones")
     hace = [v for e, v in a_ if a_ and e <= str(int(a_[-1][0][:4]) - 1) + a_[-1][0][4:]]

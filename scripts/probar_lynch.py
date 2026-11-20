@@ -28,7 +28,7 @@ def uno(t):
         for fin, pub, _ in s["ganancia"]:
             p0, i = px(fs, cs, pub)
             if not p0 or i + 250 >= len(cs): continue
-            ev = B.evaluar_lynch(s, p0, pub)
+            ev = B.evaluar_lynch(s, p0, pub, ticker=t)
             s0, j = px(sf, sc, pub)
             if not ev or not s0 or j + 250 >= len(sc): continue
             out.append((t, pub, ev, cs[i + 250] / p0 - 1 - (sc[j + 250] / s0 - 1)))
