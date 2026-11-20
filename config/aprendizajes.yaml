@@ -1,5 +1,10 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
+- fecha: '2026-11-20'
+  caso: 'Rebote en dólares después de una caída fuerte (YPFD, TGSU2): ¿sirve para todas las acciones argentinas?'
+  que_paso: 'Clau pidió agarrar oportunidades y preguntó por volver a comprar YPFD. En dólares, YPFD cayó 37% desde su máximo de 3 meses (el petróleo se desinfló y Goldman bajó precios objetivo). Se probó la regla con 64 acciones argentinas y 10 años: cuando una cae 30% o más desde el máximo de 3 meses y 15% o más en el mes, a 3 meses rindió mediana +4,4% (promedio +10,1%, suben 56%), contra -4,4% (suben 43%) de cualquier momento. Esperar a que el MACD se dé vuelta no mejora (+2,9%). Pero una alarma de venta 13% abajo saltaba antes del rebote en 58% de los casos, y el 10% peor perdió 30%.'
+  leccion: 'Comprar después de una caída fuerte tiene ventaja real a 3 meses, pero la caída puede seguir antes del rebote: con una alarma ajustada se vende justo en el piso. Ahí el riesgo se maneja con el tamaño (poca plata), no con un stop cercano.'
+  cambio: 'Para los rebotes en dólares: entrar de una vez (no esperar al MACD), con un monto que se banque una baja de 30%, y alarma lejos (debajo del mínimo del año o -25%), no al 13%. Plazo: 3 meses.'
 - fecha: '2026-11-19'
   caso: 'Anticipadores y Corresponsal para las coberturas (idea de Clau)'
   que_paso: 'Clau propuso usar a los anticipadores y al Corresponsal para anticipar el miedo del mercado. En la libreta real, el Anticipador acertó las 5 subidas de VXX y SH que avisó del 13 al 18/11 (+1,3% neto por operación en el día). Pero es una sola semana y un solo episodio de miedo; con todos los papeles, operar sus avisos da -0,9% neto porque el movimiento típico (1,6%) apenas cubre la comisión.'
