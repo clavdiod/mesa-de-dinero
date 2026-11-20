@@ -36,8 +36,8 @@ def medir(hoy) -> dict:
         v = np.array([vix[f] for f in fs]); s = np.array([spy[f] for f in fs])
         pv = float(np.mean(v < v[-1])); dmx = s[-1] / s.max() - 1
         est = "miedo" if pv >= 0.8 else "euforia" if pv <= 0.2 and dmx >= -0.02 else "normal"
-        out["eeuu"] = {"vix": round(float(v[-1]), 1), "percentil": round(pv * 100), "sp_vs_max_pct": round(dmx * 100, 1), "estado": est,
-                       "texto": f"VIX {v[-1]:.1f} (más alto que el {pv * 100:.0f}% del año), S&P {dmx * 100:+.1f}% de su máximo: {est}. "
+        out["eeuu"] = {"vix": round(float(v[-1]), 1), "percentil": round(pv * 100), "sp_vs_max_pct": round(float(dmx) * 100, 1), "estado": est,
+                       "texto": f"VIX {v[-1]:.1f} (más alto que el {pv * 100:.0f}% del año), S&P {dmx * 100:+.1f}% de su máximo: {est}. ".replace(".", ",", 2)
                                 + ("Con miedo en EE.UU. la historia muestra caídas más fuertes antes de recuperar: dato, no cambia nada."
                                    if est == "miedo" else "")}
     except Exception as ex:
