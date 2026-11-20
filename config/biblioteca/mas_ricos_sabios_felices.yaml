@@ -1,0 +1,27 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: Más ricos, más sabios, más felices (Richer, Wiser, Happier)
+autor: 'William Green (2021), entrevistas a grandes inversores (Templeton, Pabrai, Marks, Klarman y otros)'
+en_una_frase: 'Los grandes inversores comparten pocas cosas: paciencia para dejar trabajar el interés compuesto, humildad para saber lo que no saben, y sobre todo evitar la ruina.'
+ideas:
+  - clave: evitar_la_ruina
+    idea: 'Lo primero es sobrevivir: una sola pérdida enorme puede borrar años de ganancias. Los mejores evitan las apuestas que pueden destruirlos.'
+    en_criollo: 'No importa cuánto ganes si un día perdés casi todo.'
+    en_la_mesa: 'Tope de pérdida por idea y total; nada de apalancados.'
+    situaciones: [recuperar_perdida, especulacion]
+  - clave: interes_compuesto
+    idea: 'La riqueza grande viene de ganar un rendimiento razonable durante muchísimo tiempo sin interrumpirlo.'
+    en_criollo: 'Ganar bien muchos años le gana a ganar mucho un año.'
+    en_la_mesa: 'Las posiciones de 1 a 12 meses y la base en el índice apuntan a eso.'
+    situaciones: [largo_plazo, cartera]
+  - clave: copiar_a_los_mejores
+    idea: 'No hace falta inventar todo: se puede aprender (y copiar con criterio) de lo que hacen los mejores inversores.'
+    en_criollo: 'Aprendé de los que ya lo hicieron bien.'
+    en_la_mesa: 'Es lo que hace el Bibliotecario: cada libro se prueba con historia y lo que sirve lo usa toda la mesa.'
+    situaciones: [elegir_acciones]
+  - clave: humildad
+    idea: 'Los mejores aceptan que se equivocan seguido y arman la estrategia para que los errores no los hundan.'
+    en_criollo: 'Vas a errar; que no te cueste caro.'
+    en_la_mesa: 'Cada regla se vuelve a medir los viernes; si deja de servir, se avisa.'
+    situaciones: [recuperar_perdida, operacion_corta]
+fuentes_resumen:
+  - https://www.williamgreen.com/richer-wiser-happier

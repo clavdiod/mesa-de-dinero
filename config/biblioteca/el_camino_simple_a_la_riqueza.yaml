@@ -1,0 +1,27 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: El camino simple a la riqueza (The Simple Path to Wealth)
+autor: 'JL Collins (2016)'
+en_una_frase: 'Gastá menos de lo que ganás, no tengas deudas, invertí la diferencia en un fondo del índice total del mercado y no lo toques cuando el mercado se cae.'
+ideas:
+  - clave: gastar_menos_y_sin_deudas
+    idea: 'La base de todo es gastar menos de lo que entra y no tener deudas caras: eso deja plata para invertir y te da libertad.'
+    en_criollo: 'Antes de pensar en acciones, que no te coman los intereses de una tarjeta.'
+    en_la_mesa: 'Solo se invierte lo que sobra; el millón de la mesa es plata que no se necesita para vivir.'
+    situaciones: [cartera, especulacion]
+  - clave: el_indice_total
+    idea: 'Un solo fondo que compre todo el mercado de acciones, barato, alcanza para la mayoría. Elegir acciones sueltas casi nunca le gana a largo plazo.'
+    en_criollo: 'Lo simple funciona: comprá todo el mercado y olvidate.'
+    en_la_mesa: 'Coincide con Bogle (probado el 20/11: una acción suelta le ganó al índice solo 44 de cada 100 veces a un año).'
+    situaciones: [cartera, largo_plazo, elegir_acciones]
+  - clave: el_mercado_siempre_sube_pero_con_caidas
+    idea: 'A lo largo de las décadas el mercado siempre se recuperó y subió, pero con caídas muy fuertes en el camino. El error es vender en la caída.'
+    en_criollo: 'Las caídas van a venir: si vendés en el pánico, convertís una pérdida de papel en una real.'
+    en_la_mesa: 'Mano firme (Kostolany) y tamaño chico por idea para no tener que vender en el piso.'
+    situaciones: [panico, caida_fuerte]
+  - clave: plata_para_decir_que_no
+    idea: 'Tener ahorros suficientes te da libertad de elegir (cambiar de trabajo, decir que no) sin depender de nadie.'
+    en_criollo: 'La plata ahorrada no es solo para ganar más: es para estar tranquilo.'
+    en_la_mesa: 'La renta fija de la cartera (BAF27, TTD26, ONs) cumple ese papel; las acciones son la parte que se puede arriesgar.'
+    situaciones: [cartera]
+fuentes_resumen:
+  - https://jlcollinsnh.com/stock-series/

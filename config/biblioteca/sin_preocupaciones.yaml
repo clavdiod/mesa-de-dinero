@@ -1,0 +1,22 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: Sin preocupaciones (No Worries)
+autor: 'Jared Dillian (2023), ex operador de Lehman Brothers'
+en_una_frase: 'Las finanzas personales deberían darte tranquilidad, no ansiedad: sin deudas, con un colchón de ahorro, y con inversiones que te dejen dormir.'
+ideas:
+  - clave: sin_deudas
+    idea: 'La deuda es la principal fuente de estrés financiero; vivir sin deudas (o con muy pocas) vale más que cualquier rendimiento.'
+    en_criollo: 'Antes que ganar, no deber.'
+    en_la_mesa: 'Nunca se opera con plata prestada (caución tomadora, apalancamiento).'
+    situaciones: [cartera, especulacion]
+  - clave: invertir_para_dormir
+    idea: 'La mejor cartera no es la que más rinde, sino la que podés sostener sin angustia en las malas; si una inversión te quita el sueño, es demasiado grande.'
+    en_criollo: 'Si una acción te tiene mirando el celular todo el día, compraste de más.'
+    en_la_mesa: 'Tamaño de 1,5% del capital por idea y tope de pérdida total de 7,5%: para poder dormir.'
+    situaciones: [recuperar_perdida, caida_fuerte, cartera]
+  - clave: colchon
+    idea: 'Tener ahorrado varios meses de gastos evita vender inversiones en el peor momento por una urgencia.'
+    en_criollo: 'Un fondo para imprevistos te convierte en mano firme.'
+    en_la_mesa: 'Lo que vence en la renta fija funciona como colchón.'
+    situaciones: [cartera, panico]
+fuentes_resumen:
+  - https://www.harriman-house.com/noworries

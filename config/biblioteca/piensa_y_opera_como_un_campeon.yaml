@@ -1,0 +1,19 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: Piensa y opera como un campeón (Think & Trade Like a Champion)
+autor: 'Mark Minervini (2017), campeón de operaciones en EE.UU.'
+en_una_frase: 'Comprá acciones fuertes en tendencia alcista (etapa 2) cuando se consolidan, cortá las pérdidas rápido y dejá correr las ganadoras.'
+ideas:
+  - clave: plantilla_de_tendencia
+    idea: 'Solo comprar acciones en "etapa 2": arriba de sus promedios de 150 y 200 ruedas, con el de 200 subiendo, bien arriba de su mínimo del año y cerca del máximo, y entre las más fuertes del mercado.'
+    en_criollo: 'Comprá lo que ya está subiendo con fuerza, no lo que se cae.'
+    en_la_mesa: 'Probado el 20/11 (10 años, 3 meses): no da ventaja. CEDEARs en etapa 2 +1,3% contra +1,2% de cualquier momento; acciones argentinas en dólares -3,2% contra -5,3%. Coincide con Murphy: comprar lo que ya sube fuerte no rindió más.'
+    medible: plantilla
+    situaciones: [compra, operacion_corta]
+  - clave: cortar_rapido
+    idea: 'Cortar la pérdida en 7-8% como máximo, sin excepción, y nunca dejar que una ganancia se convierta en pérdida.'
+    en_criollo: 'Si te equivocaste, salí rápido y chico.'
+    en_la_mesa: 'Probado el 20/11: el corte de 8% achica las pérdidas grandes (el 10% peor pasa de -19% a -9%) pero saca demasiado temprano: en CEDEARs el promedio baja de +3,9% a +1,3% y las que terminan ganando pasan de 53 a 36 de cada 100. La mesa prefiere controlar el riesgo con el tamaño.'
+    medible: corte_8
+    situaciones: [operacion_corta, recuperar_perdida]
+fuentes_resumen:
+  - https://www.minervini.com/

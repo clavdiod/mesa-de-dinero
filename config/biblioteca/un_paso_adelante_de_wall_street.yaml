@@ -1,0 +1,23 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: Un paso adelante de Wall Street (One Up on Wall Street)
+autor: 'Peter Lynch (1989), con John Rothchild — el libro anterior a "Batiendo a Wall Street"'
+en_una_frase: 'El inversor común puede ganarle a los profesionales si invierte en negocios que entiende, los clasifica bien y tiene paciencia para que una buena empresa se multiplique.'
+ideas:
+  - clave: multiplicadoras
+    idea: 'Las grandes ganancias vienen de pocas acciones que se multiplican muchas veces (las que Lynch llama "de diez veces"); para eso hay que dejarlas crecer años, no venderlas al primer 20%.'
+    en_criollo: 'Si encontrás una gran empresa, no la vendas apurado: lo grande viene con los años.'
+    en_la_mesa: 'Por eso la alarma escalonada sube detrás del precio en vez de vender en un objetivo fijo.'
+    situaciones: [largo_plazo, compra]
+  - clave: la_historia_de_dos_minutos
+    idea: 'Antes de comprar, hay que poder explicar en dos minutos por qué la empresa va a ganar más plata: qué hace, qué la hace crecer y qué podría salir mal.'
+    en_criollo: 'Si no lo podés explicar en dos minutos, no lo compres.'
+    en_la_mesa: 'Cada propuesta de la mesa trae su "por qué" en criollo, con la prueba con historia.'
+    situaciones: [compra, elegir_acciones]
+  - clave: categorias_y_numeros
+    idea: 'Misma base que "Batiendo a Wall Street": seis tipos de empresa, el P/E contra el crecimiento, la caja y la deuda.'
+    en_criollo: 'Primero sabé qué tipo de empresa es; después mirá si está barata para lo que es.'
+    en_la_mesa: 'Las reglas de Lynch ya probadas (caja neta, crece + PEG menor a 1 + poca deuda, evitar cíclicas y endeudadas) aplican igual.'
+    medible: ver_batiendo_a_wall_street
+    situaciones: [valuacion, compra]
+fuentes_resumen:
+  - https://www.investopedia.com/articles/stocks/08/peter-lynch-principles.asp

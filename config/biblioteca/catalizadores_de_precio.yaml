@@ -1,0 +1,17 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: Catalizadores de precio (Price Catalysts)
+autor: 'Jim Osman (2024), fundador de The Edge Consulting'
+en_una_frase: 'Los precios se mueven por eventos concretos de la empresa (escisiones, compras y fusiones, cambios en el directorio, recompras, salidas de quiebra): anticiparlos da ventaja.'
+ideas:
+  - clave: eventos_mueven_precios
+    idea: 'Más que los indicadores, lo que destraba el valor de una empresa son eventos: que se divida en dos, que la compren, que entre un accionista activo, que cambie el gerente.'
+    en_criollo: 'Preguntate: ¿qué tendría que pasar para que esta acción suba? Si hay un evento a la vista, mejor.'
+    en_la_mesa: 'El Corresponsal y los hechos del emisor (CNV) ya buscan esos eventos; las noticias entran en toda propuesta.'
+    situaciones: [compra, noticias]
+  - clave: escisiones
+    idea: 'Cuando una empresa separa una división y la lista aparte, la parte nueva suele estar mal entendida al principio y con el tiempo se valoriza.'
+    en_criollo: 'La parte que se separa muchas veces arranca barata porque nadie la conoce.'
+    en_la_mesa: 'Se marca como dato cuando aparece en las noticias.'
+    situaciones: [compra, noticias]
+fuentes_resumen:
+  - https://www.harriman-house.com/pricecatalysts
