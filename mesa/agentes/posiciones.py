@@ -86,7 +86,12 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
         return []
     hoy_s = hoy.isoformat()
     ya = {p["ticker"] for p in previas if p.get("linea") == "posicion" and p.get("fecha", "") >= (hoy - timedelta(days=20)).isoformat()}
-    if sum(1 for p in previas if p.get("linea") == "posicion" and p.get("fecha") == hoy_s) >= MAX_DIA:
+    try:  # 20/11 (Marks): con calma en Argentina, más prudencia (1 por día); con miedo o neutral, hasta 2
+        from .ciclo import max_posiciones_dia
+        max_dia = max_posiciones_dia(almacen, MAX_DIA)
+    except Exception:
+        max_dia = MAX_DIA
+    if sum(1 for p in previas if p.get("linea") == "posicion" and p.get("fecha") == hoy_s) >= max_dia:
         return []
     cand = almacen.get(CLAVE_CAND) or {}
     if cand.get("fecha") != hoy_s:
@@ -100,7 +105,7 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
     # cuando cae todo el mercado salen muchas: primero las más operadas (entrar y salir sin mover el precio)
     lista = sorted(cand.get("lista") or [], key=lambda c: (c["tipo"] != "rebote", -((ctx.titulo(c["ticker"]) or {}).get("monto") or 0)))
     for c in lista:
-        if len(out) + sum(1 for p in previas if p.get("linea") == "posicion" and p.get("fecha") == hoy_s) >= MAX_DIA:
+        if len(out) + sum(1 for p in previas if p.get("linea") == "posicion" and p.get("fecha") == hoy_s) >= max_dia:
             break
         tk = c["ticker"]
         t = ctx.titulo(tk) or {}

@@ -255,6 +255,15 @@ def armar(a, hoy: date, panel: dict, velas, sector, flujos: dict, macro: dict, a
     except Exception as ex:
         print(f"[informe] agenda: {ex}")
 
+    # 6b. termómetro del ciclo (Marks)
+    try:
+        t = a.get("ciclo/termometro") or {}
+        lin = [x["texto"] for x in (t.get("argentina"), t.get("eeuu")) if x and x.get("texto")]
+        if lin:
+            secciones.append({"titulo": "🌡️ Termómetro del ciclo", "lineas": lin})
+    except Exception as ex:
+        print(f"[informe] ciclo: {ex}")
+
     # 7. 📚 la lección de la semana (el Bibliotecario): la idea de los libros que mejor explica lo que pasó
     try:
         from .biblioteca import leccion
