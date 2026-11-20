@@ -1,0 +1,52 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: Batiendo a Wall Street
+autor: 'Peter Lynch (1993), gestor del fondo Magellan de Fidelity (1977-1990)'
+en_una_frase: 'Detrás de cada acción hay una empresa: entendé qué hace, cuánto gana, cuánto debe y cuánto crece, y no te dejes asustar por las caídas del mercado.'
+ideas:
+  - clave: invertir_en_lo_que_conoces
+    idea: 'El inversor común tiene ventaja cuando conoce un negocio de cerca (lo usa, lo ve crecer en su ciudad o en su trabajo) antes de que lo descubran los profesionales.'
+    en_criollo: 'Si ves que un producto se vende como pan caliente, averiguá qué empresa lo hace. Pero eso es el punto de partida, no la compra: después hay que mirar los números.'
+    en_la_mesa: 'Clau puede traer ideas de lo que ve (un local lleno, una app que todos usan); la mesa les hace la ficha en frío y los números de Lynch antes de comprar.'
+    situaciones: [elegir_acciones, compra]
+  - clave: seis_categorias
+    idea: 'Lynch separa las empresas en seis tipos: de crecimiento lento, robustas, de crecimiento rápido, cíclicas, en recuperación y con activos escondidos. Cada tipo se compra y se vende distinto.'
+    en_criollo: 'No es lo mismo una empresa que crece 30% por año que una petrolera que depende del precio del barril. Primero sabé qué tipo de empresa es.'
+    en_la_mesa: 'La ficha de cada CEDEAR dice en qué categoría de Lynch está, calculado con sus ganancias.'
+    medible: categoria
+    situaciones: [compra, valuacion]
+  - clave: peg
+    idea: 'Una empresa de crecimiento está a buen precio cuando su P/E (precio sobre ganancias) es parecido a cuánto crece por año; si el P/E es la mitad del crecimiento, es una ganga.'
+    en_criollo: 'Si gana 20% más cada año y la pagás 20 veces sus ganancias, está bien; si la pagás 40 veces, está cara.'
+    en_la_mesa: 'PEG = P/E / crecimiento. Se prueba con historia a 12 meses.'
+    medible: peg
+    situaciones: [compra, valuacion]
+  - clave: el_balance_importa
+    idea: 'Las peores pérdidas vienen de empresas con mucha deuda. Una empresa con caja y poca deuda aguanta las crisis; una endeudada puede quebrar.'
+    en_criollo: 'Antes de enamorarte, fijate cuánto debe.'
+    en_la_mesa: 'Deuda sobre patrimonio y caja neta por acción en la ficha. Graham ya mostró que la poca deuda ayuda (+4,1% contra el S&P a un año).'
+    medible: deuda
+    situaciones: [compra, caida_fuerte]
+  - clave: ciclicas_al_reves
+    idea: 'En las cíclicas el P/E engaña: cuando parece barata (P/E bajo) suele ser el pico de ganancias, y cuando parece cara (P/E alto o con pérdidas) suele ser el fondo del ciclo.'
+    en_criollo: 'Una petrolera o una fábrica de chips de memoria con P/E bajísimo puede estar en su mejor momento, justo antes de caer.'
+    en_la_mesa: 'Ya se marcó en los fundamentos (MU, 18/11). Se prueba con historia si en las cíclicas conviene el P/E alto.'
+    medible: ciclicas
+    situaciones: [valuacion, euforia]
+  - clave: recompras
+    idea: 'Cuando una empresa recompra sus propias acciones, cada acción que queda es dueña de un pedazo más grande del negocio. Es una buena señal si lo hace con caja propia y a buen precio.'
+    en_criollo: 'Si la empresa compra sus propias acciones, cree que están baratas y te deja más pedazo de la torta.'
+    en_la_mesa: 'La ficha marca si la cantidad de acciones bajó en el último año. Se prueba con historia.'
+    medible: recompra
+    situaciones: [compra]
+  - clave: no_predecir_el_mercado
+    idea: 'Nadie puede predecir la economía ni el mercado de forma sistemática; las caídas de 10% son normales y las de 25% pasan cada tanto. El que vende por miedo pierde la recuperación.'
+    en_criollo: 'Las caídas son el precio de entrada a la bolsa. Si no te las bancás, no estés en acciones.'
+    en_la_mesa: 'El tamaño de cada posición (1,5% del capital por idea) es para poder bancarse las caídas sin vender en el piso.'
+    situaciones: [panico, caida_fuerte, recuperar_perdida]
+  - clave: seis_de_diez
+    idea: 'No hace falta acertar siempre: con 6 de cada 10 buenas elecciones alcanza, si las ganadoras se dejan correr y las perdedoras se cortan a tiempo.'
+    en_criollo: 'Lo que importa no es cuántas veces ganás, sino cuánto ganás cuando acertás contra cuánto perdés cuando te equivocás.'
+    en_la_mesa: 'Por eso la alarma escalonada deja correr a las ganadoras y la alarma de pérdida limita a las malas.'
+    situaciones: [recuperar_perdida, operacion_corta]
+fuentes_resumen:
+  - https://www.investopedia.com/articles/stocks/08/peter-lynch-principles.asp

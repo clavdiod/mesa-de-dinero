@@ -14,6 +14,8 @@ Primer libro: El inversor inteligente (Benjamin Graham). Para sumar un libro: un
 from __future__ import annotations
 
 import math
+
+import numpy as np
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -83,6 +85,8 @@ def datos_sec(cik: str) -> dict | None:
         "deuda_lp": _instantes(prim("LongTermDebtNoncurrent", "LongTermDebt")),
         "patrimonio": _instantes(prim("StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest")),
         "acciones": _instantes(((j.get("facts", {}).get("dei", {}).get("EntityCommonStockSharesOutstanding") or {}).get("units") or {}).get("shares") or []),
+        # 20/11 (Lynch): caja para la "caja neta por acción"
+        "caja": _instantes(prim("CashAndCashEquivalentsAtCarryingValue", "CashCashEquivalentsAndShortTermInvestments", "Cash")),
     }
     return s if len(s["eps"]) >= 3 else None
 
@@ -209,3 +213,65 @@ def leccion(situaciones: list[str], semana: int) -> dict | None:
                 return {"libro": lb["titulo"], "autor": lb["autor"], **i}
     lb, i = ideas[semana % len(ideas)]
     return {"libro": lb["titulo"], "autor": lb["autor"], **i}
+
+
+# ---------------- Peter Lynch (Batiendo a Wall Street) ----------------
+def evaluar_lynch(s: dict, precio: float, hasta: str | None = None) -> dict | None:
+    """PEG, deuda sobre patrimonio, caja neta, recompra de acciones y la categoría de Lynch, con lo publicado hasta `hasta`."""
+    h = hasta or "9999"
+    pub = lambda k: [(e, v) for e, f, v in s.get(k) or [] if f <= h]
+    ult = lambda k: (pub(k) or [(None, None)])[-1][1]
+    gan = [v for _, v in pub("ganancia")]
+    acc_s = [v for _, v in pub("acciones")]
+    acc = acc_s[-1] if acc_s else None
+    if len(gan) < 4 or not acc or not precio:
+        return None
+    eps = gan[-1] / acc
+    pe = precio / eps if eps > 0 else None
+    base = gan[-4]
+    crec = (gan[-1] / base) ** (1 / 3) - 1 if base > 0 and gan[-1] > 0 else None  # crecimiento anual de 3 años
+    peg = pe / (crec * 100) if pe and crec and crec > 0 else None
+    pat, dlp, caja = ult("patrimonio"), ult("deuda_lp") or 0, ult("caja")
+    dpat = dlp / pat if pat and pat > 0 else None
+    caja_neta = ((caja or 0) - dlp) / acc / precio if caja is not None else None  # caja neta por acción / precio
+    # recompra: acciones de hace ~1 año contra hoy (se ignoran saltos de más de 40%: desdoblamientos)
+    a_ = pub("acciones")
+    hace = [v for e, v in a_ if a_ and e <= str(int(a_[-1][0][:4]) - 1) + a_[-1][0][4:]]
+    camb = acc / hace[-1] - 1 if hace and hace[-1] else None
+    recompra = camb is not None and -0.40 < camb <= -0.02
+    ult5 = gan[-5:]
+    vol = (np.std(ult5) / (abs(np.mean(ult5)) + 1e-9)) if len(ult5) >= 4 else 0
+    if any(v <= 0 for v in gan[-3:-1]) and gan[-1] > 0:
+        cat = "recuperacion"
+    elif vol > 0.8:
+        cat = "ciclica"
+    elif crec is not None and crec >= 0.20:
+        cat = "rapida"
+    elif crec is not None and crec >= 0.10:
+        cat = "robusta"
+    else:
+        cat = "lenta"
+    return {"pe": round(pe, 1) if pe else None, "crec_pct": round(crec * 100, 1) if crec is not None else None,
+            "peg": round(peg, 2) if peg else None, "deuda_patrimonio": round(dpat, 2) if dpat is not None else None,
+            "caja_neta_pct": round(caja_neta * 100, 1) if caja_neta is not None else None, "recompra": recompra,
+            "acciones_1a_pct": round(camb * 100, 1) if camb is not None and -0.4 < camb < 0.4 else None, "categoria": cat}
+
+
+CAT_LYNCH = {"rapida": "de crecimiento rápido (gana 20%+ por año)", "robusta": "robusta (crece 10-20% por año)",
+             "lenta": "de crecimiento lento", "ciclica": "cíclica (sus ganancias suben y bajan con el ciclo)",
+             "recuperacion": "en recuperación (volvió a ganar plata)"}
+
+
+def frase_lynch(ev: dict | None, probado: dict | None = None) -> str:
+    if not ev:
+        return ""
+    p = [f"📚 Lynch (Batiendo a Wall Street): empresa {CAT_LYNCH[ev['categoria']]}"]
+    if ev.get("peg") is not None:
+        p.append(f"PEG {str(ev['peg']).replace('.', ',')}" + (" (barata para lo que crece)" if ev["peg"] < 1 else " (cara para lo que crece)" if ev["peg"] > 2 else ""))
+    if ev.get("deuda_patrimonio") is not None:
+        p.append("poca deuda" if ev["deuda_patrimonio"] < 0.33 else "mucha deuda" if ev["deuda_patrimonio"] > 1 else "deuda moderada")
+    if ev.get("caja_neta_pct") is not None and ev["caja_neta_pct"] > 10:
+        p.append(f"caja neta de {str(ev['caja_neta_pct']).replace('.', ',')}% del precio")
+    if ev.get("recompra"):
+        p.append(f"recompra acciones ({str(ev['acciones_1a_pct']).replace('.', ',')}% en un año)")
+    return ", ".join(p) + "." + (f" {probado['texto']}" if probado and probado.get("texto") else "")
