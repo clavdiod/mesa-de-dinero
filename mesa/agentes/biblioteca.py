@@ -90,6 +90,10 @@ def datos_sec(cik: str) -> dict | None:
         "deuda_lp": reciente("LongTermDebtNoncurrent", "LongTermDebt", "LongTermDebtAndCapitalLeaseObligations", "LongTermNotesPayable", "SeniorNotes"),
         "patrimonio": _instantes(prim("StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest")),
         "acciones": _instantes(((j.get("facts", {}).get("dei", {}).get("EntityCommonStockSharesOutstanding") or {}).get("units") or {}).get("shares") or []),
+        # 20/11 (Greenblatt y Buffett): ganancia operativa, activos e inmuebles/equipos
+        "ebit": _anuales(prim("OperatingIncomeLoss")),
+        "activos": _instantes(u("Assets")),
+        "ppe": reciente("PropertyPlantAndEquipmentNet"),
         # 20/11 (Lynch): caja para la "caja neta por acción"
         "caja": reciente("CashAndCashEquivalentsAtCarryingValue", "CashCashEquivalentsAndShortTermInvestments", "Cash"),
     }
@@ -332,3 +336,37 @@ def revision_libros(almacen, ticker: str, grupo: str | None) -> list[str]:
             out.append(g)
         out.append("📗 Bogle: una acción suelta le ganó al índice solo 44 de cada 100 veces a un año; que sea la parte chica (satélite) de la cartera.")
     return out
+
+
+# ---------------- Greenblatt (El pequeño libro que bate al mercado) y Buffett (The Warren Buffett Way) ----------------
+def evaluar_calidad(s: dict, precio: float, hasta: str | None = None, ticker: str | None = None) -> dict | None:
+    """Fórmula mágica de Greenblatt (rendimiento de la ganancia operativa sobre el valor de la empresa y retorno sobre el
+    capital) y los números de Buffett (retorno sobre el patrimonio parejo y alto, poca deuda), con lo publicado hasta `hasta`."""
+    h = hasta or "9999"
+    pub = lambda k: [(e, v) for e, f, v in s.get(k) or [] if f <= h]
+    ult = lambda k: (pub(k) or [(None, None)])[-1][1]
+    ebit, gan, pat = pub("ebit"), [v for _, v in pub("ganancia")], ult("patrimonio")
+    acc, caja, dlp = ult("acciones"), ult("caja") or 0, ult("deuda_lp") or 0
+    ac, pc, ppe = ult("act_corr"), ult("pas_corr"), ult("ppe")
+    if not ebit or not acc or not precio:
+        return None
+    e = ebit[-1][1]
+    ev = precio * acc + dlp - caja
+    ey = e / ev if ev > 0 else None
+    capital = ((ac or 0) - (pc or 0)) + (ppe or 0) if ac and pc and ppe else None
+    roc = e / capital if capital and capital > 0 else None
+    pats = [v for _, v in pub("patrimonio")][-4:]
+    roes = [g / p for g, p in zip(gan[-3:], pats[-3:]) if p and p > 0] if len(gan) >= 3 and len(pats) >= 3 else []
+    if (ticker or "").upper() in FINANCIERA_PROPIA:
+        ey = roc = None
+    return {"ey": round(ey * 100, 1) if ey is not None else None, "roc": round(roc * 100) if roc is not None else None,
+            "roe_min": round(min(roes) * 100, 1) if len(roes) == 3 else None,
+            "deuda_patrimonio": round(dlp / pat, 2) if pat and pat > 0 else None}
+
+
+def es_formula_magica(q: dict | None) -> bool:
+    return bool(q and q.get("ey") is not None and q.get("roc") is not None and q["ey"] >= 8 and q["roc"] >= 25)
+
+
+def es_buffett(q: dict | None) -> bool:
+    return bool(q and (q.get("roe_min") or 0) >= 15 and q.get("deuda_patrimonio") is not None and q["deuda_patrimonio"] < 0.5)
