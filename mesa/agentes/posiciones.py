@@ -137,7 +137,8 @@ def fondeo(almacen, cartera: list[dict], hoy: date) -> str:
         return ""
 
 
-def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], un_r: float, hora: str, max_monto: float | None = None) -> list[dict]:
+def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], un_r: float, hora: str, max_monto: float | None = None,
+             noticias_de=None, vetos: set | None = None) -> list[dict]:
     """Hasta 2 por día, una sola vez por día (después de las 11:20, con precios ya asentados)."""
     import hashlib
     from ..nucleo.calc import spread_pct
@@ -176,6 +177,8 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
         pr = t.get("ultimo")
         if tk in ya or not pr:
             continue
+        if vetos and tk in vetos:
+            continue  # hecho grave del emisor (CNV): no se compra
         sp = spread_pct(t, hora)
         if (sp is not None and sp > SPREAD_MAX) or ((t.get("monto") or 0) < MONTO_MIN and t.get("grupo") == "acciones"):
             continue  # 19/11 (GCLA): con mucha diferencia entre puntas o poco volumen, la ventaja se la come la entrada
@@ -214,6 +217,19 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
                        f"le ganaron al S&P 500 60 de cada 100 años (+3,3%).")
         if c["tipo"] == "rebote" and tk in mias:
             por_que += " Ya tenés este papel: esto sería sumar."
+        # 20/11 (Clau: "las noticias afectan y sirven para tomar decisiones, siempre analizar todo"): noticias de la empresa,
+        # ficha en frío y lo que dicen los libros, en TODA posición. Noticias solo en contra y fuertes: no se propone.
+        nots, sen_n = [], None
+        if noticias_de:
+            try:
+                sen_n = next(iter(noticias_de([tk])), None)
+            except Exception as ex_n:
+                print(f"[posiciones] noticias {tk}: {ex_n}")
+        if sen_n is not None:
+            nots = [{"dir": sen_n.direccion, "texto": sen_n.texto}]
+            if sen_n.direccion < 0 and sen_n.fuerza >= 0.4:
+                print(f"[posiciones] {tk}: noticias fuertes en contra, no se propone: {sen_n.texto[:120]}")
+                continue
         riesgo_u = entrada - stop
         cant = int(un_r / riesgo_u) if riesgo_u > 0 else None
         # 20/11 (Marks, Lo más importante): las más movedizas no rinden más, solo duelen más (CEDEARs 10 años: peor caída
@@ -231,6 +247,22 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
         if cant and max_monto and cant * entrada > max_monto:
             cant = int(max_monto / entrada)  # tope por posición (usuario/capital tope_posicion_pct; 25% desde el 20/11)
         f_ = fondeo(almacen, cartera, hoy)
+        ficha, ficha_txt = None, ""
+        try:
+            from . import ficha_frio, estructura
+            from .fundamentos import de as _fde
+            vel_ = ctx.cache.velas(tk)
+            pl_ = {"ticker": tk, "entrada": entrada, "stop": stop, "objetivo": objetivo}
+            ficha = ficha_frio.ficha(vel_[-400:], entrada, pl_, estructura.leer(vel_[-300:], entrada, t.get("grupo")) or {}, [],
+                                     t.get("grupo"), None, nots, t.get("variacion"), _fde(almacen, tk) if t.get("grupo") == "cedears" else None)
+            ficha_txt = ("Mirada de semanas (dato: no frena una posición de meses). " + ficha_frio.texto(ficha)) if ficha else ""
+        except Exception as ex_f:
+            print(f"[posiciones] ficha {tk}: {ex_f}")
+        try:
+            from .biblioteca import revision_libros
+            libros = revision_libros(almacen, tk, t.get("grupo"))
+        except Exception:
+            libros = []
         plan = {"ticker": tk, "lado": "compra", "entrada": round(entrada, 2), "stop": stop, "objetivo": objetivo, "tamano_r": 1.0,
                 "vence": (hoy + timedelta(days=30 * meses)).isoformat(), "riesgo_pct": round(riesgo_u / entrada * 100, 1),
                 "recompensa_pct": round((objetivo / entrada - 1) * 100, 1)}
@@ -241,5 +273,6 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
                     "resumen_jefe": por_que + (f" {f_}" if f_ else "") + " La alarma escalonada deja correr la ganancia.",
                     "senales": [{"agente": "posiciones", "direccion": 1, "fuerza": 0.6, "texto": por_que}],
                     "riesgo": {"ok": True, "tamano_r": 1.0, "motivos": [], "avisos": [f"Diferencia entre puntas {sp:.1f}%." if sp else ""]},
-                    "seguimiento": {"estado": "pendiente"}})
+                    "seguimiento": {"estado": "pendiente"}, "ficha_frio": ficha, "ficha_txt": ficha_txt, "libros": libros,
+                    "noticias": nots})
     return out

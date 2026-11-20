@@ -303,3 +303,32 @@ def frase_lynch(ev: dict | None, probado: dict | None = None) -> str:
 def es_combo_lynch(ev: dict | None) -> bool:
     return bool(ev and ev["categoria"] in ("rapida", "robusta") and ev.get("peg") is not None and ev["peg"] < 1
                 and (ev.get("deuda_patrimonio") or 0) < 0.33)
+
+
+def revision_libros(almacen, ticker: str, grupo: str | None) -> list[str]:
+    """20/11 (Clau: "que todos aprendan estas reglas… siempre analizar todo"): lo que dicen los libros probados sobre
+    este papel hoy, para que acompañe a TODA propuesta (Comité y posiciones). Solo lo que pasó la prueba con historia."""
+    t = ticker.upper()
+    base = t[:-1] if t[-1:] in ("D", "C") and grupo == "cedears" else t
+    out = []
+    try:  # Marks: termómetro del ciclo
+        term = almacen.get("ciclo/termometro") or {}
+        x = term.get("argentina") if grupo in ("acciones", "bonos", "ons") else term.get("eeuu")
+        if x and x.get("texto"):
+            out.append("🌡️ Marks: " + x["texto"])
+    except Exception:
+        pass
+    try:  # Kostolany: fase del huevo
+        k = almacen.get("posiciones/kostolany") or {}
+        hit = next((y for y in k.get("lista") or [] if y["ticker"] == base), None)
+        if hit:
+            out.append(f"🥚 Kostolany: está en fase de pánico (cayó {abs(hit['r20']):.0f}% en un mes con {str(hit['vol']).replace('.', ',')} veces su volumen):"
+                       " históricamente, buen momento para comprar a 3 meses.")
+    except Exception:
+        pass
+    if grupo == "cedears":
+        g = de(almacen, base)
+        if g:
+            out.append(g)
+        out.append("📗 Bogle: una acción suelta le ganó al índice solo 44 de cada 100 veces a un año; que sea la parte chica (satélite) de la cartera.")
+    return out

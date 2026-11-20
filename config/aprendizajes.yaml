@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-20'
+  caso: 'Que todos aprendan las reglas de los libros y analicen siempre todo, noticias incluidas'
+  que_paso: 'Clau pidió que todos los analistas usen las reglas de los libros probadas y que las noticias entren siempre en las decisiones. Las posiciones de meses salían sin noticias ni ficha en frío.'
+  leccion: 'Una regla probada no alcanza sola: cada propuesta tiene que llegar con todo lo que se sabe del papel ese día.'
+  cambio: 'Toda propuesta (del Comité y de posiciones) trae "📚 Lo que dicen los libros": termómetro de Marks, fase de Kostolany, Graham y Lynch para CEDEARs, Bogle. Las posiciones además buscan las noticias de la empresa (el Corresponsal), no se proponen si hay noticias fuertes en contra o un hecho grave en la CNV, y llevan la ficha en frío como dato.'
+- fecha: '2026-11-20'
   caso: 'El Bibliotecario suma a Marks: Lo más importante para invertir con sentido común'
   que_paso: 'Clau pasó el sexto libro (por un enlace de Drive; se resumió con lo conocido del libro y fuentes públicas, sin usar esa copia). Se probó su idea central de riesgo con 339 CEDEARs y 10 años: ordenadas por cuánto se movieron el último año, las más movedizas rindieron al año siguiente casi lo mismo que las tranquilas (+10,3% contra +7,1%; contra el S&P, -3% y -4,8%), pero su peor caída típica fue -44% contra -17%, cayeron 40% o más en algún momento 58 de cada 100 veces (contra 4) y terminaron el año perdiendo 30% o más 22 de cada 100 (contra 2).'
   leccion: 'Más riesgo no es más ganancia: es un abanico más ancho, con más chances de una pérdida grande. Lo de YPFD (-33%) es eso.'

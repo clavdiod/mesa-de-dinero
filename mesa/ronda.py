@@ -943,6 +943,11 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         if mitad and cantidad:
             cantidad = max(1, cantidad // 2)  # mala racha: se compra la mitad
         t_ = ctx.titulo(e["ticker"]) or {}  # 19/11: precio al proponer, para mostrar cuánto tiene que bajar hasta el límite
+        try:  # 20/11: lo que dicen los libros probados también en las propuestas del Comité
+            from .agentes.biblioteca import revision_libros as _rl
+            e["libros"] = _rl(almacen, e["ticker"], t_.get("grupo"))
+        except Exception:
+            pass
         nuevas.append({**e, "fecha": hoy.isoformat(), "hora": ctx.hora, "decision": "pendiente", "precio_al_proponer": t_.get("ultimo"),
                        "cantidad_sugerida": cantidad, "tamano_mitad": mitad, "seguimiento": {"estado": "pendiente"}})
     # 20/11: línea de posiciones de 1 a 12 meses (rebote en dólares, Graham), con su propia prueba; no pasan por el
@@ -951,7 +956,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         try:
             from .agentes import posiciones as _pos
             nuevas += _pos.proponer(ctx, almacen, hoy, cartera or [], reg.propuestas, un_r, ctx.hora,
-                                    max_monto=float(cap.get("monto_ars", 0)) * float(cap.get("tope_posicion_pct", 10)) / 100 or None)
+                                    max_monto=float(cap.get("monto_ars", 0)) * float(cap.get("tope_posicion_pct", 10)) / 100 or None,
+                                    noticias_de=lambda tks: _noticias_papeles(ctx, almacen, hoy, tks, simular), vetos=vetos)
         except Exception as ex:
             print(f"[posiciones] {ex}")
     reg.nuevas(nuevas)

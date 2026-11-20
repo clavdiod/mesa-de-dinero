@@ -52,6 +52,7 @@ function tarjeta(p) {
       <span class="chip ${p.decision === "aprobada" ? "verde" : p.decision === "rechazada" ? "rojo" : ""}">${esc(p.decision)}</span></div>
     ${seg.consejo ? `<div class="consejo ${CONSEJO_COL[seg.consejo.accion] || ""}"><b>${esc(CONSEJO_TXT[seg.consejo.accion] || seg.consejo.accion)}</b> ${esc(seg.consejo.texto)} <span class="tenue">(${esc(seg.consejo.hora || "")})</span></div>` : ""}
     <p>${esc(p.resumen_jefe || "")} <span class="chip ${p.confianza === "alta" ? "verde" : "amar"}">confianza ${esc(p.confianza)}</span></p>
+    ${(p.libros || []).length ? `<div class="ficha-frio duda"><b>📚 Lo que dicen los libros:</b> ${p.libros.map(esc).join(" · ")}</div>` : ""}
     ${p.ficha_txt ? `<div class="ficha-frio ${p.ficha_frio?.veredicto === "acompañan" ? "ok" : ["en contra", "cara"].includes(p.ficha_frio?.veredicto) ? "mal" : "duda"}"><b>🧊 En frío, antes de comprar:</b> ${esc(p.ficha_txt)}</div>` : ""}
     <div class="grilla">
       <div class="met"><span>${p.precio_al_proponer && p.precio_al_proponer > pl.entrada * 1.005 ? `Compra solo si baja a (al proponer: ${num(p.precio_al_proponer)})` : "Compra límite"}</span><b>${num(pl.entrada)}</b></div>
