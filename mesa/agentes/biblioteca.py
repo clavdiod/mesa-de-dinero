@@ -235,7 +235,9 @@ def evaluar_lynch(s: dict, precio: float, hasta: str | None = None) -> dict | No
     peg = pe / (crec * 100) if pe and crec and crec > 0 else None
     pat, dlp, caja = ult("patrimonio"), ult("deuda_lp") or 0, ult("caja")
     dpat = dlp / pat if pat and pat > 0 else None
-    caja_neta = ((caja or 0) - dlp) / acc / precio if caja is not None else None  # caja neta por acción / precio
+    # caja neta por acción / precio. Solo con balance clasificado (activo y pasivo corriente): bancos, brokers y las
+    # automotrices con financiera propia (IBKR, F, GM) mezclan la plata de los clientes y la deuda de la financiera (20/11)
+    caja_neta = ((caja or 0) - dlp) / acc / precio if caja is not None and ult("act_corr") and ult("pas_corr") else None
     # recompra: acciones de hace ~1 año contra hoy (se ignoran saltos de más de 40%: desdoblamientos)
     a_ = pub("acciones")
     hace = [v for e, v in a_ if a_ and e <= str(int(a_[-1][0][:4]) - 1) + a_[-1][0][4:]]
