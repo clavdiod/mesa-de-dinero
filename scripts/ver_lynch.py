@@ -5,3 +5,6 @@ caja = sorted(((v["lynch"]["caja_neta_pct"], k) for k, v in t.items() if (v.get(
 combo = [k for k, v in t.items() if B.es_combo_lynch(v.get("lynch"))]
 print(f"::notice::con datos de Lynch {sum(1 for v in t.values() if v.get('lynch'))} · caja neta >10% (no cíclicas): {caja[:12]} · crece+PEG<1+poca deuda: {combo[:15]}")
 print("::notice::NVDA " + (t.get("NVDA") or {}).get("frase_lynch", ""))
+mf = [k for k, v in t.items() if B.es_formula_magica(v.get("calidad"))]
+bf = [k for k, v in t.items() if B.es_buffett(v.get("calidad"))]
+print(f"::notice::fórmula mágica: {mf[:20]} · Buffett: {bf[:20]} · las dos: {sorted(set(mf) & set(bf))}")
