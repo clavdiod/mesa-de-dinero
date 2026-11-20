@@ -62,7 +62,7 @@ def graham(almacen) -> list[dict]:
         if ev.get("cumple", 0) >= 5 and (ev.get("margen_pct") or -1) >= 0:
             out.append({"ticker": tk, "tipo": "graham", "cumple": ev["cumple"], "margen": ev["margen_pct"], "frase": x.get("frase")})
     out = sorted(out, key=lambda c: (-c["cumple"], -c["margen"]))
-    # 20/11 (Lynch, probado a 12 meses): caja neta de más de 10% del precio (+9,7% contra el S&P) o crece + PEG<1 + poca deuda (+5,6%)
+    # 20/11 (Lynch, probado a 12 meses): caja neta de más de 10% del precio (+14,6% contra el S&P, sin bancos ni financieras) o crece + PEG<1 + poca deuda (+5,6%)
     from .biblioteca import es_combo_lynch
     ya_ = {c["ticker"] for c in out}
     for tk, x in t.items():
@@ -141,7 +141,7 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
             stop = round(entrada * 0.75, 2)
             meses, objetivo = 12, round(entrada * 1.30, 2)
             por_que = ("📅 Posición de 12 meses (Lynch): "
-                       + (f"tiene caja neta por {str(c['caja']).replace('.', ',')}% de su precio: en 2009-2025 las empresas así le ganaron al S&P 500 60 de cada 100 años (+9,7%). "
+                       + (f"tiene caja neta por {str(c['caja']).replace('.', ',')}% de su precio: en 2009-2025 las empresas así le ganaron al S&P 500 64 de cada 100 años (+14,6%). "
                           if (c.get("caja") or 0) > 10 else
                           f"crece, está barata para lo que crece (PEG {str(c['peg']).replace('.', ',')}) y debe poco: en 2009-2025 le ganaron al S&P 500 58 de cada 100 años (+5,6%). "))
         else:

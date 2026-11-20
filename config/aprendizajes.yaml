@@ -2,7 +2,7 @@
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-20'
   caso: 'El Bibliotecario suma a Peter Lynch: Batiendo a Wall Street'
-  que_paso: 'Clau pasó el cuarto libro. Se probaron sus reglas con 1.040 balances de 84 empresas (2009-2025), a 12 meses contra el S&P 500. Se cumplen: caja neta de más de 10% del precio (+9,7%, le ganan 60 de cada 100); crece + PEG menor a 1 + poca deuda (+5,6%, 58 de cada 100); las cíclicas rinden peor (-7,2%) y las muy endeudadas también (-3,3%). No se cumplen: el PEG solo (PEG menor a 0,5 dio -2,6%), las recompras de acciones (-2,7%) y comprar cíclicas con P/E alto (ambas variantes perdieron).'
+  que_paso: 'Clau pasó el cuarto libro. Se probaron sus reglas con 1.040 balances de 84 empresas (2009-2025), a 12 meses contra el S&P 500. Se cumplen: caja neta de más de 10% del precio, sin contar bancos ni financieras (+14,6%, le ganan 64 de cada 100); crece + PEG menor a 1 + poca deuda (+5,6%, 58 de cada 100); las cíclicas rinden peor (-7,2%) y las muy endeudadas también (-3,3%). No se cumplen: el PEG solo (PEG menor a 0,5 dio -2,6%), las recompras de acciones (-2,7%) y comprar cíclicas con P/E alto (ambas variantes perdieron).'
   leccion: 'De Lynch funciona lo del balance (caja y poca deuda) y elegir empresas que crecen a precio razonable; no alcanza con un número solo.'
   cambio: 'La ficha de cada CEDEAR suma la mirada de Lynch (categoría, PEG, deuda, caja neta, recompras) con lo probado. La línea de posiciones de 12 meses suma candidatas de Lynch: caja neta de más de 10% del precio o crece + PEG menor a 1 + poca deuda, sin cíclicas ni muy endeudadas.'
 - fecha: '2026-11-20'
