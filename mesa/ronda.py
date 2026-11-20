@@ -952,7 +952,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
                        "cantidad_sugerida": cantidad, "tamano_mitad": mitad, "seguimiento": {"estado": "pendiente"}})
     # 20/11: línea de posiciones de 1 a 12 meses (rebote en dólares, Graham), con su propia prueba; no pasan por el
     # Comité de corto plazo. Se miden solas en la simulación.
-    if not simular:
+    if not simular and (almacen.get("avisos/cartera_hoy") or "") == hoy.isoformat():  # 20/11: después de revisar tu cartera
         try:
             from .agentes import posiciones as _pos
             nuevas += _pos.proponer(ctx, almacen, hoy, cartera or [], reg.propuestas, un_r, ctx.hora,
@@ -1234,12 +1234,26 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     alertas_lista += avisos_cobro  # cobros de hoy / mañana / la semana (una vez por día)
     alertas_lista += avisos_cartera  # la sugerencia sobre algo que tenés cambió: decidir en la app
     # 17/11: "buen día": la primera ronda con el mercado abierto avisa que la mesa arrancó, con lo principal del día
+    bd_ahora = False
     try:
         if not simular and "11:00" <= (ctx.hora or "") <= "12:30" and (almacen.get("avisos/buen_dia") or "") != hoy.isoformat():
             alertas_lista.append(_buen_dia(ctx, cartera, eventos_cal, hoy))
             almacen.put("avisos/buen_dia", hoy.isoformat())
+            bd_ahora = True
     except Exception as ex:
         print(f"[buen dia] {ex}")
+    # 20/11 (criterio de Clau): primero TU CARTERA (noticias, alarmas, libros, tiempo estimado), después las oportunidades
+    try:
+        if (not simular and not bd_ahora and "11:05" <= (ctx.hora or "") <= "13:00"
+                and (almacen.get("avisos/cartera_hoy") or "") != hoy.isoformat()):
+            from .agentes import cartera_hoy as _ch
+            ch = _ch.armar(ctx, almacen, cartera or [], hoy, noticias_de=lambda tks: _noticias_papeles(ctx, almacen, hoy, tks, simular))
+            if ch:
+                alertas_lista.append(ch)
+                almacen.put("cartera/hoy", ch)
+            almacen.put("avisos/cartera_hoy", hoy.isoformat())
+    except Exception as ex:
+        print(f"[cartera hoy] {ex}")
     # 17/11: parte de cada ronda ("Ronda 14:05: sin cambios" o "Atención: ..."). Va dentro de ui/estado, que ya se
     # guarda en cada ronda: no suma escrituras de KV. El Worker lo usa para el aviso al celular cuando no hay otro.
     try:

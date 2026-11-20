@@ -189,6 +189,7 @@ async function textoAviso(env) {
     cuerpo: `Objetivo ${n(p.plan.objetivo)} · stop ${n(p.plan.stop)}${p.ruedas ? ` · plazo ${p.ruedas} ruedas` : ""}. ${nuevas.length > 1 ? `(+${nuevas.length - 1} más) ` : ""}Entrá para ver los votos y decidir.` };
   // 17/11: el parte de cada ronda ("Ronda 14:05: sin cambios" / "atención ..."); el "sin cambios" llega sin sonar y se pisa solo
   const pt = estado.parte;
+  if (a && a.tipo === "cartera_hoy") return { importante: (a.atencion || 0) > 0, titulo: `📋 Tu cartera hoy${a.atencion ? `: ${a.atencion} para mirar` : ": nada urgente"}`, cuerpo: a.texto };
   if (pt && pt.push && pt.fecha === estado.fecha && pt.hora === estado.hora && !(a && a.tipo === "buen_dia")) {
     const imp = pt.nivel !== "sin_cambios" && /salir|stop|balance|cancel|vend|🚨|compra/i.test(pt.texto + pt.titulo);
     return { importante: imp, titulo: pt.titulo, cuerpo: pt.texto, tag: pt.nivel === "sin_cambios" ? "mesa-ronda" : "mesa", silencioso: pt.nivel === "sin_cambios" };

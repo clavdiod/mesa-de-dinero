@@ -215,6 +215,14 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
             por_que = (f"📅 Posición de 12 meses (Graham): cumple {c['cumple']} de 7 criterios del inversor defensivo y el precio está "
                        f"{c['margen']}% debajo de lo que valdría según su fórmula (margen de seguridad). En 2010-2025, las que cumplían 5 o más "
                        f"le ganaron al S&P 500 60 de cada 100 años (+3,3%).")
+        try:  # 20/11 (Clau): qué tiempo aprox hace falta tenerla para ganar (scripts/probar_plazos.py)
+            from .cartera_hoy import PLAZOS
+            pz = (PLAZOS["rebote"] if c["tipo"] == "rebote" else
+                  PLAZOS["panico_ced" if c.get("mercado") == "cedears" else "panico_acc"] if c["tipo"] == "panico" else
+                  "pensada para un año: la ventaja de estas reglas se midió a 12 meses")
+            por_que += f" ⏳ Tiempo: {pz}."
+        except Exception:
+            pass
         if c["tipo"] == "rebote" and tk in mias:
             por_que += " Ya tenés este papel: esto sería sumar."
         # 20/11 (Clau: "las noticias afectan y sirven para tomar decisiones, siempre analizar todo"): noticias de la empresa,
