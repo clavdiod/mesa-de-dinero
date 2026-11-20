@@ -86,6 +86,10 @@ def evaluar(ctx: Contexto, plan: Plan, estado: dict, vetos: set[str]) -> dict:
     if rn < c["r_minimo_neto"]:
         motivos.append(f"Relación neta {rn:.2f}R, menor al mínimo {c['r_minimo_neto']}R"
                        + (f" (entrar y salir cuesta {costo:.1f}%: comisión {com:.1f}% + diferencia compra/venta {spread:.1f}%)." if spread else "."))
+    # 20/11 (Bogle + simulación auditada): una operación corta solo vale si el movimiento esperado es grande
+    mov = (plan.objetivo / plan.entrada - 1) * 100 if plan.entrada else 0
+    if mov < float(c.get("mov_minimo_corto_pct", 5)):
+        motivos.append(f"El objetivo está a {mov:.1f}%: para una operación corta, con la comisión, hace falta un movimiento de 5% o más.")
     if spread is not None and spread > c["spread_max_pct"]:
         motivos.append(f"Spread {spread:.2f}% demasiado abierto.")
     elif spread:

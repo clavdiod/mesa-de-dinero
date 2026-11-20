@@ -945,6 +945,14 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         t_ = ctx.titulo(e["ticker"]) or {}  # 19/11: precio al proponer, para mostrar cuánto tiene que bajar hasta el límite
         nuevas.append({**e, "fecha": hoy.isoformat(), "hora": ctx.hora, "decision": "pendiente", "precio_al_proponer": t_.get("ultimo"),
                        "cantidad_sugerida": cantidad, "tamano_mitad": mitad, "seguimiento": {"estado": "pendiente"}})
+    # 20/11: línea de posiciones de 1 a 12 meses (rebote en dólares, Graham), con su propia prueba; no pasan por el
+    # Comité de corto plazo. Se miden solas en la simulación.
+    if not simular:
+        try:
+            from .agentes import posiciones as _pos
+            nuevas += _pos.proponer(ctx, almacen, hoy, cartera or [], reg.propuestas, un_r, ctx.hora)
+        except Exception as ex:
+            print(f"[posiciones] {ex}")
     reg.nuevas(nuevas)
 
     # --- simulación en papel: 1.000 nominales de cada oportunidad/propuesta, medida en pesos ---
@@ -1249,7 +1257,9 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
             n0 = nuevas[0]; pl = n0.get("plan") or {}
             f_ = lambda x: f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if isinstance(x, (int, float)) else str(x)
             px = n0.get("precio_al_proponer")
-            if px and pl.get("entrada") and px > pl["entrada"] * 1.005:
+            if n0.get("linea") == "posicion":
+                tit = f"📅 Posición de {n0.get('meses')} meses: comprar {n0['ticker']} a {f_(pl.get('entrada'))}"
+            elif px and pl.get("entrada") and px > pl["entrada"] * 1.005:
                 tit = f"🗳️ Comité: comprar {n0['ticker']} solo si baja a {f_(pl.get('entrada'))} (hoy {f_(px)})"
             else:
                 tit = f"🗳️ Comité: comprar {n0['ticker']} con límite {f_(pl.get('entrada'))}"

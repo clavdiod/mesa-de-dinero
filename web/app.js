@@ -48,7 +48,7 @@ function tarjeta(p) {
     : seg.r !== undefined ? `Cerrada (${seg.estado}) · ${num(seg.r_neto, 2)}R neto` : seg.estado;
   return `<div class="card" data-tarjeta="${esc(p.id)}">
     <div class="fila"><div><span class="tenue">${esc(fecha(p.fecha))} ${esc(p.hora)} · ${esc(p.sector || "")}</span>
-      <div style="font-size:18px;font-weight:600">${esc(p.ticker)}</div></div>
+      <div style="font-size:18px;font-weight:600">${esc(p.ticker)}${p.linea === "posicion" ? ` <span class="chip verde">📅 posición ${esc(p.meses)} meses</span>` : ""}</div></div>
       <span class="chip ${p.decision === "aprobada" ? "verde" : p.decision === "rechazada" ? "rojo" : ""}">${esc(p.decision)}</span></div>
     ${seg.consejo ? `<div class="consejo ${CONSEJO_COL[seg.consejo.accion] || ""}"><b>${esc(CONSEJO_TXT[seg.consejo.accion] || seg.consejo.accion)}</b> ${esc(seg.consejo.texto)} <span class="tenue">(${esc(seg.consejo.hora || "")})</span></div>` : ""}
     <p>${esc(p.resumen_jefe || "")} <span class="chip ${p.confianza === "alta" ? "verde" : "amar"}">confianza ${esc(p.confianza)}</span></p>
@@ -783,6 +783,10 @@ function pintarAviso() {
     const pl = p.plan, ult = precios[p.ticker]?.ultimo || p.precio_al_proponer, min = minutosDesde(p.fecha, p.hora);
     const lejos = ult && ult > pl.entrada * 1.01;
     // 19/11: si el límite está debajo del precio, que quede claro que es "comprá solo si baja" (VXX: límite 7.111 con el precio en 7.600)
+    if (p.linea === "posicion") return `<div class="aviso-item"><div><b>📅 Posición de ${esc(p.meses)} meses: comprar ${esc(p.ticker)}</b> a <b>${num(pl.entrada)}</b>
+        · alarma ${num(pl.stop)}${p.cantidad_sugerida ? ` · ${num(p.cantidad_sugerida, 0)} unidades (~$${num(p.monto_sugerido, 0)})` : ""}</div>
+      <div class="tenue">${min !== null ? (min < 1 ? "recién" : `hace ${min} min`) : esc(p.hora)} · ${esc((p.resumen_jefe || "").slice(0, 220))}</div>
+      <div class="fila-form" style="margin-top:6px"><button class="chico prim" data-ir-prop="${esc(p.id)}">Ver y decidir</button><button class="chico" data-visto="${esc(p.id)}">Entendido</button></div></div>`;
     return `<div class="aviso-item"><div><b>🔔 El Comité sugiere COMPRAR ${esc(p.ticker)}</b> ${lejos ? `<b>solo si baja a ${num(pl.entrada)}</b> (hoy está ${num((ult / pl.entrada - 1) * 100, 1)}% arriba; si no baja, no se compra)` : `con límite <b>${num(pl.entrada)}</b>`}
         · objetivo ${num(pl.objetivo)} · stop ${num(pl.stop)}${p.cantidad_sugerida ? ` · ${num(p.cantidad_sugerida, 0)} unidades` : ""}</div>
       <div class="tenue">${min !== null ? (min < 1 ? "recién" : `hace ${min} min`) : esc(p.hora)} · válida hoy${ult ? ` · ahora ${num(ult)}` : ""}${lejos ? " · <b>el precio se alejó: no lo persigas, dejá la orden límite</b>" : ""}</div>

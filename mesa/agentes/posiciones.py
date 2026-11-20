@@ -1,0 +1,141 @@
+"""Posiciones de 1 a 12 meses (20/11, "probemos y vamos viendo"). Clau: "necesito que agarremos oportunidades".
+
+Por qué existe: la simulación en papel de las operaciones de 2 semanas dio 600 cerradas con 12% ganadoras (los stops
+quedaban dentro del ruido y saltaban antes de que la idea funcionara; auditado 20/11). Las ventajas que la historia sí
+confirma son de meses, no de semanas. Esta línea propone solo esas, cada una con su prueba:
+
+1. REBOTE EN DÓLARES (acciones argentinas, 3 meses). Cae 30%+ desde el máximo de 3 meses y 15%+ en el mes (en dólares
+   CCL). 10 años, 64 acciones: mediana +4,4% (promedio +10,1%, suben 56%) contra -4,4% de cualquier día. Una alarma
+   cercana (13%) saltaba antes del rebote 58% de las veces: el riesgo se maneja con el MONTO (que se banque -30%) y la
+   alarma va lejos (debajo del mínimo del año o -25%).
+2. GRAHAM (CEDEARs, 12 meses). Cumple 5+ de los 7 criterios del inversor defensivo y el precio está debajo de su valor
+   según Graham (margen de seguridad). 576 balances 2010-2025: las de 5+ criterios le ganaron al S&P 63 de cada 100 años.
+
+El riesgo se maneja con el tamaño: cantidad = riesgo por operación (1R de la configuración) / distancia a la alarma.
+Cada propuesta dice de dónde puede salir la plata (lo que vence pronto en la cartera). Se mide sola en la simulación.
+"""
+from __future__ import annotations
+
+import bisect
+from datetime import date, timedelta
+
+CLAVE_CAND = "posiciones/candidatas"
+MAX_DIA = 2
+SPREAD_MAX = 1.5
+MONTO_MIN = 20_000_000
+
+
+def _usd(ccl_f: list[str], ccl: dict, f: str, p: float) -> float | None:
+    i = bisect.bisect_right(ccl_f, f) - 1
+    return p / ccl[ccl_f[i]] if i >= 0 else None
+
+
+def rebotes(ctx, velas_de, ccl: dict, precio_de) -> list[dict]:
+    """Acciones argentinas que hoy cumplen la regla del rebote en dólares."""
+    fs = sorted(ccl)
+    hoy = ctx.fecha.isoformat()
+    out = []
+    for tk, t in (ctx.por_simbolo or {}).items():
+        if (t or {}).get("grupo") != "acciones":
+            continue
+        pr = precio_de(tk)
+        v = velas_de(tk)
+        if not pr or len(v) < 80:
+            continue
+        s = [u for u in (_usd(fs, ccl, x["fecha"], x["cierre"]) for x in v[-61:] if x.get("cierre")) if u]
+        hoy_u = _usd(fs, ccl, hoy, pr)
+        if len(s) < 40 or not hoy_u:
+            continue
+        s.append(hoy_u)
+        dd, r20 = hoy_u / max(s[-60:]) - 1, hoy_u / s[-21] - 1
+        if dd <= -0.30 and r20 <= -0.15:
+            mn = min(x["minimo"] for x in v[-250:] if x.get("minimo"))
+            out.append({"ticker": tk, "tipo": "rebote", "dd": round(dd * 100, 1), "r20": round(r20 * 100, 1), "min_1a": mn})
+    return out
+
+
+def graham(almacen) -> list[dict]:
+    t = almacen.get("biblioteca/graham") or {}
+    out = []
+    for tk, x in t.items():
+        ev = x.get("ev") or {}
+        if ev.get("cumple", 0) >= 5 and (ev.get("margen_pct") or -1) >= 0:
+            out.append({"ticker": tk, "tipo": "graham", "cumple": ev["cumple"], "margen": ev["margen_pct"], "frase": x.get("frase")})
+    return sorted(out, key=lambda c: (-c["cumple"], -c["margen"]))
+
+
+def fondeo(almacen, cartera: list[dict], hoy: date) -> str:
+    """De dónde puede salir la plata: lo que vence pronto en la cartera (Clau: "no tengo disponible")."""
+    try:
+        from ..datos.bymaeduca import flujos_guardados
+        fl = flujos_guardados(almacen)
+        lim = (hoy + timedelta(days=35)).isoformat()
+        vence = sorted((str((fl.get(c["ticker"]) or {}).get("vence") or ""), c["ticker"]) for c in cartera)
+        pr = [f"{tk} vence el {f[8:10]}/{f[5:7]}" for f, tk in vence if hoy.isoformat() < f <= lim]
+        return ("Para la plata: " + "; ".join(pr) + ".") if pr else ""
+    except Exception:
+        return ""
+
+
+def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], un_r: float, hora: str) -> list[dict]:
+    """Hasta 2 por día, una sola vez por día (después de las 11:20, con precios ya asentados)."""
+    import hashlib
+    from ..nucleo.calc import spread_pct
+    from ..nucleo.config import sector
+    if not ("11:20" <= (hora or "") < "16:30") or not un_r:
+        return []
+    hoy_s = hoy.isoformat()
+    ya = {p["ticker"] for p in previas if p.get("linea") == "posicion" and p.get("fecha", "") >= (hoy - timedelta(days=20)).isoformat()}
+    if sum(1 for p in previas if p.get("linea") == "posicion" and p.get("fecha") == hoy_s) >= MAX_DIA:
+        return []
+    cand = almacen.get(CLAVE_CAND) or {}
+    if cand.get("fecha") != hoy_s:
+        from ..datos import gratis
+        ccl = gratis.ccl_historico()
+        precio_de = lambda tk: ((ctx.titulo(tk) or {}).get("ultimo"))
+        cand = {"fecha": hoy_s, "hora": hora, "lista": rebotes(ctx, ctx.cache.velas, ccl, precio_de) + graham(almacen)[:5]}
+        almacen.put(CLAVE_CAND, cand)
+    mias = {c["ticker"] for c in cartera}
+    out = []
+    for c in cand.get("lista") or []:
+        if len(out) + sum(1 for p in previas if p.get("linea") == "posicion" and p.get("fecha") == hoy_s) >= MAX_DIA:
+            break
+        tk = c["ticker"]
+        t = ctx.titulo(tk) or {}
+        pr = t.get("ultimo")
+        if tk in ya or not pr:
+            continue
+        sp = spread_pct(t, hora)
+        if (sp is not None and sp > SPREAD_MAX) or ((t.get("monto") or 0) < MONTO_MIN and t.get("grupo") == "acciones"):
+            continue  # 19/11 (GCLA): con mucha diferencia entre puntas o poco volumen, la ventaja se la come la entrada
+        entrada = float(t.get("venta") or pr) if sp is not None else float(pr)
+        if c["tipo"] == "rebote":
+            stop = round(max(c["min_1a"] * 0.98, entrada * 0.75), 2)
+            meses, objetivo = 3, round(entrada * 1.25, 2)
+            por_que = (f"📅 Posición de 3 meses (rebote en dólares): cayó {abs(c['dd']):.0f}% en dólares desde su máximo de 3 meses y "
+                       f"{abs(c['r20']):.0f}% en el último mes. En 10 años, con 64 acciones argentinas, después de caídas así rindió a 3 meses "
+                       f"+4,4% típico (+10% promedio) y subió 56 de cada 100 veces, contra -4,4% de un día cualquiera. Puede seguir cayendo "
+                       f"antes de rebotar: por eso la alarma va lejos y el monto es chico.")
+        else:
+            stop = round(entrada * 0.75, 2)
+            meses, objetivo = 12, round(entrada * 1.30, 2)
+            por_que = (f"📅 Posición de 12 meses (Graham): cumple {c['cumple']} de 7 criterios del inversor defensivo y el precio está "
+                       f"{c['margen']}% debajo de lo que valdría según su fórmula (margen de seguridad). En 2010-2025, las que cumplían 5 o más "
+                       f"le ganaron al S&P 500 63 de cada 100 años (+4,4%).")
+        if c["tipo"] == "rebote" and tk in mias:
+            por_que += " Ya tenés este papel: esto sería sumar."
+        riesgo_u = entrada - stop
+        cant = int(un_r / riesgo_u) if riesgo_u > 0 else None
+        f_ = fondeo(almacen, cartera, hoy)
+        plan = {"ticker": tk, "lado": "compra", "entrada": round(entrada, 2), "stop": stop, "objetivo": objetivo, "tamano_r": 1.0,
+                "vence": (hoy + timedelta(days=30 * meses)).isoformat(), "riesgo_pct": round(riesgo_u / entrada * 100, 1),
+                "recompensa_pct": round((objetivo / entrada - 1) * 100, 1)}
+        out.append({"id": hashlib.sha1(f"pos{hoy_s}{tk}".encode()).hexdigest()[:10], "ticker": tk, "sector": sector(tk),
+                    "linea": "posicion", "tipo_posicion": c["tipo"], "meses": meses, "plan": plan, "fecha": hoy_s, "hora": hora,
+                    "decision": "pendiente", "precio_al_proponer": pr, "cantidad_sugerida": cant,
+                    "monto_sugerido": round(cant * entrada) if cant else None, "confianza": "media",
+                    "resumen_jefe": por_que + (f" {f_}" if f_ else "") + " La alarma escalonada deja correr la ganancia.",
+                    "senales": [{"agente": "posiciones", "direccion": 1, "fuerza": 0.6, "texto": por_que}],
+                    "riesgo": {"ok": True, "tamano_r": 1.0, "motivos": [], "avisos": [f"Diferencia entre puntas {sp:.1f}%." if sp else ""]},
+                    "seguimiento": {"estado": "pendiente"}})
+    return out

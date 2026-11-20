@@ -55,6 +55,7 @@ capital:
 riesgo:
   max_propuestas_dia: 3
   r_minimo_neto: 1.3      # relación ganancia/pérdida mínima después de costos
+  mov_minimo_corto_pct: 5   # 20/11: operación corta solo si el objetivo está a 5% o más (comisión 1,2% ida y vuelta)
   perdida_max_dia_r: 2.0
   perdida_max_semana_r: 4.0
   max_por_sector: 2
