@@ -45,6 +45,45 @@ def medir(hoy) -> dict:
     return out
 
 
+def forward_politico(almacen, hoy) -> dict | None:
+    """20/11 (Nacho, IEB): tasa forward entre el AO27 y el AO28 valuados a dólar cable. El AO27 vence justo después de la
+    elección de octubre de 2027 y el AO28 un año más tarde: la tasa implícita para ese año mide cuánto riesgo político
+    percibe el mercado para después de la elección, mejor que el riesgo país. Se guarda la serie diaria para ver su historia."""
+    from datetime import date as _d
+    from ..datos.eventos import flujos_bonos
+    pan = (almacen.get("ui/panel") or {}).get("titulos") or {}
+    fl = flujos_bonos(almacen)
+
+    def tir(tk, px):
+        fs = [(_d.fromisoformat(str(f["fecha"])[:10]), float(f.get("interes") or 0) + float(f.get("amortizacion") or 0))
+              for f in ((fl.get(tk) or {}).get("flujos") or []) if str(f["fecha"])[:10] > hoy.isoformat()]
+        if not fs or not px:
+            return None, None
+        lo, hi = -0.5, 3.0
+        for _ in range(200):
+            m = (lo + hi) / 2
+            v = sum(c / (1 + m) ** ((d - hoy).days / 365) for d, c in fs)
+            lo, hi = (m, hi) if v > px else (lo, m)
+        return m, (fs[-1][0] - hoy).days / 365
+    p27, p28 = (pan.get("AO27C") or [None])[0], (pan.get("AO28C") or [None])[0]
+    (y1, t1), (y2, t2) = tir("AO27", p27), tir("AO28", p28)
+    if y1 is None or y2 is None or not t2 or t2 <= t1:
+        return None
+    fw = ((1 + y2) ** t2 / (1 + y1) ** t1) ** (1 / (t2 - t1)) - 1
+    hist = almacen.get("ciclo/forward_hist") or {}
+    hist[hoy.isoformat()] = round(fw * 100, 1)
+    hist = dict(sorted(hist.items())[-800:])
+    almacen.put("ciclo/forward_hist", hist)
+    vals = list(hist.values())
+    pct = round(sum(1 for v in vals if v < fw * 100) / len(vals) * 100) if len(vals) >= 60 else None
+    return {"ao27_tir": round(y1 * 100, 1), "ao28_tir": round(y2 * 100, 1), "forward": round(fw * 100, 1), "percentil": pct,
+            "texto": f"Riesgo político (tasa forward AO27-AO28 a cable): {str(round(fw * 100, 1)).replace('.', ',')}% "
+                     f"(AO27 {str(round(y1 * 100, 1)).replace('.', ',')}%, AO28 {str(round(y2 * 100, 1)).replace('.', ',')}%). "
+                     "Es lo que el mercado le cobra a Argentina por el año después de la elección de 2027"
+                     + (f"; más alto que el {pct}% de los días registrados." if pct is not None else
+                        "; en abril-julio de 2026 estaba entre 10% y 16% (IEB). La mesa empieza a guardar la serie para medirla.")}
+
+
 def max_posiciones_dia(almacen, default: int = 2) -> int:
     t = (almacen.get(CLAVE) or {}).get("argentina") or {}
     return {"agresiva": 2, "neutral": 2, "prudente": 1}.get(t.get("postura"), default)

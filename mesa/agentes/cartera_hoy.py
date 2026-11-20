@@ -109,7 +109,8 @@ def armar(ctx, almacen, cartera: list[dict], hoy: date, noticias_de=None) -> dic
                 txt += f": precio {_n(pr, 2)}" + (f" ({'+' if res_b >= 0 else ''}{_n(res_b, 1)}% contra tu compra)" if res_b is not None else "") \
                     + " (sin cronograma de pagos cargado)"
             if str(info.get("moneda") or "").upper() == "USD" and info.get("tir") not in (None, "") and float(info["tir"]) < 5:
-                txt += " → rinde poco para un bono en dólares: el agente de asimetría muestra alternativas (AL35, AL41)"
+                txt += (" (a precio MEP) → rinde poco para un bono en dólares. Ojo: valuado a dólar cable el mismo bono rinde bastante más"
+                        " (AO27: 11% contra 3,8%, 20/11); el agente de asimetría muestra alternativas (AL35, AL41)")
             if vence and hoy.isoformat() < str(vence) <= (hoy + timedelta(days=15)).isoformat():
                 txt += " → vence en menos de 15 días: queda plata libre para las oportunidades"
             lineas.append(txt + ".")

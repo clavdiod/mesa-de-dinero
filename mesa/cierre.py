@@ -323,7 +323,16 @@ def diario(simular: bool = False) -> dict:
             print(f"[cierre] kostolany: {ex}")
         try:  # 20/11: termómetro del ciclo (Marks): miedo o calma con Argentina y EE.UU.
             from .agentes import ciclo as _ciclo
-            a.put(_ciclo.CLAVE, _ciclo.medir(hoy))
+            _t = _ciclo.medir(hoy)
+            try:
+                _f = _ciclo.forward_politico(a, hoy)
+                if _f:
+                    _t["forward"] = _f
+                    if _t.get("argentina"):
+                        _t["argentina"]["texto"] += " " + _f["texto"]
+            except Exception as ex_f:
+                print(f"[cierre] forward: {ex_f}")
+            a.put(_ciclo.CLAVE, _t)
         except Exception as ex:
             print(f"[cierre] ciclo: {ex}")
         try:  # 20/11: el Bibliotecario (Graham: 7 criterios del inversor defensivo y margen de seguridad)
