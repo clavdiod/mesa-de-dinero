@@ -73,6 +73,9 @@ def datos_sec(cik: str) -> dict | None:
     prim = lambda *ks, un="USD": next((u(k, un) for k in ks if u(k, un)), [])
     s = {
         "eps": _anuales(prim("EarningsPerShareDiluted", "EarningsPerShareBasic", un="USD/shares")),
+        # 20/11: la ganancia total (no por acción) para estabilidad y crecimiento: la ganancia por acción publicada no se
+        # corrige por los desdoblamientos (NVDA: 11,93 en 2024 y 2,94 en 2025 por el split 10 a 1)
+        "ganancia": _anuales(prim("NetIncomeLoss", "ProfitLoss", "NetIncomeLossAvailableToCommonStockholdersBasic")),
         "ventas": _anuales(prim("Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax", "SalesRevenueNet")),
         "div": _anuales(prim("CommonStockDividendsPerShareDeclared", "CommonStockDividendsPerShareCashPaid", un="USD/shares")),
         "div_pagados": _anuales(prim("PaymentsOfDividendsCommonStock", "PaymentsOfDividends")),
@@ -93,9 +96,15 @@ def evaluar(s: dict, precio: float, hasta: str | None = None) -> dict | None:
     eps = pub("eps")
     if len(eps) < 3 or not precio:
         return None
-    eps10 = [v for _, v in eps[-10:]]
-    eps3 = sum(v for _, v in eps[-3:]) / 3
     ac, pc, dlp, pat, acc = ult("act_corr"), ult("pas_corr"), ult("deuda_lp"), ult("patrimonio"), ult("acciones")
+    gan = pub("ganancia")
+    if len(gan) >= 3 and acc:  # por acción con las acciones de hoy: así los desdoblamientos no rompen la serie
+        eps10 = [v / acc for _, v in gan[-10:]]
+        eps_ult = gan[-1][1] / acc
+    else:
+        eps10 = [v for _, v in eps[-10:]]
+        eps_ult = eps[-1][1]
+    eps3 = sum(eps10[-3:]) / 3
     ventas = ult("ventas")
     bvps = pat / acc if pat and acc else None
     divs = pub("div") or pub("div_pagados")
@@ -111,7 +120,7 @@ def evaluar(s: dict, precio: float, hasta: str | None = None) -> dict | None:
     pe3 = precio / eps3 if eps3 > 0 else None
     pb = precio / bvps if bvps and bvps > 0 else None
     crit["precio"] = bool(pe3 and pe3 <= 15 and (pb is None or pe3 * pb <= 22.5))
-    ng = math.sqrt(22.5 * eps[-1][1] * bvps) if bvps and bvps > 0 and eps[-1][1] > 0 else None
+    ng = math.sqrt(22.5 * eps_ult * bvps) if bvps and bvps > 0 and eps_ult > 0 else None
     return {"cumple": sum(crit.values()), "criterios": crit, "pe3": round(pe3, 1) if pe3 else None, "pb": round(pb, 2) if pb else None,
             "numero_graham": round(ng, 2) if ng else None, "margen_pct": round((ng / precio - 1) * 100) if ng else None,
             "anios_eps": len(eps10), "al": eps[-1][0]}
@@ -145,9 +154,13 @@ def actualizar(a, universo: list[str], hoy: date, maximo: int = 25) -> dict:
     """Semanal por empresa (la SEC pide no abusar). Usa el precio en dólares que ya guardó fundamentos."""
     from concurrent.futures import ThreadPoolExecutor
     from .fundamentos import NO_EMPRESA, _ciks
+    from ..datos.gratis import yahoo_varios
     tabla = a.get(CLAVE) or {}
     fund = a.get("fundamentos/cedears") or {}
-    emp = [t for t in universo if t not in NO_EMPRESA]
+    # 20/11: también los CEDEARs del panel que no están en el universo de fundamentos (NVDA, MU, KO, MSFT faltaban)
+    pan = (a.get("ui/panel") or {}).get("titulos") or {}
+    extra = [t for t, x in pan.items() if x and len(x) > 4 and x[4] == "cedears" and t.isalpha() and not t.endswith(("D", "C"))] if universo else []
+    emp = list(dict.fromkeys([t for t in list(universo) + extra if t not in NO_EMPRESA]))
     viejo = (hoy - timedelta(days=7)).isoformat()
     pend = [t for t in emp if (tabla.get(t) or {}).get("sec_fecha", "") < viejo][:maximo]
     if pend:
@@ -164,11 +177,13 @@ def actualizar(a, universo: list[str], hoy: date, maximo: int = 25) -> dict:
             except Exception as ex:
                 print(f"[biblioteca] {t}: {ex}")
                 return t, False
+        faltan = [t for t in pend if not (fund.get(t) or {}).get("precio_usd")]
+        px = {k: v.get("precio") for k, v in (yahoo_varios(faltan) if faltan else {}).items()}
         with ThreadPoolExecutor(4) as ex:
             for t, s in ex.map(uno, pend):
                 if s is False:
                     continue
-                pr = (fund.get(t) or {}).get("precio_usd")
+                pr = (fund.get(t) or {}).get("precio_usd") or px.get(t)
                 ev = evaluar(s, pr) if s and pr else None
                 tabla[t] = {"sec_fecha": hoy.isoformat(), **({"ev": ev, "frase": frase(ev)} if ev else {"sin_datos": True})}
     a.put(CLAVE, tabla)
