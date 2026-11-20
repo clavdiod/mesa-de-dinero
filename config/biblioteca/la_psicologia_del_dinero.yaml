@@ -1,0 +1,27 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: La psicología del dinero (The Psychology of Money)
+autor: 'Morgan Housel (2020)'
+en_una_frase: 'Con la plata importa más cómo te comportás que cuánto sabés: evitá la ruina, dale tiempo al interés compuesto y sabé cuándo es "suficiente".'
+ideas:
+  - clave: comportamiento_mas_que_saber
+    idea: 'Gente sin formación financiera hizo fortunas con paciencia y gente brillante quebró por codicia: el comportamiento pesa más que la inteligencia.'
+    en_criollo: 'No hace falta ser un genio; hace falta no hacer macanas.'
+    en_la_mesa: 'Reglas fijas y probadas para no decidir en caliente.'
+    situaciones: [recuperar_perdida, panico, euforia]
+  - clave: margen_para_equivocarse
+    idea: 'Planificá con margen de error: las cosas salen peor de lo esperado más seguido de lo que creemos.'
+    en_criollo: 'Dejate siempre un resto por si te equivocás.'
+    en_la_mesa: 'Tope de pérdida total de 7,5% del millón.'
+    situaciones: [cartera, especulacion]
+  - clave: suficiente
+    idea: 'La forma más segura de perder todo es no saber cuándo ya es suficiente y seguir arriesgando lo que tenés por lo que no necesitás.'
+    en_criollo: 'No arriesgues lo que necesitás por lo que no necesitás.'
+    en_la_mesa: 'La renta fija de la cartera no se toca para especular.'
+    situaciones: [cartera, recuperar_perdida]
+  - clave: el_tiempo_hace_el_trabajo
+    idea: 'La mayor parte de la riqueza de los grandes inversores vino de muchos años de interés compuesto, no de un golpe de suerte.'
+    en_criollo: 'Lo que más multiplica la plata es el tiempo.'
+    en_la_mesa: 'Posiciones de meses y base en el índice.'
+    situaciones: [largo_plazo]
+fuentes_resumen:
+  - https://www.collaborativefund.com/blog/the-psychology-of-money/

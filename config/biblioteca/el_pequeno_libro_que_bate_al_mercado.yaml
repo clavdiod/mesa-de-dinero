@@ -1,0 +1,18 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: El pequeño libro que bate al mercado
+autor: 'Joel Greenblatt (2005), gestor de Gotham Capital'
+en_una_frase: 'Comprá buenas empresas (que ganan mucho sobre el capital que usan) a precios baratos (que rinden mucho sobre lo que valen), muchas a la vez, y tené paciencia: la fórmula falla años enteros.'
+ideas:
+  - clave: formula_magica
+    idea: 'Dos números: cuánto gana la empresa sobre lo que vale toda la empresa (rendimiento) y cuánto gana sobre el capital que necesita para operar (retorno sobre el capital). Comprar las que están mejor en los dos.'
+    en_criollo: 'Buen negocio y buen precio a la vez.'
+    en_la_mesa: 'Probado el 20/11 con 982 balances de 72 empresas (2009-2025): las que rinden 8% o más sobre lo que vale toda la empresa y ganan 25% o más sobre su capital le ganaron al S&P 56 de cada 100 años (+3,4%); las que no cumplían ninguna, -0,4%. Entra en la ficha de cada CEDEAR y en las posiciones de 12 meses.'
+    medible: formula_magica
+    situaciones: [compra, valuacion, elegir_acciones]
+  - clave: paciencia_con_la_formula
+    idea: 'Una buena estrategia puede perder contra el mercado dos o tres años seguidos; por eso la mayoría la abandona justo antes de que vuelva a funcionar.'
+    en_criollo: 'Si funcionara todos los años, todos la usarían y dejaría de funcionar.'
+    en_la_mesa: 'Las reglas de la mesa se juzgan con muchos casos, no con la última operación.'
+    situaciones: [recuperar_perdida, largo_plazo]
+fuentes_resumen:
+  - https://www.magicformulainvesting.com/

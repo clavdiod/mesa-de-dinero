@@ -1,0 +1,17 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: La alquimia de las finanzas (The Alchemy of Finance)
+autor: 'George Soros (1987)'
+en_una_frase: 'Los mercados no reflejan la realidad tal cual: lo que creen los inversores cambia los precios, y los precios cambian la realidad (reflexividad). De ahí salen las burbujas y los derrumbes.'
+ideas:
+  - clave: reflexividad
+    idea: 'Las creencias de los inversores mueven los precios, y los precios afectan a las empresas (pueden conseguir plata más barata, comprar otras), lo que refuerza la creencia. Ese círculo arma auges que se pasan de largo y caídas que también.'
+    en_criollo: 'Cuando todos creen algo, el precio lo confirma un tiempo, hasta que la realidad no da más y se da vuelta fuerte.'
+    en_la_mesa: 'Coincide con Marks y Kostolany: miedo y euforia exagerados se corrigen. El termómetro y el pánico ya están probados.'
+    situaciones: [euforia, panico, ciclo]
+  - clave: equivocarse_rapido
+    idea: 'Soros asume que su tesis puede estar mal y busca el punto en que la realidad la contradice para salir rápido; cuando acierta, va con todo.'
+    en_criollo: 'Tené claro qué te haría cambiar de idea, y cuando pase, cambiá.'
+    en_la_mesa: 'Cada idea tiene alarma y plan antes de entrar.'
+    situaciones: [operacion_corta, recuperar_perdida]
+fuentes_resumen:
+  - https://en.wikipedia.org/wiki/The_Alchemy_of_Finance

@@ -199,8 +199,10 @@ def actualizar(a, universo: list[str], hoy: date, maximo: int = 25) -> dict:
                 pr = (fund.get(t) or {}).get("precio_usd") or px.get(t)
                 ev = evaluar(s, pr) if s and pr else None
                 ly = evaluar_lynch(s, pr, ticker=t) if s and pr else None
+                qa = evaluar_calidad(s, pr, ticker=t) if s and pr else None
                 tabla[t] = {"sec_fecha": hoy.isoformat(), **({"ev": ev, "frase": frase(ev)} if ev else {"sin_datos": True}),
-                            **({"lynch": ly, "frase_lynch": frase_lynch(ly)} if ly else {})}
+                            **({"lynch": ly, "frase_lynch": frase_lynch(ly)} if ly else {}),
+                            **({"calidad": qa, "frase_calidad": frase_calidad(qa)} if qa else {})}
     a.put(CLAVE, tabla)
     print(f"[biblioteca] Graham: {len(pend)} empresas revisadas")
     return tabla
@@ -210,7 +212,7 @@ def de(a, ticker: str) -> str:
     t = ticker.upper()
     tabla = a.get(CLAVE) or {}
     x = tabla.get(t) or (tabla.get(t[:-1]) if t[-1:] in ("D", "C") else None) or {}
-    return " ".join(f for f in (x.get("frase"), x.get("frase_lynch")) if f)
+    return " ".join(f for f in (x.get("frase"), x.get("frase_lynch"), x.get("frase_calidad")) if f)
 
 
 def leccion(situaciones: list[str], semana: int) -> dict | None:
@@ -370,3 +372,17 @@ def es_formula_magica(q: dict | None) -> bool:
 
 def es_buffett(q: dict | None) -> bool:
     return bool(q and (q.get("roe_min") or 0) >= 15 and q.get("deuda_patrimonio") is not None and q["deuda_patrimonio"] < 0.5)
+
+
+def frase_calidad(q: dict | None) -> str:
+    """20/11, probado con 982 balances de 72 empresas (2009-2025), a 12 meses contra el S&P 500."""
+    if not q:
+        return ""
+    p = []
+    if es_formula_magica(q):
+        p.append(f"📚 Greenblatt: cumple la fórmula mágica (rinde {str(q['ey']).replace('.', ',')}% sobre lo que vale y {q['roc']}% sobre su capital);"
+                 " probado: le ganaron al S&P 56 de cada 100 años (+3,4%)")
+    if es_buffett(q):
+        p.append(f"📚 Buffett: gana {str(q['roe_min']).replace('.', ',')}%+ sobre su patrimonio los últimos 3 años y debe poco;"
+                 " probado: le ganaron al S&P 54 de cada 100 años (+2,6%)")
+    return (". ".join(p) + ".") if p else ""

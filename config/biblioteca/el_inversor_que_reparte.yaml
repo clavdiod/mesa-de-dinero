@@ -1,0 +1,18 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: El reparto inteligente de activos (The Intelligent Asset Allocator)
+autor: 'William Bernstein (2000)'
+en_una_frase: 'Lo que más decide el resultado no es qué acción comprás sino cómo repartís entre acciones, bonos y regiones, y que rebalancees cada tanto.'
+ideas:
+  - clave: el_reparto_manda
+    idea: 'Combinar activos que no se mueven juntos (acciones y bonos, distintos países) baja el riesgo de la cartera sin bajar tanto el rendimiento.'
+    en_criollo: 'Si una parte cae y la otra no, dormís mejor.'
+    en_la_mesa: 'La cartera de Clau ya combina renta fija en pesos, bonos en dólares y acciones.'
+    situaciones: [cartera, rebalanceo]
+  - clave: rebalancear
+    idea: 'Una vez por año, volver al reparto elegido: vender un poco de lo que más subió y comprar de lo que bajó. Obliga a vender caro y comprar barato.'
+    en_criollo: 'Si las acciones subieron mucho y pasaron a ser más de lo que querías, sacá un poco y pasalo a bonos (y al revés).'
+    en_la_mesa: 'Probado el 20/11 con SPY e IEF (2002-2026): rebalancear una vez por año bajó un poco la peor caída (60/40: -33% contra -37%) pero también el rendimiento (5,9% contra 7,0% anual), porque en estos años las acciones le ganaron mucho a los bonos. Sirve para dormir mejor, no para ganar más.'
+    medible: rebalanceo
+    situaciones: [cartera, rebalanceo]
+fuentes_resumen:
+  - https://www.efficientfrontier.com/

@@ -149,6 +149,11 @@ def graham(almacen) -> list[dict]:
         ly = x.get("lynch") or {}
         if tk in ya_ or not ly or ly.get("categoria") == "ciclica" or (ly.get("deuda_patrimonio") or 0) > 1:
             continue
+        from .biblioteca import es_formula_magica
+        if es_formula_magica(x.get("calidad")) and not ((ly.get("caja_neta_pct") or 0) > 10 or es_combo_lynch(ly)):
+            q_ = x["calidad"]
+            out.append({"ticker": tk, "tipo": "greenblatt", "ey": q_["ey"], "roc": q_["roc"], "frase": x.get("frase_calidad")})
+            continue
         if (ly.get("caja_neta_pct") or 0) > 10 or es_combo_lynch(ly):
             out.append({"ticker": tk, "tipo": "lynch", "caja": ly.get("caja_neta_pct"), "peg": ly.get("peg"), "categoria": ly.get("categoria"),
                         "frase": x.get("frase_lynch")})
@@ -240,6 +245,12 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
             por_que = (f"📅 Posición de 3 meses (pánico de Kostolany): cayó {abs(c['r20']):.0f}% en un mes con {str(c['vol']).replace('.', ',')} veces "
                        f"su volumen normal: los que tiemblan están vendiendo. En 10 años, después de un pánico así, {ev_}. "
                        "Puede seguir cayendo antes de rebotar: alarma lejos y monto chico.")
+        elif c["tipo"] == "greenblatt":
+            stop = round(entrada * 0.75, 2)
+            meses, objetivo = 12, round(entrada * 1.30, 2)
+            por_que = (f"📅 Posición de 12 meses (fórmula mágica de Greenblatt): rinde {str(c['ey']).replace('.', ',')}% sobre lo que vale toda la empresa "
+                       f"y gana {c['roc']}% sobre el capital que usa: buen negocio a buen precio. En 2009-2025 las que la cumplían le ganaron al S&P 500 "
+                       "56 de cada 100 años (+3,4%). Greenblatt avisa: puede fallar años enteros; es para tener paciencia.")
         elif c["tipo"] == "lynch":
             stop = round(entrada * 0.75, 2)
             meses, objetivo = 12, round(entrada * 1.30, 2)

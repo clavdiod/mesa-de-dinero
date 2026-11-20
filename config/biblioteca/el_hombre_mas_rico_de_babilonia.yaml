@@ -1,0 +1,27 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: El hombre más rico de Babilonia
+autor: 'George S. Clason (1926)'
+en_una_frase: 'Guardá al menos una de cada diez monedas que ganás, hacé que esa plata trabaje para vos, protegela de las pérdidas y escuchá a los que saben.'
+ideas:
+  - clave: pagate_primero
+    idea: 'De todo lo que ganás, separá primero una parte (al menos 10%) para ahorrar, antes de gastar.'
+    en_criollo: 'Primero te pagás a vos, después a los demás.'
+    en_la_mesa: 'El millón de la mesa sale de lo que sobra, no de lo que hace falta para vivir.'
+    situaciones: [cartera]
+  - clave: que_la_plata_trabaje
+    idea: 'El oro ahorrado tiene que trabajar: ponerlo donde rinda, y que sus ganancias también trabajen.'
+    en_criollo: 'La plata quieta pierde con la inflación; ponela a rendir.'
+    en_la_mesa: 'La renta fija de la cartera y la caución cuando no hay oportunidades.'
+    situaciones: [cartera]
+  - clave: cuidar_el_capital
+    idea: 'Protegé tu tesoro: no lo pongas donde no entendés ni en manos de quien no sabe; las promesas de ganancias fáciles suelen terminar en pérdidas.'
+    en_criollo: 'Si te prometen ganar mucho rápido y sin riesgo, desconfiá.'
+    en_la_mesa: 'Cada regla se prueba con historia antes de poner plata.'
+    situaciones: [especulacion, recuperar_perdida]
+  - clave: consejo_de_quien_sabe
+    idea: 'Pedí consejo a quienes ya hicieron bien lo que querés hacer, no a cualquiera.'
+    en_criollo: 'Aprendé del que sabe, no del que habla.'
+    en_la_mesa: 'Por eso el Bibliotecario: lo que enseñan los grandes, probado.'
+    situaciones: [elegir_acciones]
+fuentes_resumen:
+  - https://es.wikipedia.org/wiki/El_hombre_m%C3%A1s_rico_de_Babilonia

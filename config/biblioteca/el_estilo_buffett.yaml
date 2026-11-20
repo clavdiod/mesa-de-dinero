@@ -1,0 +1,23 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: El estilo Warren Buffett (The Warren Buffett Way)
+autor: 'Robert G. Hagstrom (1994, varias ediciones)'
+en_una_frase: 'Comprá como si compraras la empresa entera: negocios simples, con ventajas duraderas, buenos gerentes y que ganen mucho sobre su patrimonio, a un precio razonable, y quedátelos mucho tiempo.'
+ideas:
+  - clave: negocio_simple_y_duradero
+    idea: 'Buffett compra negocios que entiende, con historia pareja y buenas perspectivas a largo plazo (una ventaja que los protege de la competencia).'
+    en_criollo: 'Comprá empresas que entendés y que la competencia no puede copiar fácil.'
+    en_la_mesa: 'Coincide con Lynch: la historia de dos minutos.'
+    situaciones: [compra, elegir_acciones]
+  - clave: retorno_sobre_patrimonio
+    idea: 'Un gran negocio gana mucho sobre el patrimonio de los dueños (más de 15% por año), sin necesitar mucha deuda.'
+    en_criollo: 'Si por cada 100 que pusieron los dueños gana 15 o más todos los años, y sin deber mucho, es un buen negocio.'
+    en_la_mesa: 'Probado el 20/11: las que ganaron 15% o más sobre su patrimonio los 3 últimos años y deben poco le ganaron al S&P 54 de cada 100 años (+2,6%), contra +0,6% de las de retorno bajo o irregular. Juntas con la fórmula mágica de Greenblatt: +4,6% (48 casos). Entra en la ficha de cada CEDEAR.'
+    medible: buffett
+    situaciones: [compra, valuacion]
+  - clave: precio_razonable
+    idea: 'Hasta el mejor negocio es mala compra si se paga demasiado: comprar con margen respecto de lo que vale.'
+    en_criollo: 'Buena empresa a buen precio, no a cualquier precio.'
+    en_la_mesa: 'Graham y Lynch ya miden el precio.'
+    situaciones: [valuacion]
+fuentes_resumen:
+  - https://www.investopedia.com/articles/01/071801.asp

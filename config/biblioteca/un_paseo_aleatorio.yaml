@@ -1,0 +1,22 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: Un paseo aleatorio por Wall Street (A Random Walk Down Wall Street)
+autor: 'Burton Malkiel (1973, muchas ediciones)'
+en_una_frase: 'Los precios se mueven de forma casi impredecible en el corto plazo; casi nadie le gana al mercado de forma sostenida, así que lo sensato es comprar el índice barato, repartir y mantener.'
+ideas:
+  - clave: paseo_aleatorio
+    idea: 'Los cambios de precio de corto plazo se parecen mucho al azar: lo que pasó ayer dice poco de lo que pasa mañana, y la mayoría de las señales técnicas no ganan después de costos.'
+    en_criollo: 'Adivinar qué va a hacer una acción mañana es casi tirar una moneda.'
+    en_la_mesa: 'Coincide con lo probado: la simulación de operaciones de 2 semanas perdió; las señales técnicas famosas (cruce dorado, quiebre con volumen) no dieron ventaja.'
+    situaciones: [operacion_corta, especulacion]
+  - clave: burbujas
+    idea: 'La historia está llena de burbujas (tulipanes, puntocom) donde el entusiasmo hizo pagar cualquier precio; siempre terminan mal para los últimos en entrar.'
+    en_criollo: 'Cuando todos dicen "esta vez es distinto", no lo es.'
+    en_la_mesa: 'Termómetro del ciclo y precaución con las salidas a bolsa con euforia.'
+    situaciones: [euforia, ipo]
+  - clave: indice_y_reparto_por_edad
+    idea: 'Comprar fondos índice baratos y repartir entre acciones y bonos según la edad y cuánto riesgo se banca cada uno.'
+    en_criollo: 'Lo aburrido suele ganar.'
+    en_la_mesa: 'Coincide con Bogle (probado): núcleo en el índice, ideas como satélite chico.'
+    situaciones: [cartera, largo_plazo]
+fuentes_resumen:
+  - https://en.wikipedia.org/wiki/A_Random_Walk_Down_Wall_Street
