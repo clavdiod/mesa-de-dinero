@@ -24,12 +24,12 @@ ideas:
   - clave: rendimiento_de_negocio_vs_especulativo
     idea: A largo plazo la bolsa rinde lo que rinden los negocios (dividendos más crecimiento de las ganancias). Lo demás es especulación (cuánto paga la gente por cada peso de ganancia) y eso va y viene.
     en_criollo: Si la acción sube porque la empresa gana más, eso queda. Si sube porque todos se entusiasmaron, eso se puede ir.
-    en_la_mesa: Ojo con pagar múltiplos muy altos (como ANT a 34 veces sus ventas): parte de la suba es entusiasmo.
+    en_la_mesa: 'Ojo con pagar múltiplos muy altos (como ANT a 34 veces sus ventas): parte de la suba es entusiasmo.'
     situaciones: [ipo, euforia, valuacion]
   - clave: quedarse_quieto
     idea: El tiempo juega a favor del que se queda invertido; el que entra y sale según las noticias suele comprar caro y vender barato.
     en_criollo: No hagas algo, quedate ahí. Las caídas son parte del camino.
-    en_la_mesa: Para la parte de largo plazo: no vender por pánico. Para las operaciones de la mesa: plan con alarma antes de entrar, no decisiones en caliente.
+    en_la_mesa: 'Para la parte de largo plazo: no vender por pánico. Para las operaciones de la mesa: plan con alarma antes de entrar, no decisiones en caliente.'
     situaciones: [panico, caida_fuerte]
   - clave: bonos_segun_la_edad
     idea: Repartir entre acciones y bonos según cuánto riesgo podés bancar; una regla simple es tener en bonos un porcentaje parecido a tu edad.
