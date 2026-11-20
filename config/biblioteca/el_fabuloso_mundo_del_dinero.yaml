@@ -1,0 +1,39 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: El fabuloso mundo del dinero y la bolsa
+autor: 'André Kostolany (1986), especulador húngaro-alemán con 70 años en la bolsa'
+en_una_frase: 'En el corto y mediano plazo la bolsa la mueven la plata (las tasas y la liquidez) y el humor de la gente; a la larga, la economía. Comprá cuando hay pánico y los asustados venden.'
+ideas:
+  - clave: dinero_mas_psicologia
+    idea: 'La tendencia de la bolsa es la suma de dos cosas: cuánta plata hay disponible (tasas bajas, liquidez) y cómo está el ánimo de los inversores. Con las dos a favor sube; con las dos en contra baja.'
+    en_criollo: 'Si las tasas bajan y la gente está asustada, se está preparando una suba. Si las tasas suben y todos están eufóricos, cuidado.'
+    en_la_mesa: 'Se prueba si las tasas que bajan (EE.UU. y Argentina) anticipan subas de las acciones.'
+    medible: liquidez
+    situaciones: [cartera, ciclo]
+  - clave: el_perro_y_el_dueno
+    idea: 'La economía es un hombre que pasea a su perro (la bolsa). El perro corre para adelante y para atrás, a veces muy lejos, pero al final llegan juntos.'
+    en_criollo: 'La bolsa se adelanta y se atrasa respecto de la economía, pero a la larga la sigue. No te asustes por las corridas del perro.'
+    en_la_mesa: 'Por eso las posiciones de 3 a 12 meses: dan tiempo a que el perro vuelva con el dueño.'
+    situaciones: [panico, caida_fuerte, largo_plazo]
+  - clave: manos_firmes_y_temblorosas
+    idea: 'En los pisos, las acciones pasan de los que tiemblan (que venden por miedo o porque necesitan la plata) a los de manos firmes. En los techos pasa al revés.'
+    en_criollo: 'No compres con plata que vas a necesitar: te convierte en mano temblorosa y te hace vender en el peor momento.'
+    en_la_mesa: 'El tamaño de cada idea (1,5% del capital) es para que Clau pueda ser mano firme y no vender en el piso.'
+    situaciones: [panico, recuperar_perdida, caida_fuerte]
+  - clave: el_huevo
+    idea: 'El ciclo de la bolsa tiene forma de huevo: corrección (poco volumen), suba acompañada (volumen creciente) y exageración (volumen enorme, todos compran); después lo mismo para abajo, hasta el pánico (volumen enorme, todos venden). Se compra en el pánico y se vende en la exageración.'
+    en_criollo: 'Cuando el precio se derrumba con un volumen enorme, todos están vendiendo: suele ser el momento de comprar. Cuando sube con volumen enorme y todos hablan de eso, de vender.'
+    en_la_mesa: 'Se prueba con precio y volumen de las acciones argentinas y los CEDEARs si la fase de pánico rinde más que la de exageración.'
+    medible: huevo
+    situaciones: [panico, euforia, caida_fuerte]
+  - clave: contra_la_corriente
+    idea: 'Cuando todos piensan lo mismo, suelen estar equivocados. El especulador gana yendo contra la mayoría, con paciencia.'
+    en_criollo: 'Si en el asado todos hablan de la misma acción, es tarde.'
+    en_la_mesa: 'Coincide con Marks y con lo probado en Argentina: el miedo fue la mejor hora de comprar.'
+    situaciones: [euforia, ipo, panico]
+  - clave: quien_puede_especular
+    idea: 'El que tiene mucha plata puede especular; el que tiene poca no debe, porque una mala racha lo deja afuera.'
+    en_criollo: 'Especulá solo con lo que te sobra.'
+    en_la_mesa: 'El millón de la mesa es la parte para especular; el resto de la cartera queda en renta fija.'
+    situaciones: [especulacion, recuperar_perdida, cartera]
+fuentes_resumen:
+  - https://es.wikipedia.org/wiki/Andr%C3%A9_Kostolany
