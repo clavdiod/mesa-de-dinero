@@ -11,7 +11,7 @@ ideas:
   - clave: a_favor_de_la_tendencia
     idea: 'La tendencia es tu amiga: comprar en tendencias alcistas y no pelear contra las bajistas. Los promedios móviles (50 y 200 ruedas) marcan la tendencia; el cruce del de 50 sobre el de 200 es el "cruce dorado".'
     en_criollo: 'No compres algo que viene cayendo esperando que se dé vuelta, salvo que tengas una razón probada.'
-    en_la_mesa: 'Se prueba el cruce dorado, el cruce de la muerte y estar arriba o abajo del promedio de 200.'
+    en_la_mesa: 'Probado el 20/11 (10 años, 3 meses): el cruce dorado NO sirvió (acciones argentinas -8,8% contra -5,5% de cualquier momento; CEDEARs +0,9% contra +1,2%) y el cruce de la muerte rindió mejor. Estar arriba del promedio de 200 casi no cambia nada.'
     medible: tendencia
     situaciones: [compra, caida_fuerte]
   - clave: soportes_y_resistencias
@@ -22,13 +22,13 @@ ideas:
   - clave: el_volumen_confirma
     idea: 'El volumen tiene que acompañar a la tendencia: una suba con volumen creciente es firme; un quiebre de un techo sin volumen es sospechoso.'
     en_criollo: 'Si sube con mucha gente comprando, creele; si sube con poca gente, desconfiá.'
-    en_la_mesa: 'Se prueba el quiebre del máximo del año con volumen.'
+    en_la_mesa: 'Probado el 20/11: quebrar el máximo del año con volumen no rindió más que sin volumen (acciones argentinas -4,0% contra -3,2%; CEDEARs +1,0% contra +1,4%). No se cumple.'
     medible: quiebre
     situaciones: [compra, euforia]
   - clave: osciladores_en_rangos
     idea: 'Los osciladores (RSI, estocástico) sirven cuando el precio va de costado; en una tendencia fuerte pueden quedar sobrecomprados o sobrevendidos mucho tiempo. Lo mejor es usarlos a favor de la tendencia mayor.'
     en_criollo: 'Un RSI bajo en una acción que viene subiendo es una oportunidad de entrar barato; en una que viene cayendo puede ser una trampa.'
-    en_la_mesa: 'Se prueba RSI bajo 30 arriba y abajo del promedio de 200, y la divergencia alcista.'
+    en_la_mesa: 'Probado el 20/11: en acciones argentinas, un RSI que baja de 30 con tendencia alcista rindió +3,9% a 3 meses (suben 55 de cada 100) contra -1,4% con tendencia bajista y -5,5% de cualquier momento: se cumple y la mesa lo propone. En CEDEARs, el RSI bajo 30 sirve con cualquier tendencia (+2,4% y +3,4% contra +1,2%). La divergencia alcista ayudó poco (CEDEARs +2,6%).'
     medible: osciladores
     situaciones: [compra, caida_fuerte]
   - clave: manejo_del_dinero

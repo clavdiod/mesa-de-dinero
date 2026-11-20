@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-20'
+  caso: 'El Bibliotecario suma a Murphy: Análisis técnico de los mercados financieros'
+  que_paso: 'Clau pasó el séptimo libro. Se probaron las reglas técnicas que la mesa no había medido (10 años, 3 meses, con comisión). No se cumplieron: el cruce dorado (acciones argentinas -8,8% contra -5,5% de cualquier momento; CEDEARs +0,9% contra +1,2%), el quiebre del máximo del año con volumen (no rindió más que sin volumen) y estar arriba del promedio de 200 (casi igual). Se cumplió la idea de usar los osciladores a favor de la tendencia: en acciones argentinas, RSI que baja de 30 estando arriba del promedio de 200 (en dólares) rindió +3,9% (suben 55 de cada 100; 179 casos) contra -1,4% con tendencia bajista. En CEDEARs el RSI bajo 30 ayuda con cualquier tendencia.'
+  leccion: 'Las señales técnicas famosas (cruce dorado, quiebre con volumen) no dan ventaja por sí solas en estos mercados; comprar una caída dentro de una suba, sí.'
+  cambio: 'La línea de posiciones suma el "retroceso en tendencia alcista" en acciones argentinas (3 meses), avisando que la muestra es chica.'
+- fecha: '2026-11-20'
   caso: 'Que todos aprendan las reglas de los libros y analicen siempre todo, noticias incluidas'
   que_paso: 'Clau pidió que todos los analistas usen las reglas de los libros probadas y que las noticias entren siempre en las decisiones. Las posiciones de meses salían sin noticias ni ficha en frío.'
   leccion: 'Una regla probada no alcanza sola: cada propuesta tiene que llegar con todo lo que se sabe del papel ese día.'

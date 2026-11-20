@@ -103,6 +103,37 @@ def preparar_kostolany(almacen, cache, hoy: date) -> dict:
     return res
 
 
+def retrocesos(ctx, velas_de, ccl: dict, precio_de) -> list[dict]:
+    """20/11 (Murphy, probado): acción argentina en tendencia alcista (en dólares, arriba de su promedio de 200 ruedas) cuyo
+    RSI acaba de bajar de 30: a 3 meses +3,9% típico (suben 55 de cada 100) contra -5,5% de cualquier momento (179 casos)."""
+    import numpy as np
+    fs = sorted(ccl)
+    out = []
+    for tk, t in (ctx.por_simbolo or {}).items():
+        if (t or {}).get("grupo") != "acciones":
+            continue
+        pr = precio_de(tk)
+        v = velas_de(tk)
+        if not pr or len(v) < 230:
+            continue
+        s = [u for u in (_usd(fs, ccl, x["fecha"], x["cierre"]) for x in v[-260:] if x.get("cierre")) if u]
+        hoy_u = _usd(fs, ccl, ctx.fecha.isoformat(), pr)
+        if len(s) < 220 or not hoy_u:
+            continue
+        c = np.array(s + [hoy_u])
+        d = np.diff(c)
+        def _ema(x, n):
+            k, o = 2 / (n + 1), [x[0]]
+            for y in x[1:]:
+                o.append(y * k + o[-1] * (1 - k))
+            return np.array(o)
+        up, dn = _ema(np.maximum(d, 0), 27), _ema(np.maximum(-d, 0), 27)
+        r = 100 - 100 / (1 + up / np.where(dn == 0, 1e-12, dn))
+        if c[-1] > c[-200:].mean() and r[-1] < 30 and r[-2] >= 30:
+            out.append({"ticker": tk, "tipo": "retroceso", "rsi": round(float(r[-1])), "sobre200": round((c[-1] / c[-200:].mean() - 1) * 100, 1)})
+    return out
+
+
 def graham(almacen) -> list[dict]:
     t = almacen.get("biblioteca/graham") or {}
     out = []
@@ -161,13 +192,14 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
         precio_de = lambda tk: ((ctx.titulo(tk) or {}).get("ultimo"))
         kost = [k for k in ((almacen.get(CLAVE_KOST) or {}).get("lista") or []) if (almacen.get(CLAVE_KOST) or {}).get("fecha", "") >= (hoy - timedelta(days=4)).isoformat()]
         reb = rebotes(ctx, ctx.cache.velas, ccl, precio_de)
+        reb += [x for x in retrocesos(ctx, ctx.cache.velas, ccl, precio_de) if x["ticker"] not in {r["ticker"] for r in reb}]
         en_reb = {r["ticker"] for r in reb}
         cand = {"fecha": hoy_s, "hora": hora, "lista": reb + [k for k in kost if k["ticker"] not in en_reb] + graham(almacen)[:8]}
         almacen.put(CLAVE_CAND, cand)
     mias = {c["ticker"] for c in cartera}
     out = []
     # cuando cae todo el mercado salen muchas: primero las más operadas (entrar y salir sin mover el precio)
-    orden = {"rebote": 0, "panico": 1}
+    orden = {"rebote": 0, "retroceso": 0, "panico": 1}
     lista = sorted(cand.get("lista") or [], key=lambda c: (orden.get(c["tipo"], 2), -((ctx.titulo(c["ticker"]) or {}).get("monto") or 0)))
     for c in lista:
         if len(out) + sum(1 for p in previas if p.get("linea") == "posicion" and p.get("fecha") == hoy_s) >= max_dia:
@@ -193,6 +225,12 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
                        f"{abs(c['r20']):.0f}% en el último mes. En 10 años, con 64 acciones argentinas, después de caídas así rindió a 3 meses "
                        f"+4,4% típico (+10% promedio) y subió 56 de cada 100 veces, contra -4,4% de un día cualquiera. Puede seguir cayendo "
                        f"antes de rebotar: por eso la alarma va lejos y el monto es chico.")
+        elif c["tipo"] == "retroceso":
+            stop = round(entrada * 0.75, 2)
+            meses, objetivo = 3, round(entrada * 1.20, 2)
+            por_que = (f"📅 Posición de 3 meses (retroceso en tendencia alcista, Murphy): en dólares está {str(c['sobre200']).replace('.', ',')}% arriba de su "
+                       f"promedio de 200 ruedas y el RSI acaba de bajar a {c['rsi']}. En 10 años, con acciones argentinas, esa caída dentro de una suba "
+                       "rindió a 3 meses +3,9% típico (subieron 55 de cada 100), contra -5,5% de cualquier momento. Son 179 casos: muestra chica.")
         elif c["tipo"] == "panico":
             stop = round(entrada * 0.75, 2)
             meses, objetivo = 3, round(entrada * 1.20, 2)
@@ -217,7 +255,7 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
                        f"le ganaron al S&P 500 60 de cada 100 años (+3,3%).")
         try:  # 20/11 (Clau): qué tiempo aprox hace falta tenerla para ganar (scripts/probar_plazos.py)
             from .cartera_hoy import PLAZOS
-            pz = (PLAZOS["rebote"] if c["tipo"] == "rebote" else
+            pz = (PLAZOS["rebote"] if c["tipo"] in ("rebote", "retroceso") else
                   PLAZOS["panico_ced" if c.get("mercado") == "cedears" else "panico_acc"] if c["tipo"] == "panico" else
                   "pensada para un año: la ventaja de estas reglas se midió a 12 meses")
             por_que += f" ⏳ Tiempo: {pz}."
