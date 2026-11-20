@@ -1,6 +1,11 @@
 # Bitácora de aprendizajes: qué pasó, qué se aprendió y qué regla cambió.
 # Se muestra en la web (pestaña Agentes). Lo más nuevo arriba.
 - fecha: '2026-11-20'
+  caso: 'El Bibliotecario suma a Kostolany: El fabuloso mundo del dinero y la bolsa'
+  que_paso: 'Clau pasó el quinto libro. Se probó el huevo de Kostolany con 10 años de precio y volumen. Fase de pánico (cae 10% o más en un mes con 1,5 veces o más el volumen normal), a 3 meses: CEDEARs +6,8% típico y suben 64 de cada 100 (2.000 casos) contra +1,2% de cualquier momento; acciones argentinas en dólares +3,9% (55 de cada 100) contra -4,2%. Fase de exageración (sube 10% o más con mucho volumen): CEDEARs +0,7%, acciones argentinas -6,6%. La idea de "dinero más psicología" con las tasas no se cumplió: con la tasa a 10 años de EE.UU. o la BADLAR bajando, las acciones rindieron lo mismo que con las tasas subiendo.'
+  leccion: 'Comprar cuando los que tiemblan venden con volumen enorme funciona en los dos mercados; comprar en la euforia con volumen enorme, no. Mirar las tasas solas no alcanza para anticipar la bolsa.'
+  cambio: 'En el cierre se buscan los papeles en fase de pánico (CEDEARs con datos de EE.UU., acciones argentinas en dólares) y la línea de posiciones los propone a 3 meses, después de los rebotes en dólares y antes de Graham y Lynch, con alarma lejos y monto chico.'
+- fecha: '2026-11-20'
   caso: 'El Bibliotecario suma a Peter Lynch: Batiendo a Wall Street'
   que_paso: 'Clau pasó el cuarto libro. Se probaron sus reglas con 1.040 balances de 84 empresas (2009-2025), a 12 meses contra el S&P 500. Se cumplen: caja neta de más de 10% del precio, sin contar bancos, brokers ni empresas con financiera propia como Ford o GM (+15%, le ganan 69 de cada 100; 120 casos); crece + PEG menor a 1 + poca deuda (+4,2%, 56 de cada 100); las cíclicas rinden peor (-7,2%) y las muy endeudadas también (-4,1%). No se cumplen: el PEG solo (PEG menor a 0,5 dio -2,6%), las recompras de acciones (-2,7%) y comprar cíclicas con P/E alto (ambas variantes perdieron).'
   leccion: 'De Lynch funciona lo del balance (caja y poca deuda) y elegir empresas que crecen a precio razonable; no alcanza con un número solo.'

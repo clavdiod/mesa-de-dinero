@@ -54,6 +54,49 @@ def rebotes(ctx, velas_de, ccl: dict, precio_de) -> list[dict]:
     return out
 
 
+CLAVE_KOST = "posiciones/kostolany"
+
+
+def preparar_kostolany(almacen, cache, hoy: date) -> dict:
+    """En el cierre (20/11, Kostolany probado): la fase de PÁNICO del huevo = cae 10%+ en 20 ruedas con volumen 1,5 veces
+    o más el normal. A 3 meses: CEDEARs +6,8% típico (suben 64 de cada 100) contra +1,2% de cualquier momento; acciones
+    argentinas en dólares +3,9% (55 de cada 100) contra -4,2%. CEDEARs: precio y volumen de EE.UU. (Yahoo);
+    acciones argentinas: las velas de la mesa en dólares CCL."""
+    from concurrent.futures import ThreadPoolExecutor
+    from ..datos import gratis
+    pan = (almacen.get("ui/panel") or {}).get("titulos") or {}
+
+    def fase(c, v):
+        if len(c) < 61 or not v or sum(v[-60:-20]) <= 0:
+            return None
+        vr = (sum(v[-20:]) / 20) / (sum(v[-60:-20]) / 40)
+        r = c[-1] / c[-21] - 1
+        return {"r20": round(r * 100, 1), "vol": round(vr, 1)} if r <= -0.10 and vr >= 1.5 else None
+    out = []
+    ced = [t for t, x in pan.items() if x and len(x) > 4 and x[4] == "cedears" and t.isalpha() and not t.endswith(("D", "C"))]
+    with ThreadPoolExecutor(8) as ex:
+        for t, v in zip(ced, ex.map(lambda t: gratis.yahoo_ohlcv(t.replace(".", "-"), "6mo"), ced)):
+            f = fase([x["c"] for x in v], [x.get("v") or 0 for x in v]) if v else None
+            if f:
+                out.append({"ticker": t, "tipo": "panico", "mercado": "cedears", **f})
+    try:
+        ccl = gratis.ccl_historico(); fs = sorted(ccl)
+        for t, x in pan.items():
+            if not x or len(x) < 5 or x[4] != "acciones":
+                continue
+            v = cache.velas(t)[-61:]
+            c = [u for u in (_usd(fs, ccl, y["fecha"], y["cierre"]) for y in v if y.get("cierre")) if u]
+            f = fase(c, [y.get("volumen") or 0 for y in v]) if len(c) == len(v) else None
+            if f:
+                out.append({"ticker": t, "tipo": "panico", "mercado": "acciones", **f})
+    except Exception as ex_:
+        print(f"[kostolany] acciones: {ex_}")
+    res = {"fecha": hoy.isoformat(), "lista": out}
+    almacen.put(CLAVE_KOST, res)
+    print(f"[kostolany] fase de pánico: {len(out)} papeles")
+    return res
+
+
 def graham(almacen) -> list[dict]:
     t = almacen.get("biblioteca/graham") or {}
     out = []
@@ -109,12 +152,16 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
         from ..datos import gratis
         ccl = gratis.ccl_historico()
         precio_de = lambda tk: ((ctx.titulo(tk) or {}).get("ultimo"))
-        cand = {"fecha": hoy_s, "hora": hora, "lista": rebotes(ctx, ctx.cache.velas, ccl, precio_de) + graham(almacen)[:8]}
+        kost = [k for k in ((almacen.get(CLAVE_KOST) or {}).get("lista") or []) if (almacen.get(CLAVE_KOST) or {}).get("fecha", "") >= (hoy - timedelta(days=4)).isoformat()]
+        reb = rebotes(ctx, ctx.cache.velas, ccl, precio_de)
+        en_reb = {r["ticker"] for r in reb}
+        cand = {"fecha": hoy_s, "hora": hora, "lista": reb + [k for k in kost if k["ticker"] not in en_reb] + graham(almacen)[:8]}
         almacen.put(CLAVE_CAND, cand)
     mias = {c["ticker"] for c in cartera}
     out = []
     # cuando cae todo el mercado salen muchas: primero las más operadas (entrar y salir sin mover el precio)
-    lista = sorted(cand.get("lista") or [], key=lambda c: (c["tipo"] != "rebote", -((ctx.titulo(c["ticker"]) or {}).get("monto") or 0)))
+    orden = {"rebote": 0, "panico": 1}
+    lista = sorted(cand.get("lista") or [], key=lambda c: (orden.get(c["tipo"], 2), -((ctx.titulo(c["ticker"]) or {}).get("monto") or 0)))
     for c in lista:
         if len(out) + sum(1 for p in previas if p.get("linea") == "posicion" and p.get("fecha") == hoy_s) >= max_dia:
             break
@@ -137,6 +184,15 @@ def proponer(ctx, almacen, hoy: date, cartera: list[dict], previas: list[dict], 
                        f"{abs(c['r20']):.0f}% en el último mes. En 10 años, con 64 acciones argentinas, después de caídas así rindió a 3 meses "
                        f"+4,4% típico (+10% promedio) y subió 56 de cada 100 veces, contra -4,4% de un día cualquiera. Puede seguir cayendo "
                        f"antes de rebotar: por eso la alarma va lejos y el monto es chico.")
+        elif c["tipo"] == "panico":
+            stop = round(entrada * 0.75, 2)
+            meses, objetivo = 3, round(entrada * 1.20, 2)
+            ev_ = ("en CEDEARs, a 3 meses +6,8% típico y subieron 64 de cada 100 veces, contra +1,2% de cualquier momento"
+                   if c.get("mercado") == "cedears" else
+                   "en acciones argentinas (en dólares), a 3 meses +3,9% típico y subieron 55 de cada 100, contra -4,2% de cualquier momento")
+            por_que = (f"📅 Posición de 3 meses (pánico de Kostolany): cayó {abs(c['r20']):.0f}% en un mes con {str(c['vol']).replace('.', ',')} veces "
+                       f"su volumen normal: los que tiemblan están vendiendo. En 10 años, después de un pánico así, {ev_}. "
+                       "Puede seguir cayendo antes de rebotar: alarma lejos y monto chico.")
         elif c["tipo"] == "lynch":
             stop = round(entrada * 0.75, 2)
             meses, objetivo = 12, round(entrada * 1.30, 2)

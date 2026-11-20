@@ -6,7 +6,7 @@ ideas:
   - clave: dinero_mas_psicologia
     idea: 'La tendencia de la bolsa es la suma de dos cosas: cuánta plata hay disponible (tasas bajas, liquidez) y cómo está el ánimo de los inversores. Con las dos a favor sube; con las dos en contra baja.'
     en_criollo: 'Si las tasas bajan y la gente está asustada, se está preparando una suba. Si las tasas suben y todos están eufóricos, cuidado.'
-    en_la_mesa: 'Se prueba si las tasas que bajan (EE.UU. y Argentina) anticipan subas de las acciones.'
+    en_la_mesa: 'Probado el 20/11: no se cumplió. Con la tasa a 10 años de EE.UU. bajando, el S&P rindió a 6 meses casi lo mismo (+5,6%) que con la tasa subiendo (+5,2%); en Argentina con la BADLAR, tampoco (+5,9% contra +6,5%).'
     medible: liquidez
     situaciones: [cartera, ciclo]
   - clave: el_perro_y_el_dueno
@@ -22,7 +22,7 @@ ideas:
   - clave: el_huevo
     idea: 'El ciclo de la bolsa tiene forma de huevo: corrección (poco volumen), suba acompañada (volumen creciente) y exageración (volumen enorme, todos compran); después lo mismo para abajo, hasta el pánico (volumen enorme, todos venden). Se compra en el pánico y se vende en la exageración.'
     en_criollo: 'Cuando el precio se derrumba con un volumen enorme, todos están vendiendo: suele ser el momento de comprar. Cuando sube con volumen enorme y todos hablan de eso, de vender.'
-    en_la_mesa: 'Se prueba con precio y volumen de las acciones argentinas y los CEDEARs si la fase de pánico rinde más que la de exageración.'
+    en_la_mesa: 'Probado el 20/11 (10 años): la fase de pánico (cae 10%+ en un mes con volumen 1,5 veces o más) rindió a 3 meses +6,8% en CEDEARs (suben 64 de cada 100) y +3,9% en acciones argentinas en dólares; la de exageración (sube 10%+ con mucho volumen), +0,7% y -6,6%. La línea de posiciones propone los pánicos.'
     medible: huevo
     situaciones: [panico, euforia, caida_fuerte]
   - clave: contra_la_corriente

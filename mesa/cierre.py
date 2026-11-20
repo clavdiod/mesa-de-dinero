@@ -316,6 +316,11 @@ def diario(simular: bool = False) -> dict:
             _fun.actualizar(a, _universo_cedears(a), hoy)
         except Exception as ex:
             print(f"[cierre] fundamentos: {ex}")
+        try:  # 20/11: fase de pánico del huevo de Kostolany (para las posiciones de mañana)
+            from .agentes import posiciones as _posi
+            _posi.preparar_kostolany(a, CacheHistorico(a), hoy)
+        except Exception as ex:
+            print(f"[cierre] kostolany: {ex}")
         try:  # 20/11: termómetro del ciclo (Marks): miedo o calma con Argentina y EE.UU.
             from .agentes import ciclo as _ciclo
             a.put(_ciclo.CLAVE, _ciclo.medir(hoy))
