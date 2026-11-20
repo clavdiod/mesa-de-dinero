@@ -6,7 +6,7 @@ ideas:
   - clave: comprar_el_pajar
     idea: Los inversores, todos juntos, son el mercado; antes de costos ganan lo que gana el mercado. Después de costos, el promedio gana menos. La forma segura de quedarse con el rendimiento del mercado es comprarlo entero con un fondo índice barato.
     en_criollo: Elegir la acción ganadora es difícil y la mayoría falla. Comprando todo el índice no le ganás al mercado, pero tampoco perdés contra él.
-    en_la_mesa: Un núcleo de la cartera en el índice (CEDEAR de SPY) y las ideas de la mesa como satélite chico. Se prueba cuántas acciones sueltas le ganan al índice.
+    en_la_mesa: 'Probado el 20/11 con 330 CEDEARs y 10 años: una acción suelta le ganó al SPY solo 44 de cada 100 veces a un año (mediana -4%) y 37 de cada 100 a cinco años (mediana -29%), y eso que faltan las que quebraron. Núcleo en el índice (CEDEAR de SPY) y las ideas de la mesa como satélite chico.'
     medible: indice_vs_eleccion
     situaciones: [cartera, largo_plazo, elegir_acciones]
   - clave: los_costos_se_comen_la_ganancia
@@ -18,7 +18,7 @@ ideas:
   - clave: vuelta_al_promedio
     idea: Lo que más subió (fondos, sectores, acciones de moda) tiende a volver al promedio. Perseguir al ganador del año pasado suele salir mal.
     en_criollo: Lo que estuvo de moda el año pasado no es garantía de nada; muchas veces es lo que más cae después.
-    en_la_mesa: Se mide si las acciones que más subieron en 12 meses le ganan o pierden contra el índice al año siguiente.
+    en_la_mesa: 'Probado el 20/11 con 330 CEDEARs: en acciones sueltas NO se cumple. Las que más subieron en 12 meses le ganaron al índice al año siguiente (+1,7%, 51 de cada 100) y las que más bajaron siguieron perdiendo (-9,9%). Bogle hablaba de fondos; en acciones de EE.UU. lo que cae fuerte no suele rebotar solo (distinto de las acciones argentinas en dólares).'
     medible: reversion_media
     situaciones: [euforia, perseguir, compra]
   - clave: rendimiento_de_negocio_vs_especulativo
