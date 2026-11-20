@@ -145,8 +145,8 @@ def frase(ev: dict | None) -> str:
               f". Sin margen de seguridad: el precio está {abs(m)}% arriba de lo que valdría según su fórmula")
     elif cfg:
         t += ". Su fórmula de valor no se puede calcular (pierde plata o patrimonio negativo)"
-    # 20/11, probado con 635 balances de 58 empresas (2011-2025), a 12 meses contra el S&P 500
-    return t + (". Probado: las que cumplen 5 o más le ganaron al S&P 56 de cada 100 años (+2,3%); las que pierden plata quedaron 7% abajo."
+    # 20/11, probado con 576 balances de 56 empresas (2010-2025), a 12 meses contra el S&P 500
+    return t + (". Probado: las que cumplen 5 o más le ganaron al S&P 63 de cada 100 años (+4,4%) y las que cumplen 2 o menos quedaron 4% abajo."
                 " Es una mirada de un año, no de semanas: dato, no voto.")
 
 
