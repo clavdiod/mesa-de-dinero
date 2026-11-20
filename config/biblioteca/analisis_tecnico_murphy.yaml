@@ -1,0 +1,40 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: Análisis técnico de los mercados financieros
+autor: 'John J. Murphy (1999), referencia clásica del análisis técnico'
+en_una_frase: 'El precio ya refleja todo lo que se sabe, se mueve en tendencias y la historia se repite: operá a favor de la tendencia, confirmá con el volumen y cuidá el riesgo de cada operación.'
+ideas:
+  - clave: tres_premisas
+    idea: 'El análisis técnico se apoya en tres ideas: el precio ya descuenta todo lo conocido; los precios se mueven en tendencias que tienden a seguir; y como la psicología de la gente no cambia, los patrones se repiten.'
+    en_criollo: 'El gráfico cuenta lo que hacen los que compran y venden de verdad. Si viene subiendo, lo más probable es que siga, hasta que el gráfico muestre lo contrario.'
+    en_la_mesa: 'La mesa ya usa tendencia, RSI y MACD probados el 02/11; con Murphy se prueban las reglas que faltaban.'
+    situaciones: [compra, operacion_corta]
+  - clave: a_favor_de_la_tendencia
+    idea: 'La tendencia es tu amiga: comprar en tendencias alcistas y no pelear contra las bajistas. Los promedios móviles (50 y 200 ruedas) marcan la tendencia; el cruce del de 50 sobre el de 200 es el "cruce dorado".'
+    en_criollo: 'No compres algo que viene cayendo esperando que se dé vuelta, salvo que tengas una razón probada.'
+    en_la_mesa: 'Se prueba el cruce dorado, el cruce de la muerte y estar arriba o abajo del promedio de 200.'
+    medible: tendencia
+    situaciones: [compra, caida_fuerte]
+  - clave: soportes_y_resistencias
+    idea: 'Un soporte es un piso donde aparecen compradores; una resistencia, un techo donde aparecen vendedores. Cuando se rompen, cambian de papel: el techo roto pasa a ser piso.'
+    en_criollo: 'Si una acción pasa un techo que le costó varias veces, ese techo después suele sostenerla.'
+    en_la_mesa: 'La ficha en frío ya muestra pisos y techos con sus toques.'
+    situaciones: [compra, valuacion]
+  - clave: el_volumen_confirma
+    idea: 'El volumen tiene que acompañar a la tendencia: una suba con volumen creciente es firme; un quiebre de un techo sin volumen es sospechoso.'
+    en_criollo: 'Si sube con mucha gente comprando, creele; si sube con poca gente, desconfiá.'
+    en_la_mesa: 'Se prueba el quiebre del máximo del año con volumen.'
+    medible: quiebre
+    situaciones: [compra, euforia]
+  - clave: osciladores_en_rangos
+    idea: 'Los osciladores (RSI, estocástico) sirven cuando el precio va de costado; en una tendencia fuerte pueden quedar sobrecomprados o sobrevendidos mucho tiempo. Lo mejor es usarlos a favor de la tendencia mayor.'
+    en_criollo: 'Un RSI bajo en una acción que viene subiendo es una oportunidad de entrar barato; en una que viene cayendo puede ser una trampa.'
+    en_la_mesa: 'Se prueba RSI bajo 30 arriba y abajo del promedio de 200, y la divergencia alcista.'
+    medible: osciladores
+    situaciones: [compra, caida_fuerte]
+  - clave: manejo_del_dinero
+    idea: 'Ninguna técnica sirve sin manejo del riesgo: no arriesgar más de un pequeño porcentaje del capital por operación, buscar ganar bastante más de lo que se arriesga, cortar rápido las pérdidas y dejar correr las ganancias.'
+    en_criollo: 'Lo que te salva no es acertar siempre, sino perder poco cuando te equivocás y ganar mucho cuando acertás.'
+    en_la_mesa: 'Ya aplicado: 1,5% del capital por idea, tope total 7,5%, alarma escalonada para dejar correr.'
+    situaciones: [recuperar_perdida, operacion_corta, especulacion]
+fuentes_resumen:
+  - https://www.investopedia.com/terms/t/technicalanalysis.asp
