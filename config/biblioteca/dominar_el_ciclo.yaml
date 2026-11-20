@@ -1,0 +1,38 @@
+# Resumen con palabras propias (sin copiar el texto). Ver el formato en el_inversor_inteligente.yaml.
+titulo: Cómo dominar el ciclo de las inversiones
+autor: 'Howard Marks (2018), cofundador de Oaktree Capital'
+en_una_frase: 'No se puede adivinar el futuro, pero sí saber en qué parte del ciclo estamos: con miedo, ser más agresivo; con euforia, más prudente.'
+ideas:
+  - clave: todo_es_ciclo
+    idea: 'La economía, las ganancias de las empresas, el crédito y el humor de los inversores suben y bajan en ciclos. Los excesos de un lado preparan el movimiento contrario.'
+    en_criollo: 'Lo que sube mucho por entusiasmo después baja, y lo que se hunde por miedo después rebota. Nada sigue igual para siempre.'
+    en_la_mesa: 'La mesa mide la temperatura del mercado (miedo o euforia) todos los días y ajusta cuánto se anima.'
+    situaciones: [caida_fuerte, euforia, panico]
+  - clave: el_pendulo
+    idea: 'El humor de los inversores es un péndulo que casi nunca está en el medio: va de la codicia al miedo, del "no hay riesgo" al "no compro nada".'
+    en_criollo: 'Cuando todos están contentos y nadie ve riesgo, ahí está el riesgo. Cuando nadie quiere comprar, aparecen las gangas.'
+    en_la_mesa: 'Termómetro del ciclo: riesgo país (miedo con Argentina) y VIX (miedo en EE.UU.) contra su historia.'
+    medible: termometro
+    situaciones: [panico, euforia, ipo]
+  - clave: el_riesgo_es_mayor_cuando_parece_menor
+    idea: 'El riesgo más grande aparece cuando los precios ya subieron mucho y todos creen que no hay peligro; el más chico, cuando ya cayeron y todos tienen miedo.'
+    en_criollo: 'Comprar después de una gran caída suele ser menos riesgoso de lo que parece; comprar en la euforia, más.'
+    en_la_mesa: 'Coincide con lo que probó la mesa: el rebote en dólares después de caídas fuertes (20/11) y no comprar salidas a bolsa con euforia (ANT).'
+    situaciones: [caida_fuerte, euforia, ipo]
+  - clave: el_ciclo_del_credito
+    idea: 'El crédito es el ciclo más importante: cuando los que prestan son generosos, se financia cualquier cosa y los precios suben; cuando cierran la canilla, todo cae y aparecen oportunidades.'
+    en_criollo: 'Si conseguir plata es fácil, cuidado. Si nadie presta, es cuando conviene tener plata para comprar.'
+    en_la_mesa: 'El riesgo país es la tasa extra que le cobran a Argentina: alto es canilla cerrada (miedo), bajo es canilla abierta.'
+    situaciones: [cartera, caida_fuerte]
+  - clave: calibrar_no_adivinar
+    idea: 'No hace falta adivinar qué va a pasar: alcanza con reconocer dónde estamos y mover la postura entre agresiva y defensiva. Eso pone las probabilidades a favor, aunque no garantiza nada.'
+    en_criollo: 'No es todo o nada: con miedo en el mercado, comprás un poco más; con euforia, un poco menos y más cuidado.'
+    en_la_mesa: 'La postura del termómetro (agresiva, neutral o defensiva) se prueba con historia antes de cambiar cuántas posiciones propone la mesa.'
+    situaciones: [cartera, rebalanceo]
+  - clave: tener_plata_cuando_hay_miedo
+    idea: 'Las mejores compras se hacen cuando hay pánico y casi nadie tiene plata o ganas de comprar. Para eso hay que haber sido prudente antes.'
+    en_criollo: 'Guardá algo de plata para cuando todo esté barato y nadie quiera comprar.'
+    en_la_mesa: 'Lo que vence en la cartera (T661O, TTD26) es la plata para esos momentos.'
+    situaciones: [panico, caida_fuerte, recuperar_perdida]
+fuentes_resumen:
+  - https://www.oaktreecapital.com/insights/memo/mastering-the-market-cycle
