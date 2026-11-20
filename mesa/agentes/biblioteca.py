@@ -73,6 +73,11 @@ def datos_sec(cik: str) -> dict | None:
     g = j.get("facts", {}).get("us-gaap", {})
     u = lambda k, un="USD": ((g.get(k) or {}).get("units") or {}).get(un) or []
     prim = lambda *ks, un="USD": next((u(k, un) for k in ks if u(k, un)), [])
+
+    def reciente(*ks):  # 20/11 (ORCL): de varias etiquetas, la que tiene el dato más nuevo (algunas empresas cambian de etiqueta)
+        xs = [_instantes(u(k)) for k in ks]
+        xs = [x for x in xs if x]
+        return max(xs, key=lambda x: x[-1][0]) if xs else []
     s = {
         "eps": _anuales(prim("EarningsPerShareDiluted", "EarningsPerShareBasic", un="USD/shares")),
         # 20/11: la ganancia total (no por acción) para estabilidad y crecimiento: la ganancia por acción publicada no se
@@ -82,11 +87,11 @@ def datos_sec(cik: str) -> dict | None:
         "div": _anuales(prim("CommonStockDividendsPerShareDeclared", "CommonStockDividendsPerShareCashPaid", un="USD/shares")),
         "div_pagados": _anuales(prim("PaymentsOfDividendsCommonStock", "PaymentsOfDividends")),
         "act_corr": _instantes(u("AssetsCurrent")), "pas_corr": _instantes(u("LiabilitiesCurrent")),
-        "deuda_lp": _instantes(prim("LongTermDebtNoncurrent", "LongTermDebt")),
+        "deuda_lp": reciente("LongTermDebtNoncurrent", "LongTermDebt", "LongTermDebtAndCapitalLeaseObligations", "LongTermNotesPayable", "SeniorNotes"),
         "patrimonio": _instantes(prim("StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest")),
         "acciones": _instantes(((j.get("facts", {}).get("dei", {}).get("EntityCommonStockSharesOutstanding") or {}).get("units") or {}).get("shares") or []),
         # 20/11 (Lynch): caja para la "caja neta por acción"
-        "caja": _instantes(prim("CashAndCashEquivalentsAtCarryingValue", "CashCashEquivalentsAndShortTermInvestments", "Cash")),
+        "caja": reciente("CashAndCashEquivalentsAtCarryingValue", "CashCashEquivalentsAndShortTermInvestments", "Cash"),
     }
     return s if len(s["eps"]) >= 3 else None
 
