@@ -28,7 +28,7 @@ for p in cart:
     res = (pr / c - 1) * 100 if pr and c else None
     info = fl.get(tk) or {}
     tot += val or 0
-    filas.append(f"{tk} [{grupo}] q {q:g} compra {c:g} hoy {pr} valor ${val:,.0f} res {res:+.1f}% TIR {info.get('tir')} vence {info.get('vence')} ley {info.get('ley')} moneda {info.get('moneda')}" if val else f"{tk} [{grupo}] q {q:g} compra {c:g} sin precio")
+    filas.append(f"{tk} [{grupo}] q {q:g} compra {c:g} hoy {pr} valor ${val:,.0f} res {('%+.1f%%' % res) if res is not None else 's/d'} TIR {info.get('tir')} vence {info.get('vence')} ley {info.get('ley')} moneda {info.get('moneda')}" if val else f"{tk} [{grupo}] q {q:g} compra {c:g} sin precio")
 print("::notice::CARTERA total aprox $" + f"{tot:,.0f} | " + " | ".join(filas))
 
 # B) energéticas: ficha + historia en dólares
