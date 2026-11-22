@@ -64,9 +64,23 @@ def votar(e: dict, pesos: dict) -> dict:
         votos.append({"agente": ag, "nombre": nombre(ag), "dir": 1 if m["v"] > 0 else -1, "fuerza": round(abs(m["v"]), 2),
                       "peso": p, "voto": round(m["v"] * p, 2), "acierto": (pesos.get(ag) or {}).get("acierto"),
                       "texto": m["texto"][:200]})
-    favor = round(sum(v["voto"] for v in votos if v["voto"] > 0), 2)
-    contra = round(-sum(v["voto"] for v in votos if v["voto"] < 0), 2)
-    n_favor = sum(1 for v in votos if v["voto"] > 0)
+    # 22/11: los que miran lo mismo (gráfico, noticias, macro) cuentan una sola vez: vale el voto más fuerte de cada familia.
+    # Así "dos analistas distintos" quiere decir dos métodos distintos, no Acciones y Técnico mirando el mismo gráfico.
+    from ..nucleo.familias import familia
+    gana: dict[str, dict] = {}
+    for v in votos:
+        f = familia(v["agente"])
+        if f not in gana or abs(v["voto"]) > abs(gana[f]["voto"]):
+            gana[f] = v
+    for v in votos:
+        g = gana[familia(v["agente"])]
+        v["cuenta"] = g is v
+        if not v["cuenta"]:
+            v["misma_familia"] = g["nombre"]
+    cuentan = [v for v in votos if v["cuenta"]]
+    favor = round(sum(v["voto"] for v in cuentan if v["voto"] > 0), 2)
+    contra = round(-sum(v["voto"] for v in cuentan if v["voto"] < 0), 2)
+    n_favor = sum(1 for v in cuentan if v["voto"] > 0)
     n_hist = sum(1 for v in votos if v["voto"] > 0 and v["agente"] in HISTORIA)
     eco_contra = any(v["agente"] == "economista" and v["voto"] < 0 for v in votos)
     est = e.get("estructura") or {}
@@ -88,7 +102,7 @@ def votar(e: dict, pesos: dict) -> dict:
     else:
         motivo = ""
     return {"votos": sorted(votos, key=lambda v: -abs(v["voto"])), "favor": favor, "contra": contra, "neto": round(favor - contra, 2),
-            "n_favor": n_favor, "n_contra": sum(1 for v in votos if v["voto"] < 0), "aprobada": ok, "motivo": motivo}
+            "n_favor": n_favor, "n_contra": sum(1 for v in cuentan if v["voto"] < 0), "aprobada": ok, "motivo": motivo}
 
 
 def _x(p: float) -> str:
@@ -97,8 +111,8 @@ def _x(p: float) -> str:
 
 def conclusion(e: dict, v: dict) -> str:
     from .revision import nombre
-    fav = [x for x in v["votos"] if x["voto"] > 0][:4]
-    con = [x for x in v["votos"] if x["voto"] < 0][:3]
+    fav = [x for x in v["votos"] if x["voto"] > 0 and x.get("cuenta", True)][:4]
+    con = [x for x in v["votos"] if x["voto"] < 0 and x.get("cuenta", True)][:3]
     pl = e.get("plan") or {}
     plazo = f" Plazo: {e.get('ruedas')} ruedas" + (f" (hasta el {pl['vence'][8:10]}/{pl['vence'][5:7]})" if pl.get("vence") else "") \
         + (f", lo marca {nombre(e['principal'])}." if e.get("principal") else ".") if e.get("ruedas") else ""

@@ -28,6 +28,7 @@ from .nucleo.modelos import Senal
 from .nucleo.registro import Registro
 from .nucleo.simulacion import Simulador
 from .nucleo import combinador
+from .nucleo import familias
 from .nucleo import calc
 from .nucleo.reloj import ahora, en_horario, es_dia_habil, toca_correr
 
@@ -109,22 +110,47 @@ def _aprendizajes() -> list[dict]:
 
 def puntaje_ticker(senales: list[Senal], reg: Registro, ctx: Contexto | None = None) -> float:
     """Suma ponderada de las señales. El Economista "enseña": según el contexto macro, a las señales de los
-    demás que van a favor del régimen se les cree más y a las que van en contra, menos."""
+    demás que van a favor del régimen se les cree más y a las que van en contra, menos.
+    22/11: cada familia de agentes (gráfico, noticias, macro) cuenta una sola vez por papel (ver nucleo/familias)."""
     reg_eco = (ctx.extra.get("regimen") if ctx else None)
-    tot = 0.0
+    # 22/11: el que ya "enseña" (multiplica a los demás) en este papel no vota además: si no, el mismo clima pesa dos veces
+    ensenan_de: dict[str, set] = {}
+
+    def ensenan(tk: str) -> set:
+        if tk not in ensenan_de:
+            out = set()
+            if ctx:
+                grupo = (ctx.titulo(tk) or {}).get("grupo")
+                if economista.multiplicador(reg_eco, ctx, tk, 1) != 1.0:
+                    out.add("economista")
+                if wallstreet.multiplicador(ctx.extra.get("wallstreet"), grupo, 1) != 1.0:
+                    out.add("wallstreet")
+                if ctx.extra.get("cripto") and cripto.multiplicador(ctx.extra["cripto"].get("btc"), ctx.extra["cripto"].get("ens") or {}, grupo, 1) != 1.0:
+                    out.add("cripto")
+            ensenan_de[tk] = out
+        return ensenan_de[tk]
+    aportes = []
     for s in senales:
-        if s.direccion:
+        if s.direccion and s.agente not in ensenan(s.ticker):
             m = economista.multiplicador(reg_eco, ctx, s.ticker, s.direccion) if s.agente != "economista" else 1.0
             if ctx and s.agente != "wallstreet":
                 m *= wallstreet.multiplicador(ctx.extra.get("wallstreet"), (ctx.titulo(s.ticker) or {}).get("grupo"), s.direccion)
             if ctx and s.agente != "cripto" and ctx.extra.get("cripto"):
                 m *= cripto.multiplicador(ctx.extra["cripto"].get("btc"), ctx.extra["cripto"].get("ens") or {},
                                           (ctx.titulo(s.ticker) or {}).get("grupo"), s.direccion)
+            m = min(MULT_CLIMA_MAX, max(MULT_CLIMA_MIN, m))  # 22/11: los climas juntos mueven a lo sumo ±25%
             if s.agente == "ministro" and (s.datos or {}).get("probada") and ctx and \
                     (ctx.titulo(s.ticker) or {}).get("grupo") in MINISTRO_DOMINIO:
                 m *= 1.5  # en bonos y pesos el Ministro decide: su voto probado pesa 50% más
-            tot += s.direccion * s.fuerza * reg.peso(s.agente, s.fuerza) * m
-    return round(tot, 3)
+            aportes.append((s.ticker, s.agente, s.direccion * s.fuerza * reg.peso(s.agente, s.fuerza) * m))
+    # 22/11: los que miran lo mismo (gráfico, noticias, macro) cuentan una sola vez: vale el más fuerte de cada familia
+    por_tk: dict[str, list] = {}
+    for tk, ag, v in aportes:
+        por_tk.setdefault(tk, []).append((ag, v))
+    return round(sum(v for xs in por_tk.values() for _, v in familias.uno_por_familia(xs).values()), 3)
+
+
+MULT_CLIMA_MIN, MULT_CLIMA_MAX = 0.75, 1.25
 
 
 # terreno del Ministro: bonos soberanos, letras y ONs (donde la política económica manda)
@@ -875,7 +901,11 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         comite_estado["historial"] = dict(sorted(hist_c.items())[-15:])
     except Exception as ex:
         print(f"[comite] {ex}")
-        elegidos = con_ia.jefe(ia, debatidos, cupo, contexto_txt)
+        try:
+            pesos_j = pesos_v
+        except NameError:
+            pesos_j = {}
+        elegidos = con_ia.jefe(ia, debatidos, cupo, contexto_txt, pesos_j)
     ids_elegidos = {e["id"] for e in elegidos}
     for e in debatidos:
         if e["id"] not in ids_elegidos:
@@ -1252,6 +1282,15 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         alertas_lista += sorted(compras_rev, key=lambda x: not x.get("entrar"))  # 20/11: compras grandes ya revisadas
     except NameError:
         pass
+    # 22/11: el Vigía avisa si un agente que casi siempre habla lleva varias rondas mudo (una fuente que se cayó en silencio)
+    vigia_estado = estado_ui.get("vigia")
+    if not simular and "11:30" <= (ctx.hora or "") <= "16:55":  # con el mercado andando (antes de las 11 varios callan siempre)
+        try:
+            from .nucleo import vigia as _vig
+            vigia_estado, avisos_vig = _vig.actualizar(estado_ui.get("vigia"), {s_.agente for s_ in senales}, hoy.isoformat(), ctx.hora or "")
+            alertas_lista += avisos_vig
+        except Exception as ex:
+            print(f"[vigia] {ex}")
     # 17/11: "buen día": la primera ronda con el mercado abierto avisa que la mesa arrancó, con lo principal del día
     bd_ahora = False
     try:
@@ -1286,7 +1325,7 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     except Exception as ex:
         print(f"[parte] {ex}")
         parte, estado_ui_partes = None, estado_ui.get("partes") or []
-    almacen.put("ui/estado", {**estado_ui, **resumen, "dia": dia, "parte": parte, "partes": estado_ui_partes})
+    almacen.put("ui/estado", {**estado_ui, **resumen, "dia": dia, "parte": parte, "partes": estado_ui_partes, "vigia": vigia_estado})
     if alertas_lista:
         almacen.put("ui/alertas", (alertas_lista + previas)[:60])
     consumo.guardar()

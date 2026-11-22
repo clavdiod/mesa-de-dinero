@@ -1063,7 +1063,7 @@ function pintarComite() {
   const fila = (a) => `<div class="rg-fila"><span class="rg-n" style="${a.aprobada ? "" : "background:var(--borde);color:var(--tenue)"}">${a.aprobada ? "✔" : "✕"}</span><div>
     ${estrella(a.ticker, "Comité")}<b class="link" data-abrir-debate="${esc(a.ticker)}">${esc(a.ticker)}</b>
     <span class="tenue">· a favor ${num(a.favor, 1)} · en contra ${num(a.contra, 1)}${a.ruedas ? ` · plazo ${a.ruedas} ruedas` : ""}</span>
-    <div class="tiras" style="margin-top:4px">${(a.votos || []).map((v) => `<span class="chip chico2 ${v.voto > 0 ? "verde" : "rojo"}" title="${esc(v.texto || "")}">${v.voto > 0 ? "▲" : "▼"} ${esc(v.nombre)} ${x(v.peso)}</span>`).join("")}</div>
+    <div class="tiras" style="margin-top:4px">${(a.votos || []).map((v) => `<span class="chip chico2 ${v.voto > 0 ? "verde" : "rojo"}" style="${v.cuenta === false ? "opacity:.5" : ""}" title="${esc(v.cuenta === false ? `No suma: mira lo mismo que ${v.misma_familia || "otro analista"}. ` : "")}${esc(v.texto || "")}">${v.voto > 0 ? "▲" : "▼"} ${esc(v.nombre)} ${x(v.peso)}${v.cuenta === false ? " (repite)" : ""}</span>`).join("")}</div>
     ${a.aprobada ? "" : `<div class="tenue" style="font-size:13px;margin-top:2px">${esc(a.motivo || "")}</div>`}</div></div>`;
   // 13/11: arriba solo lo que pasó TODO (votos + revisión en frío del precio de entrada). Lo demás, plegado y con el motivo.
   const bloque = (acta) => { const ok = acta.filter((a) => a.aprobada && a.propuesta), frio = acta.filter((a) => a.aprobada && !a.propuesta), no = acta.filter((a) => !a.aprobada);

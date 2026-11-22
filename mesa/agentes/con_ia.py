@@ -163,15 +163,40 @@ def debate(ia: IA, expediente: dict) -> dict:
 
 
 # 13. Jefe -------------------------------------------------------------------------------------
-def jefe(ia: IA, candidatos: list[dict], cupo: int, contexto_txt: str) -> list[dict]:
-    """Elige hasta `cupo` propuestas. Cada candidato ya pasó por Riesgo. Respaldo: mayor puntaje."""
+def _votos_jefe(c: dict, pesos: dict | None) -> list[dict]:
+    """22/11: quién votó, cómo le viene yendo en vivo y si repite lo que ya dijo otro de su familia (no suma)."""
+    try:
+        from .comite import votar
+        v = votar(c, pesos or {})
+        return [{"quien": x["nombre"], "dir": "a favor" if x["dir"] > 0 else "en contra", "fuerza": x["fuerza"],
+                 "acierto_en_vivo": f"{x['acierto']}%" if x.get("acierto") is not None else "sin historia suficiente",
+                 "peso": x["peso"], **({"repite_a": x["misma_familia"]} if not x.get("cuenta", True) else {})}
+                for x in v["votos"][:12]]
+    except Exception:
+        return []
+
+
+QUIEN_HACE_QUE = (
+    "Quién hace qué: Técnico, Acciones y Volumen miran el mismo gráfico (precio, medias, volumen); Noticias, Corresponsal y "
+    "Hechos del emisor, las noticias; Macro/dólar, Economista y Ministro, el clima argentino (riesgo país, dólar, tasas). "
+    "Dentro de cada una de esas familias, varios votos a favor son UNA sola opinión ('repite_a'). Historiador: gráficos "
+    "parecidos del pasado. Wall Street y Cripto: el clima de EE.UU. y de Bitcoin para los CEDEARs. Anticipadores y Anticipo NY: "
+    "lo que viene antes de que se mueva el papel. Cazador y Herramientas de Wall Street: estrategias de EE.UU. probadas. "
+    "Comprador de pánico: caídas exageradas. Calificadoras: cambios de nota. 'acierto_en_vivo' es cuánto acertó ese "
+    "analista en la vida real: creele más al que acierta más.")
+
+
+def jefe(ia: IA, candidatos: list[dict], cupo: int, contexto_txt: str, pesos: dict | None = None) -> list[dict]:
+    """Elige hasta `cupo` propuestas. Cada candidato ya pasó por Riesgo. Respaldo: mayor puntaje.
+    22/11: recibe quién votó, con su acierto en vivo, y qué votos repiten a otro de la misma familia."""
     if cupo <= 0 or not candidatos:
         return []
-    resumen = json.dumps([{k: c[k] for k in ("id", "ticker", "puntaje", "plan", "debate", "riesgo", "historiador")
-                           if k in c} for c in candidatos], ensure_ascii=False, default=str)[:9000]
+    resumen = json.dumps([{**{k: c[k] for k in ("id", "ticker", "puntaje", "plan", "debate", "riesgo", "historiador")
+                              if k in c}, "votos": _votos_jefe(c, pesos)} for c in candidatos], ensure_ascii=False, default=str)[:12000]
     res = ia.json(
         "Sos el Jefe de una mesa de dinero argentina. Recibís candidatos ya aprobados por Riesgo, con el debate "
-        f"alcista/bajista. Elegí como máximo {cupo}, solo los de convicción real; elegir cero está bien. "
+        f"alcista/bajista y los votos de cada analista. {QUIEN_HACE_QUE} "
+        f"Elegí como máximo {cupo}, solo los de convicción real; elegir cero está bien. "
         "Explicá en 2 oraciones claras para alguien que decide desde el celular. Formato: "
         "{\"elegidos\":[{\"id\":\"...\",\"confianza\":\"alta|media\",\"resumen\":\"...\"}],\"descartados\":[{\"id\":\"...\",\"motivo\":\"...\"}]}",
         f"Contexto: {contexto_txt}\nCandidatos: {resumen}", rapido=False)

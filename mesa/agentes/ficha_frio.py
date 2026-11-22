@@ -187,7 +187,7 @@ def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None,
                            "arriba": round(sum(1 for x in v if x > 0) / len(v) * 100),
                            "llega_obj": round(sum(1 for x in casos if x[1]) / len(casos) * 100),
                            "toca_stop": round(sum(1 for x in casos if x[2]) / len(casos) * 100)}
-    contra = [x["nombre"] for x in votos or [] if x.get("voto", 0) < 0]
+    contra = [x["nombre"] for x in votos or [] if x.get("voto", 0) < 0 and x.get("cuenta", True)]
     out["contra"] = contra
     out["grafico"] = (estructura or {}).get("estado")
     # veredicto simple: ¿los números acompañan?
