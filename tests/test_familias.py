@@ -82,3 +82,13 @@ def test_vigia_no_avisa_al_que_habla_poco():
     for i in range(40):
         est, av = vigia.actualizar(est, {"historiador"} | ({"panico"} if i % 10 == 0 else set()), "2026-11-20", f"12:{i:02d}")
         assert not [a for a in av if a["agente"] == "panico"]
+
+
+def test_soporte_ignora_vela_rota_con_minimo_cero():
+    from mesa.nucleo import calc
+    from tests.conftest import serie
+    vs = serie(120)
+    vs[-30] = {**vs[-30], "minimo": 0.0}
+    precio = min(v["minimo"] for v in vs if v["minimo"]) * 0.5  # todo lo sano queda arriba: antes el "soporte" era 0
+    sop = calc.soporte_cercano(vs, precio)
+    assert sop is None or sop["nivel"] > 0

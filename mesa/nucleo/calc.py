@@ -33,10 +33,12 @@ def atr(velas: list[dict], n: int = 14) -> float | None:
 def pivotes(velas: list[dict], lado: str = "min", ancho: int = 2) -> list[float]:
     """Mínimos (o máximos) locales: más bajos que `ancho` ruedas a cada lado."""
     campo = "minimo" if lado == "min" else "maximo"
-    vals = [v[campo] for v in velas]
+    vals = [v.get(campo) or 0 for v in velas]
     out = []
     for i in range(ancho, len(vals) - ancho):
         ventana = vals[i - ancho:i + ancho + 1]
+        if not vals[i] or vals[i] <= 0:
+            continue  # 22/11: una vela rota con mínimo 0 armaba un "soporte" en 0 (división por cero en el informe)
         if (lado == "min" and vals[i] == min(ventana)) or (lado == "max" and vals[i] == max(ventana)):
             out.append(vals[i])
     return out
