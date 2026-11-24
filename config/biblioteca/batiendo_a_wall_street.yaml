@@ -11,31 +11,31 @@ ideas:
   - clave: seis_categorias
     idea: 'Lynch separa las empresas en seis tipos: de crecimiento lento, robustas, de crecimiento rápido, cíclicas, en recuperación y con activos escondidos. Cada tipo se compra y se vende distinto.'
     en_criollo: 'No es lo mismo una empresa que crece 30% por año que una petrolera que depende del precio del barril. Primero sabé qué tipo de empresa es.'
-    en_la_mesa: 'La ficha de cada CEDEAR dice en qué categoría de Lynch está, calculado con sus ganancias.'
+    en_la_mesa: 'La ficha de cada CEDEAR dice en qué categoría de Lynch está, calculado con sus ganancias. Probado el 20/11 (1.040 balances de 84 empresas, 2009-2025, 12 meses contra el S&P 500): la categoría sola no da ventaja. Lentas +2,3%, robustas +1,2%, rápidas -2,0%, en recuperación -4,7%, cíclicas -7,2%.'
     medible: categoria
     situaciones: [compra, valuacion]
   - clave: peg
     idea: 'Una empresa de crecimiento está a buen precio cuando su P/E (precio sobre ganancias) es parecido a cuánto crece por año; si el P/E es la mitad del crecimiento, es una ganga.'
     en_criollo: 'Si gana 20% más cada año y la pagás 20 veces sus ganancias, está bien; si la pagás 40 veces, está cara.'
-    en_la_mesa: 'PEG = P/E / crecimiento. Se prueba con historia a 12 meses.'
+    en_la_mesa: 'PEG = P/E / crecimiento. Probado el 20/11 (1.040 balances de 84 empresas, 2009-2025, 12 meses contra el S&P 500): el PEG solo no da ventaja (menor a 0,5: -2,6%; entre 0,5 y 2: +0,6 a +0,8%). Sirve combinado: crece + PEG menor a 1 + poca deuda le ganó al S&P 56 de cada 100 años (+4,2%).'
     medible: peg
     situaciones: [compra, valuacion]
   - clave: el_balance_importa
     idea: 'Las peores pérdidas vienen de empresas con mucha deuda. Una empresa con caja y poca deuda aguanta las crisis; una endeudada puede quebrar.'
     en_criollo: 'Antes de enamorarte, fijate cuánto debe.'
-    en_la_mesa: 'Deuda sobre patrimonio y caja neta por acción en la ficha. Graham ya mostró que la poca deuda ayuda (+4,1% contra el S&P a un año).'
+    en_la_mesa: 'Deuda sobre patrimonio y caja neta por acción en la ficha. Probado el 20/11 (1.040 balances de 84 empresas, 2009-2025, 12 meses contra el S&P 500): caja neta de más de 10% del precio le ganó al S&P 69 de cada 100 años (+15%, sin bancos ni financieras); deuda baja o moderada +1,1%; deuda mayor que el patrimonio -4,1%.'
     medible: deuda
     situaciones: [compra, caida_fuerte]
   - clave: ciclicas_al_reves
     idea: 'En las cíclicas el P/E engaña: cuando parece barata (P/E bajo) suele ser el pico de ganancias, y cuando parece cara (P/E alto o con pérdidas) suele ser el fondo del ciclo.'
     en_criollo: 'Una petrolera o una fábrica de chips de memoria con P/E bajísimo puede estar en su mejor momento, justo antes de caer.'
-    en_la_mesa: 'Ya se marcó en los fundamentos (MU, 18/11). Se prueba con historia si en las cíclicas conviene el P/E alto.'
+    en_la_mesa: 'Ya se marcó en los fundamentos (MU, 18/11). Probado el 20/11 (1.040 balances de 84 empresas, 2009-2025, 12 meses contra el S&P 500): no se cumple. Las cíclicas quedaron abajo del S&P con P/E bajo (-4,5%) y con P/E alto o pérdida (-6,2%). Queda como advertencia: evitar cíclicas.'
     medible: ciclicas
     situaciones: [valuacion, euforia]
   - clave: recompras
     idea: 'Cuando una empresa recompra sus propias acciones, cada acción que queda es dueña de un pedazo más grande del negocio. Es una buena señal si lo hace con caja propia y a buen precio.'
     en_criollo: 'Si la empresa compra sus propias acciones, cree que están baratas y te deja más pedazo de la torta.'
-    en_la_mesa: 'La ficha marca si la cantidad de acciones bajó en el último año. Se prueba con historia.'
+    en_la_mesa: 'La ficha marca si la cantidad de acciones bajó en el último año. Probado el 20/11 (1.040 balances de 84 empresas, 2009-2025, 12 meses contra el S&P 500): no se cumple. Las que recompraron 2%+ quedaron -2,7% contra el S&P (le ganaron 45 de cada 100); las que no cambiaron, +1,1%. Dato, no voto.'
     medible: recompra
     situaciones: [compra]
   - clave: no_predecir_el_mercado

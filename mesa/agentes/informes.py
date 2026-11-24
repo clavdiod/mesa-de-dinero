@@ -159,7 +159,7 @@ def tecnico_historiador(ctx: Contexto) -> dict:
         h = pat["horizontes"].get(10)
         hist = f"{h['subas']}/{pat['casos']} subió, {_pct(h['promedio_pct'])}" if h else "sin casos"
         filas.append([tk, _ar(r, 0), "arriba" if m50 and t["ultimo"] > m50 else "abajo",
-                      f"{_ar(sop['nivel'])} ({sop['toques']}x, {_pct((t['ultimo'] / sop['nivel'] - 1) * 100)})" if sop else "—",
+                      f"{_ar(sop['nivel'])} ({sop['toques']}x, {_pct((t['ultimo'] / sop['nivel'] - 1) * 100)})" if sop and sop.get("nivel") else "—",
                       hist])
     if not filas:
         return {}
