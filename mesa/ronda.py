@@ -179,13 +179,16 @@ def _ccl_ayer(almacen, hoy):
 
 def _radar_detectar(ctx, almacen, hoy, ya) -> list[dict]:
     try:
-        ccl_ay, _ = _ccl_ayer(almacen, hoy)
+        ccl_ay, ccl_s = _ccl_ayer(almacen, hoy)
         vivo = {a: gratis.yahoo_vivo(a) for a in set(adr.ADRS.values())}
         ctx.extra["adr_vivo"] = vivo
         ccl_now = (ctx.dolares.get("contadoconliqui") or {}).get("venta")
         fo = adr.foto(ctx, vivo, ccl_now)
-        fo = adr.base_feriado(fo, ctx, datos.get("adrs") or {}, ccl, hoy.isoformat())  # 24/11: tras un feriado local
-        brechas = {loc: adr.brecha_vivo(f, ccl_now, ccl_ay) for loc, f in fo["filas"].items()}
+        try:  # 24/11: tras un feriado local, base del ADR y del CCL del mismo día que el último cierre local
+            fo = adr.base_feriado(fo, ctx, (almacen.get("adr/datos") or {}).get("adrs") or {}, ccl_s, hoy.isoformat())
+        except Exception as ex:
+            print(f"[radar] base feriado: {ex}")
+        brechas = {loc: adr.brecha_vivo(f, ccl_now, fo.get("ccl_ant") or ccl_ay) for loc, f in fo["filas"].items()}
         alertas = radar.detectar(ctx, ya.hour * 60 + ya.minute, brechas, ctx.riesgo_pais_ayer, ccl_ay)
         # --- Anticipador: CEDEARs que todavía no copiaron lo que su acción ya hizo en Nueva York (incluye pre-market) ---
         minuto = ya.hour * 60 + ya.minute
