@@ -149,3 +149,24 @@ def test_adr_en_vivo_tras_feriado_usa_base_local():
     fo = {"filas": {"GGAL": {"adr": 26.0, "adr_ant": 26.62, "loc": 4600.0, "loc_ant": 4400.0}}}
     fo = adr.base_feriado(fo, _Ctx(), {"GGAL": [["2026-11-20", 25.29], ["2026-11-23", 26.62]]}, {"2026-11-20": 1800.0}, "2026-11-24")
     assert fo["filas"]["GGAL"]["adr_ant"] == 25.29 and fo["ccl_ant"] == 1800.0
+
+
+def test_alarma_de_mi_lista_opina_al_sonar(almacen):
+    """24/11 (NVDA): la alarma de Mi lista no trae un "no es momento" escrito de antemano; la mesa mira al sonar.
+    Las de tu cartera (alarma de venta) siguen con su nota."""
+    from mesa.ronda import _alertas_niveles
+    from tests.conftest import serie
+    vs = serie(300)
+    pr = vs[-1]["cierre"]
+
+    class _C:
+        def velas(self, t):
+            return vs
+    ctx = Contexto(date(2026, 10, 17), "12:00", {"cedears": [{"simbolo": "NVDA", "ultimo": pr}], "acciones": [{"simbolo": "GGAL", "ultimo": pr}]})
+    ctx.cache = _C()
+    lista = [{"ticker": "NVDA", "alertas": [{"id": "a1", "tipo": "baja", "nivel": pr * 1.1, "nota": "no es momento de entrar"}]}]
+    cart = [{"ticker": "GGAL", "alertas": [{"id": "a2", "tipo": "baja", "nivel": pr * 1.1, "nota": "Alarma de venta"}]}]
+    out = _alertas_niveles(ctx, lista + cart, almacen, False, de_lista={id(lista[0])})
+    t = {o["ticker"]: o["texto"] for o in out}
+    assert "no es momento" not in t["NVDA"] and "La mesa lo mira ahora" in t["NVDA"]
+    assert "Alarma de venta" in t["GGAL"] and "La mesa" not in t["GGAL"]

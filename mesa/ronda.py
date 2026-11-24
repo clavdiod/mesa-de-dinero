@@ -1271,7 +1271,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     previas = almacen.get("ui/alertas") or []
     ya_avisadas = {(a["fecha"], a["ticker"]) for a in previas}
     try:
-        alertas_niv = _alertas_niveles(ctx, lista + [c for c in cartera if c.get("alertas")], almacen, simular)
+        alertas_niv = _alertas_niveles(ctx, lista + [c for c in cartera if c.get("alertas")], almacen, simular,
+                                       de_lista={id(x) for x in lista if isinstance(x, dict)} - {id(c) for c in cartera})
     except Exception as ex:
         print(f"[alertas de nivel] {ex}")
         alertas_niv = []
@@ -1589,9 +1590,35 @@ def _graficos(ctx, cartera: list[dict], seg: dict) -> dict:
     return out
 
 
-def _alertas_niveles(ctx: Contexto, lista: list[dict], almacen, simular: bool) -> list[dict]:
+def _lectura_alarma(ctx: Contexto, tk: str) -> str:
+    """24/11 (NVDA: la alarma de US$150 decía "no es momento de entrar", escrito una semana antes, y sonó justo en el piso):
+    cuando suena una alarma de Mi lista, la mesa mira el papel EN ESE MOMENTO con la ficha en frío y recién ahí opina."""
+    try:
+        from .agentes import ficha_frio, estructura
+        t = ctx.titulo(tk) or {}
+        pr, velas = t.get("ultimo"), (ctx.cache.velas(tk) if ctx.cache else []) or []
+        if not pr or len(velas) < 80:
+            return "La mesa no tiene historia suficiente de este papel para opinar: revisalo antes de decidir."
+        atr = sum((v.get("maximo") or 0) - (v.get("minimo") or 0) for v in velas[-14:]) / 14
+        dist = min(0.15, max(0.06, 2.5 * atr / pr))
+        plan = {"ticker": tk, "entrada": pr, "stop": pr * (1 - dist), "objetivo": pr * 1.15}
+        est = estructura.leer(velas[-300:], pr, t.get("grupo")) or {}
+        f = ficha_frio.ficha(velas[-400:], pr, plan, est, [], t.get("grupo"))
+        if not f:
+            return "La mesa no pudo revisarlo ahora: miralo antes de decidir."
+        if f.get("veredicto") == "acompañan":
+            return f"La mesa lo mira ahora: ✅ los números acompañan a {_ar(pr)} (alarma de venta sugerida {_ar(plan['stop'])}, -{dist * 100:.0f}%)."
+        return "La mesa lo mira ahora: ⏸ todavía no. " + ficha_frio.motivo_corto(f, None, pr) + "."
+    except Exception as ex:
+        print(f"[alarma lista] {tk}: {ex}")
+        return "La mesa no pudo revisarlo ahora: miralo antes de decidir."
+
+
+def _alertas_niveles(ctx: Contexto, lista: list[dict], almacen, simular: bool, de_lista: set[int] | None = None) -> list[dict]:
     """Alertas de nivel que cargás en la app para cada favorito: "avisame si baja de X / sube de Y",
-    en pesos (precio de BYMA) o en dólares (precio de la acción en EE.UU., para CEDEARs). Cada una avisa una vez."""
+    en pesos (precio de BYMA) o en dólares (precio de la acción en EE.UU., para CEDEARs). Cada una avisa una vez.
+    24/11: las de Mi lista (papeles que no tenés) no traen un veredicto escrito de antemano: al sonar, la mesa corre
+    la ficha en frío con el precio de ese momento (_lectura_alarma). Las de tu cartera siguen con su nota (alarma de venta)."""
     items = [(it, al) for it in lista for al in (it.get("alertas") or []) if al.get("id") and al.get("nivel")]
     if not items:
         return []
@@ -1621,9 +1648,13 @@ def _alertas_niveles(ctx: Contexto, lista: list[dict], almacen, simular: bool) -
         if toca:
             disparadas[al["id"]] = {"fecha": ctx.fecha.isoformat(), "hora": ctx.hora, "precio": round(p, 4)}
             cambio = True
+            if de_lista and id(it) in de_lista:
+                extra = " " + (_lectura_alarma(ctx, tk) if not simular else "")
+            else:
+                extra = f" {al['nota']}" if al.get("nota") else ""
             out.append({"fecha": ctx.fecha.isoformat(), "hora": ctx.hora, "ticker": tk, "id": al["id"],
-                        "texto": f"🔔 {tk} {'bajó de' if al.get('tipo') == 'baja' else 'superó'} {mon}{_ar(nivel)} (ahora {mon}{_ar(p)})."
-                                 + (f" {al['nota']}" if al.get("nota") else "")})
+                        "texto": (f"🔔 {tk} {'bajó de' if al.get('tipo') == 'baja' else 'superó'} {mon}{_ar(nivel)} (ahora {mon}{_ar(p)})."
+                                  + extra).rstrip()})
     if cambio and not simular:
         almacen.put("alertas/disparadas", disparadas)
     return out
