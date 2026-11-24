@@ -92,3 +92,23 @@ def test_soporte_ignora_vela_rota_con_minimo_cero():
     precio = min(v["minimo"] for v in vs if v["minimo"]) * 0.5  # todo lo sano queda arriba: antes el "soporte" era 0
     sop = calc.soporte_cercano(vs, precio)
     assert sop is None or sop["nivel"] > 0
+
+
+def test_motivo_corto_con_precios():
+    from mesa.agentes.ficha_frio import motivo_corto
+    f = {"veredicto": "cara", "entrada_mejor": 8332.0, "entrada_cara": ["la entrada está en el 99% más alto de su rango de 3 meses"]}
+    m = motivo_corto(f, 8880.9, 8850.0)
+    assert m.startswith("entrada cara: precio actual 8.850; entrada del plan 8.881; precio razonable 8.332 o menos (5,9% más abajo)")
+    assert "99%" in m
+    f2 = {"veredicto": "dudosos", "alertas": ["el caso típico terminó en -3,3% a un mes"]}
+    assert motivo_corto(f2, 100.0, 100.0) == "números flojos: precio actual 100; el caso típico terminó en -3,3% a un mes"
+
+
+def test_parte_dice_cartera_o_lista():
+    from mesa.ronda import _parte_ronda
+    ctx = _ctx()
+    al = [{"fecha": "2026-11-24", "ticker": "IBB (radar)", "tipo": "radar", "texto": "IBB: en Nueva York va +5%"}]
+    p = _parte_ronda(ctx, date(2026, 11, 24), [], [], al, [], [], [], 3, [{"ticker": "GGAL"}])
+    assert "novedad en tu lista" in p["titulo"]
+    p = _parte_ronda(ctx, date(2026, 11, 24), [], [], al, [], [], [], 3, [{"ticker": "IBB"}])
+    assert "novedad en tu cartera" in p["titulo"]

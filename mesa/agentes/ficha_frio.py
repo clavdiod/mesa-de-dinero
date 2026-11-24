@@ -210,6 +210,30 @@ def ficha(velas: list[dict], precio: float, plan: dict, estructura: dict | None,
     return out
 
 
+def motivo_corto(f: dict | None, entrada: float | None = None, precio: float | None = None) -> str:
+    """24/11 (Clau: "para saber por qué no siguió aunque estaba seleccionada", "el precio actual también"): el motivo
+    concreto en una línea, con el precio de ahora, la entrada del plan y el precio razonable."""
+    def n(x):
+        return f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if x < 100 else f"{x:,.0f}".replace(",", ".")
+    precios = []
+    if precio:
+        precios.append(f"precio actual {n(precio)}")
+    if entrada and (not precio or abs(entrada / precio - 1) > 0.002):
+        precios.append(f"entrada del plan {n(entrada)}")
+    if not f:
+        return "; ".join(precios + ["sin datos para revisar en frío"])
+    v = f.get("veredicto")
+    if v == "cara":
+        mejor, base = f.get("entrada_mejor"), precio or entrada
+        if mejor and base:
+            pct = f"{(1 - mejor / base) * 100:.1f}".replace(".", ",")
+            precios.append(f"precio razonable {n(mejor)} o menos ({pct}% más abajo)")
+        return "entrada cara: " + "; ".join(precios + (f.get("entrada_cara") or [])[:1])
+    if v in ("dudosos", "en contra"):
+        return ("números flojos: " if v == "dudosos" else "números en contra: ") + "; ".join(precios + (f.get("alertas") or []))
+    return "; ".join(precios + ["los números acompañan"])
+
+
 def texto(f: dict | None) -> str:
     if not f:
         return ""

@@ -962,8 +962,9 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
         for a_ in (comite_estado.get("acta") or []) + ((comite_estado.get("historial") or {}).get(hoy.isoformat()) or []):
             if a_.get("ticker") == e["ticker"]:
                 a_["frio"] = ff_.get("veredicto") or "sin datos"
-                a_["frio_motivo"] = "; ".join((ff_.get("entrada_cara") or []) + (ff_.get("alertas") or []))[:300]
+                a_["frio_motivo"] = _ff.motivo_corto(ff_, pl.get("entrada"), (ctx.titulo(e["ticker"]) or {}).get("ultimo"))[:400]  # 24/11: con precio de entrada y precio razonable
                 a_["propuesta"] = ff_.get("veredicto") == "acompañan"
+        e["frio_corto"] = _ff.motivo_corto(e.get("ficha_frio"), pl.get("entrada"), (ctx.titulo(e["ticker"]) or {}).get("ultimo"))
         if (e.get("ficha_frio") or {}).get("veredicto") != "acompañan":  # 04/11: solo pasa si TODOS los números acompañan (antes pasaba con 1 en contra)
             print(f"[ficha en frío] {e['ticker']} no se propone: {e['ficha_txt']}")
             continue  # si los números en frío no acompañan, no llega a vos
@@ -1424,8 +1425,12 @@ def _parte_ronda(ctx, hoy, nuevas, avisos_cartera, alertas, evaluados, debatidos
     otras = [a for a in alertas if a.get("tipo") != "buen_dia"]
     if otras:
         a = otras[0]
+        # 24/11 (Clau: "no tengo más IBB"): lo que está solo en Mi lista no es "lo tuyo"; se dice dónde está
+        en_cart = {str(c.get("ticker", "")).upper() for c in cartera or []}
+        tk_a = str(a.get("ticker", "")).split(" ")[0].replace("📡", "").strip().upper()
+        donde = "tu cartera" if tk_a in en_cart or tk_a[:-1] in en_cart else "tu lista" if a.get("tipo") in ("radar", "anticipo", "lista") or "radar" in str(a.get("ticker", "")) else "lo tuyo"
         return {"fecha": hoy.isoformat(), "hora": hora, "nivel": "novedad",
-                "titulo": f"🔔 Ronda {hora}: novedad en lo tuyo",
+                "titulo": f"🔔 Ronda {hora}: novedad en {donde}",
                 "texto": corto(f"{a.get('ticker', '')}: {a.get('texto', '')}".strip(": "))
                          + (f" (+{len(otras) - 1} más)" if len(otras) > 1 else "")}
     # sin cambios: se decidió no invertir; el porqué en una línea
@@ -1441,13 +1446,15 @@ def _parte_ronda(ctx, hoy, nuevas, avisos_cartera, alertas, evaluados, debatidos
         porque = f"el Comité votó {tks} y no aprobó ninguno"
     else:
         tks = ", ".join(e["ticker"] for e in elegidos[:3])
-        porque = f"el Comité aprobó {tks} pero la revisión en frío no acompañó (precio o números)"
+        # 24/11 (Clau): el motivo de cada uno, con números, en vez de "precio o números"
+        det = " · ".join(f"{e['ticker']} {e.get('frio_corto') or 'precio o números'}" for e in elegidos[:3])
+        porque = f"el Comité aprobó {tks} pero la revisión en frío no acompañó. {det}"
     clima = ctx.extra.get("clima_estado")
     rp = (ctx.riesgo_pais or {}).get("valor")
     marco = ", ".join(x for x in [f"clima {clima}" if clima else "", f"riesgo país {rp:,.0f}".replace(",", ".") if rp else ""] if x)
     texto = f"Se decidió no invertir: {porque}." + (" Lo tuyo, sin alarmas." if cartera else "") \
             + (f" Miró {n_mira} papeles" + (f"; {marco}." if marco else ".") if n_mira else "")
-    return {"fecha": hoy.isoformat(), "hora": hora, "nivel": "sin_cambios", "titulo": f"✅ Ronda {hora}: sin cambios", "texto": corto(texto, 220)}
+    return {"fecha": hoy.isoformat(), "hora": hora, "nivel": "sin_cambios", "titulo": f"✅ Ronda {hora}: sin cambios", "texto": corto(texto, 700 if " · " in texto else 220)}
 
 
 def _buen_dia(ctx, cartera, eventos, hoy) -> dict:
