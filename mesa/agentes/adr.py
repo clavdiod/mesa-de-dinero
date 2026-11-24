@@ -26,6 +26,29 @@ def _ret(serie: dict[str, float], fecha: str) -> float | None:
     return (serie[fs[-1]] / serie[fs[-2]] - 1) * 100
 
 
+def _al(serie: dict[str, float], fecha: str) -> float | None:
+    """Valor de la serie en `fecha` o el último anterior."""
+    fs = [f for f in serie if f <= fecha]
+    return serie[max(fs)] if fs else None
+
+
+def brecha_tras_feriado(local: dict[str, float], adr: dict[str, float], ccl: dict[str, float], ayer: str, hoy: str) -> float | None:
+    """24/11: si Nueva York operó días en que acá no hubo mercado (feriado local), la noche que importa es la ÚLTIMA
+    rueda de Nueva York, no la de `ayer`. Se compara el ADR desde el cierre local anterior a `ayer` hasta su última rueda
+    antes de hoy, contra lo que la acción local se movió en `ayer`. Sin feriado da lo mismo que brecha()."""
+    ult = max((f for f in adr if f < hoy), default=None)
+    if not ult or ult <= ayer:
+        return brecha(local, adr, ccl, ayer)
+    fl = sorted(f for f in local if f <= ayer)
+    if len(fl) < 2 or fl[-1] != ayer:
+        return None
+    d0 = fl[-2]
+    a0, a1, c0, c1 = _al(adr, d0), adr[ult], _al(ccl, d0), _al(ccl, ult)
+    if not (a0 and c0 and c1):
+        return None
+    return round((a1 / a0 - 1) * 100 + (c1 / c0 - 1) * 100 - (local[ayer] / local[d0] - 1) * 100, 3)
+
+
 def brecha(local: dict[str, float], adr: dict[str, float], ccl: dict[str, float], fecha: str) -> float | None:
     rl, ra, rc = _ret(local, fecha), _ret(adr, fecha), _ret(ccl, fecha)
     if rl is None or ra is None or rc is None:
@@ -78,7 +101,7 @@ def senales_en(ctx, datos: dict, ccl_series: dict[str, float], minuto: int, umbr
             continue
         ayer = velas[-1]["fecha"] if velas[-1]["fecha"] < ctx.fecha.isoformat() else velas[-2]["fecha"]
         cierres = {v["fecha"]: v["cierre"] for v in velas if v["fecha"] <= ayer}
-        b = brecha(cierres, serie_adr, ccl_series, ayer)
+        b = brecha_tras_feriado(cierres, serie_adr, ccl_series, ayer, ctx.fecha.isoformat())
         if b is None:
             continue
         hoy_local = (t["ultimo"] / cierres[ayer] - 1) * 100
@@ -104,6 +127,24 @@ def foto(ctx, adrs_vivo: dict[str, dict], ccl: float | None) -> dict:
     return {"hora": ctx.hora, "ccl": ccl, "filas": filas}
 
 
+def base_feriado(fo: dict, ctx, adrs_hist: dict, ccl_series: dict[str, float], hoy: str) -> dict:
+    """24/11: después de un feriado local, el "cierre anterior" del ADR (Yahoo) es de una rueda que acá no existió, y la
+    brecha en vivo daba -3% a -6% falsos (la local ya había alcanzado al ADR en la apertura). Se toma como base el cierre
+    del ADR y el CCL del mismo día que el último cierre local. Sin feriado no cambia nada."""
+    ccl_base = None
+    for loc, fila in (fo.get("filas") or {}).items():
+        velas = ctx.cache.velas(loc) if ctx.cache else []
+        d = next((v["fecha"] for v in reversed(velas or []) if v["fecha"] < hoy), None)
+        serie = {f: c for f, c in adrs_hist.get(ADRS.get(loc), [])}
+        if not d or not any(d < f < hoy for f in serie) or not serie.get(d):
+            continue
+        fila["adr_ant"] = serie[d]
+        ccl_base = ccl_base or _al(ccl_series, d)
+    if ccl_base:
+        fo["ccl_ant"] = ccl_base
+    return fo
+
+
 def brecha_vivo(f: dict, ccl: float | None, ccl_ant: float | None) -> float | None:
     """Brecha en vivo: lo que el ADR (con el CCL) se movió hoy menos lo que se movió la acción local."""
     if not (f.get("adr_ant") and f.get("loc_ant") and ccl and ccl_ant):
@@ -125,7 +166,7 @@ def estadistica_del_dia(fotos: list[dict], ccl_ant: float | None, umbral: float 
     fotos = sorted(fotos, key=lambda x: _minutos(x["hora"]))
     for i, fo in enumerate(fotos):
         for loc, f in fo["filas"].items():
-            b = brecha_vivo(f, fo.get("ccl"), ccl_ant)
+            b = brecha_vivo(f, fo.get("ccl"), fo.get("ccl_ant") or ccl_ant)
             if b is None or abs(b) < umbral:
                 continue
             d = 1 if b > 0 else -1
