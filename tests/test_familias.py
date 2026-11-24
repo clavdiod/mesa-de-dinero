@@ -112,3 +112,40 @@ def test_parte_dice_cartera_o_lista():
     assert "novedad en tu lista" in p["titulo"]
     p = _parte_ronda(ctx, date(2026, 11, 24), [], [], al, [], [], [], 3, [{"ticker": "IBB"}])
     assert "novedad en tu cartera" in p["titulo"]
+
+
+def test_vigia_no_avisa_fuera_de_horario():
+    """24/11: Noche de Nueva York opina solo hasta las 13 h; callarse a la tarde no es estar caído."""
+    est = None
+    for i in range(12):
+        est, av = vigia.actualizar(est, {"adr", "historiador"}, "2026-11-24", f"11:{30 + i:02d}")
+    avisos = []
+    for i in range(20):
+        est, av = vigia.actualizar(est, {"historiador"}, "2026-11-24", f"14:{i:02d}")
+        avisos += av
+    assert not avisos and est["mudos"] == []
+
+
+def test_adr_tras_feriado_mira_la_ultima_noche():
+    """24/11: el lunes 23 fue feriado acá y Nueva York operó: la brecha tiene que incluir esa rueda."""
+    from mesa.agentes import adr
+    local = {"2026-11-19": 100.0, "2026-11-20": 98.0}
+    ny = {"2026-11-19": 26.07, "2026-11-20": 25.29, "2026-11-23": 26.62}
+    ccl = {"2026-11-19": 1800.0, "2026-11-20": 1800.0, "2026-11-23": 1800.0}
+    b = adr.brecha_tras_feriado(local, ny, ccl, "2026-11-20", "2026-11-24")
+    assert round(b, 1) == round((26.62 / 26.07 - 1) * 100 + 2.0, 1)  # +2,1% del ADR contra -2% local
+    assert adr.brecha_tras_feriado(local, ny, ccl, "2026-11-20", "2026-11-23") == adr.brecha(local, ny, ccl, "2026-11-20")
+
+
+def test_adr_en_vivo_tras_feriado_usa_base_local():
+    from mesa.agentes import adr
+
+    class _C:
+        def velas(self, t):
+            return [{"fecha": "2026-11-19"}, {"fecha": "2026-11-20"}]
+
+    class _Ctx:
+        cache = _C()
+    fo = {"filas": {"GGAL": {"adr": 26.0, "adr_ant": 26.62, "loc": 4600.0, "loc_ant": 4400.0}}}
+    fo = adr.base_feriado(fo, _Ctx(), {"GGAL": [["2026-11-20", 25.29], ["2026-11-23", 26.62]]}, {"2026-11-20": 1800.0}, "2026-11-24")
+    assert fo["filas"]["GGAL"]["adr_ant"] == 25.29 and fo["ccl_ant"] == 1800.0

@@ -13,6 +13,14 @@ HABITUAL = 0.8      # habla en 8 de cada 10 rondas o más
 RONDAS_MUDO = 6     # ~30 a 60 minutos de mercado
 SUAVE = 0.1         # cuánto pesa cada ronda nueva en la tasa (promedio móvil)
 MIN_RONDAS = 10     # con menos historia no se sabe si es habitual
+# 24/11: agentes que por diseño hablan solo en una franja (Noche de Nueva York opina hasta las 13 h). Fuera de su
+# horario no cuentan: ni como que hablaron ni como que se callaron (antes el Vigía daba una falsa alarma a las 14 h).
+HORARIO = {"adr": ("00:00", "13:00")}
+
+
+def en_horario(ag: str, hora: str) -> bool:
+    desde, hasta = HORARIO.get(ag, ("00:00", "23:59"))
+    return not hora or desde <= hora[:5] <= hasta
 
 
 def actualizar(previo: dict | None, hablaron: set[str], hoy: str, hora: str) -> tuple[dict, list[dict]]:
@@ -21,6 +29,8 @@ def actualizar(previo: dict | None, hablaron: set[str], hoy: str, hora: str) -> 
     ags = {k: dict(v) for k, v in ((previo or {}).get("agentes") or {}).items()}
     avisos = []
     for ag in set(ags) | set(hablaron):
+        if ag not in hablaron and not en_horario(ag, hora):
+            continue  # fuera de su franja: callarse es lo normal
         x = ags.setdefault(ag, {"tasa": 0.5, "rondas": 0, "sin": 0})  # nuevo: tiene que demostrar que habla seguido
         x["rondas"] = x.get("rondas", 0) + 1
         if ag in hablaron:
@@ -40,7 +50,8 @@ def actualizar(previo: dict | None, hablaron: set[str], hoy: str, hora: str) -> 
     # los que se fueron hace mucho (agentes dados de baja) dejan de contarse
     ags = {k: v for k, v in ags.items() if v.get("tasa", 0) >= 0.05 or k in hablaron}
     return {"fecha": hoy, "hora": hora, "agentes": ags,
-            "mudos": sorted(k for k, v in ags.items() if v.get("sin", 0) >= RONDAS_MUDO and v.get("tasa_antes", 0) >= HABITUAL)}, avisos
+            "mudos": sorted(k for k, v in ags.items() if v.get("sin", 0) >= RONDAS_MUDO and v.get("tasa_antes", 0) >= HABITUAL
+                            and en_horario(k, hora))}, avisos
 
 
 def aviso(ag: str, x: dict, hoy: str, hora: str) -> dict:

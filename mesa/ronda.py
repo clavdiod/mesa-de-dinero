@@ -184,6 +184,7 @@ def _radar_detectar(ctx, almacen, hoy, ya) -> list[dict]:
         ctx.extra["adr_vivo"] = vivo
         ccl_now = (ctx.dolares.get("contadoconliqui") or {}).get("venta")
         fo = adr.foto(ctx, vivo, ccl_now)
+        fo = adr.base_feriado(fo, ctx, datos.get("adrs") or {}, ccl, hoy.isoformat())  # 24/11: tras un feriado local
         brechas = {loc: adr.brecha_vivo(f, ccl_now, ccl_ay) for loc, f in fo["filas"].items()}
         alertas = radar.detectar(ctx, ya.hour * 60 + ya.minute, brechas, ctx.riesgo_pais_ayer, ccl_ay)
         # --- Anticipador: CEDEARs que todavía no copiaron lo que su acción ya hizo en Nueva York (incluye pre-market) ---
@@ -446,12 +447,13 @@ def _senales_adr(ctx, almacen, hoy, ya, simular) -> list[Senal]:
         # mismo CCL que la serie histórica (dolarapi/argentinadatos), para no mezclar fuentes en la brecha
         ccl_now = (ctx.dolares.get("contadoconliqui") or {}).get("venta") or ctx.extra.get("ccl_al30")
         fo = adr.foto(ctx, vivo, ccl_now)
+        fo = adr.base_feriado(fo, ctx, datos.get("adrs") or {}, ccl, hoy.isoformat())  # 24/11: tras un feriado local
         if fo["filas"]:
             clave = f"adr/fotos/{hoy.isoformat()}"
             fotos = (almacen.get(clave) or []) + [fo]
             almacen.put(clave, fotos[-120:])
         ccl_ant = next((v for f, v in sorted(ccl.items(), reverse=True) if f < hoy.isoformat()), None)
-        en_vivo = sorted(({"ticker": loc, "adr": adr.ADRS[loc], "brecha": adr.brecha_vivo(f, ccl_now, ccl_ant)}
+        en_vivo = sorted(({"ticker": loc, "adr": adr.ADRS[loc], "brecha": adr.brecha_vivo(f, ccl_now, fo.get("ccl_ant") or ccl_ant)}
                           for loc, f in fo["filas"].items()), key=lambda x: -abs(x["brecha"] or 0))
         ctx.extra["adr_tabla"] = {"hora": ctx.hora, "filas": sorted(tabla, key=lambda x: -abs(x["resta"])) if tabla else [],
                                   "vivo": [x for x in en_vivo if x["brecha"] is not None],
