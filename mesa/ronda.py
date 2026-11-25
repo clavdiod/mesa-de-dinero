@@ -1643,6 +1643,8 @@ def _alertas_niveles(ctx: Contexto, lista: list[dict], almacen, simular: bool, d
             t = ctx.titulo(tk) or {}
             p = t.get("ultimo")
             lo, hi = t.get("minimo") or p, t.get("maximo") or p
+            if al.get("creada") == ctx.fecha.isoformat():
+                lo = hi = p  # 25/11: METR, alarma subida a 1.737,5 a las 14:20 sonó con el mínimo de las 13:10 ("bajó de 1.737,50 (ahora 1.801)")
             mon = "$"
         if not p:
             continue

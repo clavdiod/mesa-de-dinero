@@ -22,3 +22,15 @@ def test_alertas_de_nivel(monkeypatch):
     out = ronda._alertas_niveles(Ctx(), lista, al, False)
     assert {x["id"] for x in out} == {"a", "c"} and "bajó de US$" in out[0]["texto"]
     assert ronda._alertas_niveles(Ctx(), lista, al, False) == []   # avisa una sola vez
+
+
+def test_alarma_creada_hoy_no_suena_con_el_minimo_de_antes():
+    """25/11: METR, alarma subida a 1.737,5 después de la caída de las 13:10; sonó con el mínimo del día y el precio en 1.801."""
+    class C(Ctx):
+        def titulo(self, tk):
+            return {"METR": {"ultimo": 1801, "minimo": 1630, "maximo": 1830}}.get(tk)
+    hoy = C.fecha.isoformat()
+    cart = [{"ticker": "METR", "alertas": [{"id": "n", "tipo": "baja", "nivel": 1737.5, "moneda": "ARS", "creada": hoy},
+                                           {"id": "v", "tipo": "baja", "nivel": 1700, "moneda": "ARS", "creada": "2026-10-01"}]}]
+    out = ronda._alertas_niveles(C(), cart, A(), False)
+    assert [x["id"] for x in out] == ["v"]
