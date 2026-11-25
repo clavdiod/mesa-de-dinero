@@ -1632,6 +1632,8 @@ def _alertas_niveles(ctx: Contexto, lista: list[dict], almacen, simular: bool, d
             continue
         tk = it["ticker"]
         nivel = float(al["nivel"])
+        if al.get("moneda") != "USD" and (ctx.hora or "11:00") < "11:00":
+            continue  # 25/11: antes de las 11 el precio de BYMA es el de ayer ("bajó de $7.000 (ahora $7.000)" a las 10:45)
         if al.get("moneda") == "USD":
             base = tk[:-1] if tk[-1:] in ("D", "C") and ctx.titulo(tk[:-1]) else tk
             p = (vivo.get(base) or {}).get("precio")
