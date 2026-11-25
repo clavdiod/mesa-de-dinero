@@ -64,9 +64,10 @@ def test_jefe_recibe_votos_y_acierto():
 
 def test_vigia_avisa_una_vez_cuando_se_calla():
     est, todos = None, {"tecnico", "historiador"}
-    for i in range(20):
-        est, av = vigia.actualizar(est, todos, "2026-11-20", f"12:{i:02d}")
-        assert not av
+    for d in ("2026-11-18", "2026-11-19"):
+        for i in range(20):
+            est, av = vigia.actualizar(est, todos, d, f"12:{i:02d}")
+            assert not av
     avisos = []
     for i in range(10):
         est, av = vigia.actualizar(est, {"historiador"}, "2026-11-20", f"13:{i:02d}")
@@ -186,3 +187,22 @@ def test_posicion_respeta_la_alarma_del_plan():
                                   hora="11:10")
     x = out["TGSU2"]
     assert x["piso"] == 5283.75 and x["consejo"] != "Vender" and "posición a 3 meses" in x["fuente_objetivo"]
+
+
+def test_vigia_aprende_el_silencio_normal():
+    """25/11 (Acciones): habla a la tarde, cuando se junta volumen; a la mañana calla 12 rondas. No es estar caído."""
+    est = None
+    dias = ["2026-11-18", "2026-11-19", "2026-11-20", "2026-11-24", "2026-11-25"]
+    avisos = []
+    for d in dias:
+        for i in range(60):
+            habla = {"historiador"} | ({"acciones"} if i >= 12 else set())
+            est, av = vigia.actualizar(est, habla, d, f"{11 + i // 12}:{(i % 12) * 5:02d}")
+            avisos += av
+    assert not [a for a in avisos if a["agente"] == "acciones"]
+    assert est["agentes"]["acciones"]["max_sin"] >= 12
+    # si un día no habla nunca, ahí sí avisa (pasa el doble de su silencio normal)
+    for i in range(60):
+        est, av = vigia.actualizar(est, {"historiador"}, "2026-11-26", f"{11 + i // 12}:{(i % 12) * 5:02d}")
+        avisos += av
+    assert [a for a in avisos if a["agente"] == "acciones"]

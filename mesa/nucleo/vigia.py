@@ -13,6 +13,10 @@ HABITUAL = 0.8      # habla en 8 de cada 10 rondas o más
 RONDAS_MUDO = 6     # ~30 a 60 minutos de mercado
 SUAVE = 0.1         # cuánto pesa cada ronda nueva en la tasa (promedio móvil)
 MIN_RONDAS = 10     # con menos historia no se sabe si es habitual
+MIN_DIAS = 3        # 25/11: y tres días vistos, para conocer su silencio normal (Acciones parecía "habitual" con media tarde)
+# 25/11 (Acciones, "lleva 6 rondas sin decir nada" a las 12:20): hay agentes que hablan solo cuando pasa algo (Acciones
+# necesita volumen 1,5x, que a la mañana todavía no se juntó). Cada agente tiene su silencio normal más largo (max_sin):
+# el Vigía avisa solo si el silencio de hoy pasa el doble de eso.
 # 24/11: agentes que por diseño hablan solo en una franja (Noche de Nueva York opina hasta las 13 h). Fuera de su
 # horario no cuentan: ni como que hablaron ni como que se callaron (antes el Vigía daba una falsa alarma a las 14 h).
 HORARIO = {"adr": ("00:00", "13:00")}
@@ -21,6 +25,11 @@ HORARIO = {"adr": ("00:00", "13:00")}
 def en_horario(ag: str, hora: str) -> bool:
     desde, hasta = HORARIO.get(ag, ("00:00", "23:59"))
     return not hora or desde <= hora[:5] <= hasta
+
+
+def umbral(x: dict) -> int:
+    """Rondas de silencio para avisar: 6, o el doble del silencio normal más largo de ese agente."""
+    return max(RONDAS_MUDO, 2 * int(x.get("max_sin", 0)))
 
 
 def actualizar(previo: dict | None, hablaron: set[str], hoy: str, hora: str) -> tuple[dict, list[dict]]:
@@ -33,7 +42,11 @@ def actualizar(previo: dict | None, hablaron: set[str], hoy: str, hora: str) -> 
             continue  # fuera de su franja: callarse es lo normal
         x = ags.setdefault(ag, {"tasa": 0.5, "rondas": 0, "sin": 0})  # nuevo: tiene que demostrar que habla seguido
         x["rondas"] = x.get("rondas", 0) + 1
+        if x.get("dia") != hoy:
+            x["dia"], x["dias"] = hoy, x.get("dias", 0) + 1
         if ag in hablaron:
+            if x.get("sin", 0):
+                x["max_sin"] = max(x.get("max_sin", 0), x["sin"])  # un silencio que terminó solo, el mismo día: era normal
             x["tasa"] = round((1 - SUAVE) * x.get("tasa", 1.0) + SUAVE, 3)
             x["sin"] = 0
             x["ultima"] = f"{hoy} {hora}"
@@ -43,15 +56,15 @@ def actualizar(previo: dict | None, hablaron: set[str], hoy: str, hora: str) -> 
             x["tasa_antes"] = x.get("tasa", 1.0)  # lo habitual que era justo antes de callarse
         x["sin"] = x.get("sin", 0) + 1
         x["tasa"] = round((1 - SUAVE) * x.get("tasa", 1.0), 3)
-        if (x["sin"] >= RONDAS_MUDO and x.get("tasa_antes", 0) >= HABITUAL and x["rondas"] >= MIN_RONDAS
-                and x.get("avisado") != hoy):
+        if (x["sin"] >= umbral(x) and x.get("tasa_antes", 0) >= HABITUAL and x["rondas"] >= MIN_RONDAS
+                and x.get("dias", 0) >= MIN_DIAS and x.get("avisado") != hoy):
             x["avisado"] = hoy
             avisos.append(aviso(ag, x, hoy, hora))
     # los que se fueron hace mucho (agentes dados de baja) dejan de contarse
     ags = {k: v for k, v in ags.items() if v.get("tasa", 0) >= 0.05 or k in hablaron}
     return {"fecha": hoy, "hora": hora, "agentes": ags,
-            "mudos": sorted(k for k, v in ags.items() if v.get("sin", 0) >= RONDAS_MUDO and v.get("tasa_antes", 0) >= HABITUAL
-                            and en_horario(k, hora))}, avisos
+            "mudos": sorted(k for k, v in ags.items() if v.get("sin", 0) >= umbral(v) and v.get("tasa_antes", 0) >= HABITUAL
+                            and v.get("dias", 0) >= MIN_DIAS and en_horario(k, hora))}, avisos
 
 
 def aviso(ag: str, x: dict, hoy: str, hora: str) -> dict:
