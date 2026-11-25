@@ -170,3 +170,19 @@ def test_alarma_de_mi_lista_opina_al_sonar(almacen):
     t = {o["ticker"]: o["texto"] for o in out}
     assert "no es momento" not in t["NVDA"] and "La mesa lo mira ahora" in t["NVDA"]
     assert "Alarma de venta" in t["GGAL"] and "La mesa" not in t["GGAL"]
+
+
+def test_posicion_respeta_la_alarma_del_plan():
+    """25/11 (TGSU2): comprada ayer a 7.000 por una posición a 3 meses (alarma 5.284). A 6.985 no es "perforó el piso"."""
+    from mesa.agentes import proyeccion
+    from tests.conftest import serie
+    vs = [{**v, "cierre": v["cierre"] * 7 , "maximo": v["maximo"] * 7, "minimo": v["minimo"] * 7} for v in serie(120)]
+    pr = 6985.0
+    cart = [{"ticker": "TGSU2", "cantidad": 33, "precio": 7000.0, "fecha": "2026-11-24", "propuesta_id": "bceb78f8c2",
+             "alertas": [{"id": "s", "tipo": "baja", "nivel": 5283.75, "nota": "Alarma de venta (-24.5% de tu compra): la idea no se dio."}]}]
+    props = [{"id": "bceb78f8c2", "ticker": "TGSU2", "linea": "posicion", "meses": 3, "decision": "pendiente",
+              "plan": {"entrada": 7045.0, "stop": 5283.75, "objetivo": 8806.25}}]
+    out = proyeccion.para_cartera(cart, lambda t: {"ultimo": pr, "grupo": "acciones"}, lambda t: vs, {}, props, {}, {}, [], [],
+                                  hora="11:10")
+    x = out["TGSU2"]
+    assert x["piso"] == 5283.75 and x["consejo"] != "Vender" and "posición a 3 meses" in x["fuente_objetivo"]

@@ -109,6 +109,11 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
             mx.append(compra or precio)
             x["max_desde_compra"] = max(mx)
         p = abiertas.get(tk)
+        if not p and pos.get("propuesta_id"):
+            # 25/11 (TGSU2): una posición de 1 a 12 meses comprada por una propuesta de la mesa tiene su plan (alarma y objetivo).
+            # Antes se ignoraba, se usaba el piso técnico de un mes (2% abajo) y al +3% pedía subir la alarma a la compra:
+            # al otro día, con $15 de ruido, decía "VENDÉ TODO".
+            p = next((q for q in propuestas if q.get("id") == pos["propuesta_id"] and (q.get("plan") or {}).get("stop")), None)
         objetivo = piso = None
         fuente = None
         # la idea que te hizo comprar (Anticipador, Cazador, Corresponsal...): su objetivo es el que se probó, y manda
@@ -122,7 +127,8 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
         NOM_IDEA = {"anticipador": "Anticipador", "anticipador_arg": "Anticipador ARG", "anticipador_mundo": "Anticipador Mundo",
                     "ganadores": "Cazador de ganadores", "profesionales": "Herramientas de Wall Street", "mundo": "Corresponsal", "oportunidad": "Oportunidad"}
         if p:
-            objetivo, piso, fuente = p["plan"].get("objetivo"), p["plan"].get("stop"), "plan del Comité"
+            objetivo, piso = p["plan"].get("objetivo"), p["plan"].get("stop")
+            fuente = "plan del Comité" if p.get("decision") == "aprobada" else f"plan de la mesa (posición a {p.get('meses') or 'varios'} meses)"
         elif idea:
             objetivo = float(idea["ref"]) * (1 + float(idea["objetivo_pct"]) / 100)
             fuente = f"objetivo de la idea del {NOM_IDEA.get(idea['origen'], idea['origen'])} (+{idea['objetivo_pct']:.0f}% desde {_m(float(idea['ref']))}): es lo que se probó"
@@ -156,7 +162,8 @@ def para_cartera(cartera: list[dict], titulo, velas_de, opinion: dict, propuesta
                 piso = rg[0]
         # tu propio stop (una alerta de baja que dice "stop", en tus alertas o en la posición) manda sobre el técnico
         mio = [al for al in list((alertas or {}).get(tk, [])) + list(pos.get("alertas") or [])
-               if al.get("tipo") == "baja" and "stop" in str(al.get("nota", "")).lower() and "cerca" not in str(al.get("nota", "")).lower()
+               if al.get("tipo") == "baja" and any(w in str(al.get("nota", "")).lower() for w in ("stop", "alarma de venta"))
+               and "cerca" not in str(al.get("nota", "")).lower()
                and al.get("moneda", "ARS") == "ARS" and al.get("nivel")]
         if mio and not p:
             piso = max(float(al["nivel"]) for al in mio)
