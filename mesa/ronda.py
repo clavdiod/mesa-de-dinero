@@ -507,6 +507,12 @@ def _series_macro(almacen, hoy) -> dict:
     return guardado.get("series") or {}
 
 
+def respaldo_tarde(dt) -> bool:
+    """Un respaldo de GitHub que llega más de una hora después del cierre ya no sirve: solo mandaría avisos viejos."""
+    h, m = (int(x) for x in str(config()["mercado"]["cierre"]).split(":")[:2])
+    return dt.hour * 60 + dt.minute > h * 60 + m + 60
+
+
 def correr(forzar: bool = False, simular: bool = False) -> dict:
     almacen = almacen_por_defecto()
     ya = ahora()
@@ -529,6 +535,10 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     minuto_dia = ya.hour * 60 + ya.minute
     cada30 = bool(forzar or simular or minuto_dia % 30 < 5 or minuto_dia >= 16 * 60 + 55)
     if not simular and not forzar and os.environ.get("RESPALDO"):
+        # 25/11: el respaldo de las 17:52 llegó a las 19:26 (GitHub atrasa el schedule) y mandó un aviso con el
+        # mercado cerrado. Pasada una hora del cierre, el respaldo no hace nada.
+        if respaldo_tarde(ya):
+            return {"corrio": False, "motivo": "respaldo atrasado: el mercado ya cerró"}
         # respaldo de GitHub: solo trabaja si el reloj de Cloudflare no corrió rondas en los últimos 12 minutos
         est = almacen.get("ui/estado") or {}
         if est.get("fecha") == hoy.isoformat() and est.get("hora"):

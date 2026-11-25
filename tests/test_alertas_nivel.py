@@ -34,3 +34,11 @@ def test_alarma_creada_hoy_no_suena_con_el_minimo_de_antes():
                                            {"id": "v", "tipo": "baja", "nivel": 1700, "moneda": "ARS", "creada": "2026-10-01"}]}]
     out = ronda._alertas_niveles(C(), cart, A(), False)
     assert [x["id"] for x in out] == ["v"]
+
+
+def test_respaldo_atrasado_no_corre_con_el_mercado_cerrado():
+    """25/11: el respaldo de las 17:52 corrió a las 19:26 y mandó al celular la revisión del día otra vez."""
+    from datetime import datetime
+    assert ronda.respaldo_tarde(datetime(2026, 11, 25, 19, 26))
+    assert not ronda.respaldo_tarde(datetime(2026, 11, 25, 17, 52))
+    assert not ronda.respaldo_tarde(datetime(2026, 11, 25, 12, 0))
