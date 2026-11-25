@@ -35,7 +35,10 @@ def armar(a, hoy: date, panel: dict) -> list[str]:
         if clave in vistos:
             continue  # el mismo pronóstico anotado en pesos y en dólares (YPFD / YPFDD)
         vistos.add(clave)
-        est = {"se_dio": "✅ se cumplió", "fallo": "❌ falló (tocó el stop)", "no_se_dio": "⌛ venció sin cumplirse"}.get(x.get("estado"), x.get("estado"))
+        # 25/11: "falló (tocó el stop)" se leía como tu alarma de venta (PAMP); es el corte del pronóstico, no tu posición
+        sp = str(x.get("stop_pct") or "").replace(".", ",")
+        est = {"se_dio": "✅ se cumplió", "fallo": f"❌ falló (fue {sp + '% ' if sp else ''}en contra antes de llegar; no es tu alarma)",
+               "no_se_dio": "⌛ venció sin cumplirse"}.get(x.get("estado"), x.get("estado"))
         puntos.append(f"{x.get('ticker')}: el pronóstico de {nombre(x.get('origen') or '')} {est}"
                       + (f" (iba a {'+' if (x.get('objetivo_pct') or 0) >= 0 else ''}{str(x.get('objetivo_pct')).replace('.', ',')}%)" if x.get("objetivo_pct") is not None else "") + ".")
 
