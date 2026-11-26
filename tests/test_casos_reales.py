@@ -75,3 +75,20 @@ def test_decision_de_mantener_se_respeta():
     ok, fuera = S.auditar(av, lambda tk: {"fecha": f"{hoy.isoformat()}T11:20:00", "ultimo": 2180}, hoy, "11:25",
                           {"TRAN": {"fecha": hoy.isoformat(), "accion": "mantener"}})
     assert not ok
+
+
+def test_devolver_ganancia_lo_deciden_los_agentes():
+    """26/11: PAMP llegó a +7,2% (4.600) y volvió a +3,1%: la mesa mandó 'VENDÉ LA MITAD'. Clau: que decidan los analistas."""
+    hoy = date(2026, 11, 26)
+    v = _velas(date(2025, 11, 1), 250, 4000, 0.0003)
+    pos = {"ticker": "PAMP", "cantidad": 20, "precio": 4290, "fecha": "2026-11-24"}
+    t = {"ultimo": 4423, "grupo": "acciones", "variacion": -1.0, "maximo": 4600, "fecha": f"{hoy.isoformat()}T11:00:00",
+         "cierre_anterior": 4440, "volumen": 10000}
+    pr = P.para_cartera([pos], lambda tk: t, lambda tk: v, {}, [], {}, {}, None, [], hora="11:00")
+    pr["PAMP"]["max_desde_compra"] = 4600
+    sigue = lambda *a: {"accion": "dejar_correr", "puntaje": 2, "a_favor": ["MACD positivo", "el gráfico es alcista"], "en_contra": []}
+    cae = lambda *a: {"accion": "vender_todo", "puntaje": -2, "a_favor": [], "en_contra": ["el gráfico sigue cayendo", "MACD negativo"]}
+    out, av = S.armar([pos], pr, {}, [], [], {}, {}, hoy, "11:00", [], {}, analizar_salida=sigue)
+    assert out["PAMP"]["sugerida"] == "mantener" and not av
+    out, av = S.armar([pos], pr, {}, [], [], {}, {}, hoy, "11:00", [], {}, analizar_salida=cae)
+    assert out["PAMP"]["sugerida"] == "vender_todo" and "más motivos para que siga bajando" in av[0]["texto"]
