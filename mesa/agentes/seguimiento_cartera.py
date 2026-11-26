@@ -182,9 +182,31 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         devolviendo = bool(abierto and gan_max is not None and gan_max >= 5 and res is not None and 0 < res <= gan_max / 2 - 0.5
                            and (dias or 0) >= 1)
         if devolviendo:
-            sug = "vender_todo" if (res or 0) <= 1.5 else "vender_mitad"
-            por_que = (f"Llegó a ganar {_m(gan_max, 1)}% (máximo {_p(mx)}) y ya devolvió más de la mitad: hoy vas {_m(res, 1)}%. "
-                       + ("Salí ahora con lo que queda de ganancia." if sug == "vender_todo" else "Asegurá al menos la mitad."))
+            # 26/11 (Clau: "prefiero que analicen los analistas y si creen que va a seguir subiendo la mantengo, no quiero
+            # asegurar ganancia de una posición tan chica"): devolver ganancia ya no vende la mitad por regla. Deciden los agentes:
+            # si ven más motivos para que baje, vender todo; si no, mantener (la alarma de venta sigue cuidando).
+            an = None
+            if analizar_salida:
+                try:
+                    an = analizar_salida(tk, precio, compra_p, precio, opinion.get(tk) or {})
+                except Exception as ex_s:
+                    print(f"[salida] {tk}: {ex_s}")
+            if (res or 0) <= 1.5:
+                # casi sin ganancia (LRCX 30/10 volvió a la compra): ya no es asegurar ganancia sino no pasar a pérdida
+                sug, por_que = "vender_todo", (f"Llegó a ganar {_m(gan_max, 1)}% (máximo {_p(mx)}) y volvió casi a tu compra: hoy vas {_m(res, 1)}%. "
+                                               "Salí ahora con lo que queda de ganancia.")
+            elif an:
+                fav_, con_ = an.get("a_favor") or [], an.get("en_contra") or []
+                baja = (an.get("puntaje") or 0) <= -1
+                sug = "vender_todo" if baja else "mantener"
+                por_que = (f"Llegó a ganar {_m(gan_max, 1)}% (máximo {_p(mx)}) y devolvió más de la mitad: hoy vas {_m(res, 1)}%. "
+                           + ("Los agentes ven más motivos para que siga bajando: vendé." if baja else
+                              "Los agentes no ven motivos para salir: mantené; la alarma de venta sigue cuidando.")
+                           + (" A favor de seguir: " + "; ".join(fav_) + "." if fav_ else "")
+                           + (" En contra: " + "; ".join(con_) + "." if con_ else ""))
+            else:  # sin el análisis de los agentes, el aviso de siempre
+                sug, por_que = "vender_mitad", (f"Llegó a ganar {_m(gan_max, 1)}% (máximo {_p(mx)}) y ya devolvió más de la mitad: hoy vas {_m(res, 1)}%. "
+                                                "Asegurá al menos la mitad.")
         elif cons.startswith("Dejar correr") and compra_p:
             # stop que sube solo: nunca debajo de tu compra ni del objetivo cumplido, y a ~6% del máximo alcanzado
             oi = x.get("objetivo_idea") or 0
