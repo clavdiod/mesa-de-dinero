@@ -32,14 +32,15 @@ def umbral(x: dict) -> int:
     return max(RONDAS_MUDO, 2 * int(x.get("max_sin", 0)))
 
 
-def actualizar(previo: dict | None, hablaron: set[str], hoy: str, hora: str) -> tuple[dict, list[dict]]:
+def actualizar(previo: dict | None, hablaron: set[str], hoy: str, hora: str, libres: set[str] | None = None) -> tuple[dict, list[dict]]:
     """previo: el estado de la ronda anterior. hablaron: agentes que dejaron alguna señal en esta ronda (aunque sea
-    "sin novedades"). Devuelve (estado nuevo, avisos para el celular)."""
+    "sin novedades"). libres: agentes que hoy callan con razón (27/11: Noche de Nueva York después de un feriado allá);
+    no cuentan, igual que fuera de horario. Devuelve (estado nuevo, avisos para el celular)."""
     ags = {k: dict(v) for k, v in ((previo or {}).get("agentes") or {}).items()}
     avisos = []
     for ag in set(ags) | set(hablaron):
-        if ag not in hablaron and not en_horario(ag, hora):
-            continue  # fuera de su franja: callarse es lo normal
+        if ag not in hablaron and (not en_horario(ag, hora) or ag in (libres or ())):
+            continue  # fuera de su franja (o sin datos nuevos por un feriado): callarse es lo normal
         x = ags.setdefault(ag, {"tasa": 0.5, "rondas": 0, "sin": 0})  # nuevo: tiene que demostrar que habla seguido
         x["rondas"] = x.get("rondas", 0) + 1
         if x.get("dia") != hoy:
@@ -64,7 +65,7 @@ def actualizar(previo: dict | None, hablaron: set[str], hoy: str, hora: str) -> 
     ags = {k: v for k, v in ags.items() if v.get("tasa", 0) >= 0.05 or k in hablaron}
     return {"fecha": hoy, "hora": hora, "agentes": ags,
             "mudos": sorted(k for k, v in ags.items() if v.get("sin", 0) >= umbral(v) and v.get("tasa_antes", 0) >= HABITUAL
-                            and v.get("dias", 0) >= MIN_DIAS and en_horario(k, hora))}, avisos
+                            and v.get("dias", 0) >= MIN_DIAS and en_horario(k, hora) and k not in (libres or ()))}, avisos
 
 
 def aviso(ag: str, x: dict, hoy: str, hora: str) -> dict:

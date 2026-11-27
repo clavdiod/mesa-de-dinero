@@ -206,3 +206,36 @@ def test_vigia_aprende_el_silencio_normal():
         est, av = vigia.actualizar(est, {"historiador"}, "2026-11-26", f"{11 + i // 12}:{(i % 12) * 5:02d}")
         avisos += av
     assert [a for a in avisos if a["agente"] == "acciones"]
+
+
+def test_vigia_no_avisa_noche_ny_tras_feriado_en_ny():
+    """27/11: el 26/11 Nueva York no operó (Acción de Gracias); Noche de Nueva York calló toda la mañana con razón."""
+    from mesa.agentes import adr
+    adrs = {"GGAL": [["2026-11-24", 50.0], ["2026-11-25", 51.0]], "YPF": [["2026-11-25", 30.0]]}
+    velas = [{"fecha": "2026-11-25"}, {"fecha": "2026-11-26"}, {"fecha": "2026-11-27"}]
+    assert adr.ny_sin_rueda(adrs, velas, "2026-11-27")
+    assert not adr.ny_sin_rueda(adrs, velas[:2], "2026-11-26")
+    est = None
+    for d in ("2026-11-23", "2026-11-24", "2026-11-25"):
+        for i in range(12):
+            est, _ = vigia.actualizar(est, {"adr", "historiador"}, d, f"11:{30 + i:02d}")
+    avisos = []
+    for i in range(10):
+        est, av = vigia.actualizar(est, {"historiador"}, "2026-11-27", f"12:{i * 5:02d}", libres={"adr"})
+        avisos += av
+    assert not avisos and est["mudos"] == []
+    for i in range(10):  # sin la razón, el mismo silencio sí avisa
+        est, av = vigia.actualizar(est, {"historiador"}, "2026-11-30", f"12:{i * 5:02d}")
+        avisos += av
+    assert avisos
+
+
+def test_parte_aviso_del_vigia_no_es_lo_tuyo():
+    """27/11: "Ronda 12:20: novedad en lo tuyo" para un agente callado, que no tiene nada que ver con tus papeles."""
+    from datetime import date
+    from types import SimpleNamespace
+    from mesa.ronda import _parte_ronda
+    ctx = SimpleNamespace(hora="12:20", por_simbolo={}, extra={"clima_estado": "neutro"}, riesgo_pais={"valor": 612.0})
+    al = [{"tipo": "agente_mudo", "ticker": "⚠️ Noche de Nueva York", "texto": "lleva 6 rondas sin decir nada"}]
+    p = _parte_ronda(ctx, date(2026, 11, 27), [], [], al, [], [], [], 0, [{"ticker": "PAMP"}])
+    assert p["titulo"] == "🔧 Ronda 12:20: aviso de la mesa"

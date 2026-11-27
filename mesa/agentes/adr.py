@@ -49,6 +49,13 @@ def brecha_tras_feriado(local: dict[str, float], adr: dict[str, float], ccl: dic
     return round((a1 / a0 - 1) * 100 + (c1 / c0 - 1) * 100 - (local[ayer] / local[d0] - 1) * 100, 3)
 
 
+def ny_sin_rueda(adrs: dict, velas_local: list[dict], hoy: str) -> bool:
+    """27/11: True si Nueva York no operó la última rueda local antes de hoy (feriado allá, ej. Acción de Gracias)."""
+    ult_ny = max((f for serie in adrs.values() for f, _ in (serie or []) if f < hoy), default=None)
+    ult_loc = max((v["fecha"] for v in velas_local if v.get("fecha", "") < hoy), default=None)
+    return bool(ult_ny and ult_loc and ult_ny < ult_loc)
+
+
 def brecha(local: dict[str, float], adr: dict[str, float], ccl: dict[str, float], fecha: str) -> float | None:
     rl, ra, rc = _ret(local, fecha), _ret(adr, fecha), _ret(ccl, fecha)
     if rl is None or ra is None or rc is None:
