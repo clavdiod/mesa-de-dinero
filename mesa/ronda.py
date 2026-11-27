@@ -445,6 +445,9 @@ def _senales_adr(ctx, almacen, hoy, ya, simular) -> list[Senal]:
             almacen.put("adr/datos", datos)
         ccl = ((almacen.get("macro/series") or {}).get("series") or {}).get("ccl") or {}
         sen, tabla = adr.senales_en(ctx, datos, ccl, ya.hour * 60 + ya.minute)
+        # 27/11: el 26/11 Nueva York no operó (Acción de Gracias): no hubo "noche" que comparar y el agente calla con razón
+        if not sen and adr.ny_sin_rueda(datos.get("adrs") or {}, ctx.cache.velas("GGAL") if ctx.cache else [], hoy.isoformat()):
+            ctx.extra.setdefault("vigia_libres", set()).add("adr")
         # histórico propio: una foto por ronda (ADR en vivo, acción local, CCL) para armar estadística
         vivo = ctx.extra.get("adr_vivo") or {a: gratis.yahoo_vivo(a) for a in set(adr.ADRS.values())}
         # mismo CCL que la serie histórica (dolarapi/argentinadatos), para no mezclar fuentes en la brecha
@@ -1304,7 +1307,8 @@ def correr(forzar: bool = False, simular: bool = False) -> dict:
     if not simular and "11:30" <= (ctx.hora or "") <= "16:55":  # con el mercado andando (antes de las 11 varios callan siempre)
         try:
             from .nucleo import vigia as _vig
-            vigia_estado, avisos_vig = _vig.actualizar(estado_ui.get("vigia"), {s_.agente for s_ in senales}, hoy.isoformat(), ctx.hora or "")
+            vigia_estado, avisos_vig = _vig.actualizar(estado_ui.get("vigia"), {s_.agente for s_ in senales}, hoy.isoformat(), ctx.hora or "",
+                                                       libres=ctx.extra.get("vigia_libres") or set())
             alertas_lista += avisos_vig
         except Exception as ex:
             print(f"[vigia] {ex}")
@@ -1445,8 +1449,10 @@ def _parte_ronda(ctx, hoy, nuevas, avisos_cartera, alertas, evaluados, debatidos
         en_cart = {str(c.get("ticker", "")).upper() for c in cartera or []}
         tk_a = str(a.get("ticker", "")).split(" ")[0].replace("📡", "").strip().upper()
         donde = "tu cartera" if tk_a in en_cart or tk_a[:-1] in en_cart else "tu lista" if a.get("tipo") in ("radar", "anticipo", "lista") or "radar" in str(a.get("ticker", "")) else "lo tuyo"
+        # 27/11: el Vigía habla de la mesa (un agente callado), no de tus papeles
+        titulo = f"🔧 Ronda {hora}: aviso de la mesa" if a.get("tipo") == "agente_mudo" else f"🔔 Ronda {hora}: novedad en {donde}"
         return {"fecha": hoy.isoformat(), "hora": hora, "nivel": "novedad",
-                "titulo": f"🔔 Ronda {hora}: novedad en {donde}",
+                "titulo": titulo,
                 "texto": corto(f"{a.get('ticker', '')}: {a.get('texto', '')}".strip(": "))
                          + (f" (+{len(otras) - 1} más)" if len(otras) > 1 else "")}
     # sin cambios: se decidió no invertir; el porqué en una línea
