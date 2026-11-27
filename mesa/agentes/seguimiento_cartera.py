@@ -72,8 +72,11 @@ def replantear_plazo(tk: str, vence: str | None, compra: date | None, hoy: date,
     tope = sumar_ruedas(compra, 60) if compra else sumar_ruedas(hoy, 60)
     # 1) balance antes del final: el plazo termina el día anterior (en el balance puede saltar para cualquier lado)
     base = tk[:-1] if tk[-1:] in ("D", "C") else tk
-    bal = next((e for e in eventos or [] if e.get("tipo") == "balance" and e.get("ticker") in (tk, base)
-                and hoy.isoformat() <= e.get("fecha", "") <= v.isoformat()), None)
+    # 27/11: en una posición a meses (40 ruedas o más) el balance es parte del plan: no corta el plazo (si no, cada
+    # balance del trimestre terminaba en "se cumplió el plazo: vendé").
+    meses_ = bool(compra and ruedas_entre(compra, v) >= 40)
+    bal = None if meses_ else next((e for e in eventos or [] if e.get("tipo") == "balance" and e.get("ticker") in (tk, base)
+                                    and hoy.isoformat() <= e.get("fecha", "") <= v.isoformat()), None)
     if bal:
         b = date.fromisoformat(bal["fecha"]) - timedelta(days=1)
         while b.weekday() >= 5:
@@ -181,7 +184,8 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         # "devolviste la ganancia" no tiene sentido: ahí manda la alarma de venta.
         # 27/11 (EDN, posición a 3 meses: "VENDÉ TODO" al día siguiente de comprarla porque subió 6% y volvió a +1,4%): en una
         # idea larga el ida y vuelta de un día es ruido; ahí mandan la alarma y el objetivo del plan, no esta regla.
-        plan_largo = bool(total and total >= 40) or any(p_.get("id") == pos.get("propuesta_id") and p_.get("linea") == "posicion"
+        total_base = ruedas_entre(compra_d, date.fromisoformat(vence_base)) if compra_d and vence_base else None
+        plan_largo = bool(total_base and total_base >= 40) or any(p_.get("id") == pos.get("propuesta_id") and p_.get("linea") == "posicion"
                                                        for p_ in propuestas if pos.get("propuesta_id"))
         devolviendo = bool(abierto and not plan_largo and gan_max is not None and gan_max >= 5 and res is not None
                            and 0 < res <= gan_max / 2 - 0.5 and (dias or 0) >= 1)
