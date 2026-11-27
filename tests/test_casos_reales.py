@@ -126,3 +126,14 @@ def test_posicion_larga_no_vende_la_mitad_porque_la_mesa_este_en_contra():
     nots = {"METR": [{"dir": -1, "fuerza": 0.5, "texto": "Titular en contra", "agente": "noticias"}]}
     out, av = S.armar([pos], pr, op, props, [], {}, {}, hoy, "15:50", [], nots)
     assert out["METR"]["sugerida"] not in ("vender_todo", "vender_mitad") and not any("VEND" in a["ticker"] for a in av)
+
+
+def test_posicion_larga_el_balance_no_corta_el_plazo():
+    """27/11: en una posición a 3 meses el balance del trimestre no puede terminar en 'se cumplió el plazo: vendé'."""
+    from mesa.agentes.seguimiento_cartera import replantear_plazo
+    hoy = date(2026, 11, 27)
+    ev = [{"tipo": "balance", "ticker": "EDN", "fecha": "2026-12-03"}]
+    v, mot = replantear_plazo("EDN", "2027-02-24", date(2026, 11, 26), hoy, {}, {}, ev, [])
+    assert v == "2027-02-24" and not mot
+    v, mot = replantear_plazo("EDN", "2026-12-15", date(2026, 11, 26), hoy, {}, {}, ev, [])  # idea corta: sí lo corta
+    assert v < "2026-12-03" and "balance" in mot[0]
