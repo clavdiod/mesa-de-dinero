@@ -223,6 +223,12 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
             sug, por_que = ("subir_stop" if nuevo_stop else "mantener"), x.get("motivo")
         elif cons.startswith("Vender"):
             sug, por_que = "vender_todo", x.get("motivo")
+        elif (cons == "Tomar parte" and plan_largo and not (x.get("objetivo_idea") and precio >= float(x["objetivo_idea"]))):
+            # 27/11 (METR, posición a 3 meses en +11,8%: "VENDÉ LA MITAD: la mesa hoy está en contra"): en una idea a meses, que la
+            # mesa esté en contra un día no alcanza para vender una parte (Clau no quiere "asegurar" por regla). Mandan la alarma y
+            # el objetivo del plan; si los agentes ven motivos fuertes para que baje, lo dice la alarma de venta.
+            sug, por_que = "mantener", (f"La mesa hoy está en contra, pero es una posición a meses y vas {_m(res or 0, 1)}% arriba: "
+                                        "se mantiene; mandan la alarma de venta y el objetivo del plan.")
         elif cons.startswith("Tomar") and (res or 0) >= 1.5 and (dias or 0) >= 1:
             # 13/11: "tomar ganancia" solo si HAY ganancia (más que las comisiones) y no el mismo día de la compra
             # (COST: a los 12 minutos de comprarla, en -0,3%, decía "vendé la mitad: la mayor parte de la suba ya se dio")
