@@ -179,8 +179,12 @@ def armar(cartera: list[dict], proy: dict, opinion: dict, propuestas: list[dict]
         abierto = (hora or "00:00") >= "11:00"
         # 11/11: solo mientras todavía hay ganancia que cuidar. Si ya vas en pérdida (TRAN -8,7% decía "salí antes de perder"),
         # "devolviste la ganancia" no tiene sentido: ahí manda la alarma de venta.
-        devolviendo = bool(abierto and gan_max is not None and gan_max >= 5 and res is not None and 0 < res <= gan_max / 2 - 0.5
-                           and (dias or 0) >= 1)
+        # 27/11 (EDN, posición a 3 meses: "VENDÉ TODO" al día siguiente de comprarla porque subió 6% y volvió a +1,4%): en una
+        # idea larga el ida y vuelta de un día es ruido; ahí mandan la alarma y el objetivo del plan, no esta regla.
+        plan_largo = bool(total and total >= 40) or any(p_.get("id") == pos.get("propuesta_id") and p_.get("linea") == "posicion"
+                                                       for p_ in propuestas if pos.get("propuesta_id"))
+        devolviendo = bool(abierto and not plan_largo and gan_max is not None and gan_max >= 5 and res is not None
+                           and 0 < res <= gan_max / 2 - 0.5 and (dias or 0) >= 1)
         if devolviendo:
             # 26/11 (Clau: "prefiero que analicen los analistas y si creen que va a seguir subiendo la mantengo, no quiero
             # asegurar ganancia de una posición tan chica"): devolver ganancia ya no vende la mitad por regla. Deciden los agentes:
