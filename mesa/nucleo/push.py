@@ -93,6 +93,14 @@ def _respaldo(almacen, titulo: str, texto: str, prioridad: int = 4) -> bool:
 def avisar(almacen, titulo: str | None = None, texto: str | None = None, importante: bool = False) -> dict:
     """Manda el push a todos los celulares; maneja las vencidas y usa el respaldo si un aviso importante no llegó."""
     from ..nucleo.reloj import ahora
+    # 27/11: Clau usa ntfy. usuario/avisos.canal (por defecto "ambos", elegido por Clau): "app" (solo la app de la mesa; ntfy de respaldo), "ntfy" (todo por ntfy;
+    # la app de la mesa solo si ntfy falla) o "ambos". Lo sin novedad va a ntfy con prioridad baja (no suena).
+    canal = ((almacen.get("usuario/avisos") or {}).get("canal") or "ambos") if almacen is not None else "app"
+    por_ntfy = False
+    if canal in ("ntfy", "ambos") and titulo:
+        por_ntfy = _respaldo(almacen, titulo, texto or "Entrá a la mesa para ver el detalle.", 4 if importante else 2)
+        if canal == "ntfy" and por_ntfy:
+            return {"enviadas": 0, "vencidas": [], "ntfy": True}
     subs = almacen.get("push/suscripciones") or []
     res = enviar(subs)
     print(f"[push] {len(subs)} suscripciones, enviadas {res['enviadas']}: {res.get('codigos')}")
@@ -106,13 +114,13 @@ def avisar(almacen, titulo: str | None = None, texto: str | None = None, importa
         nuevo = not corte.get("desde")
         if nuevo:
             corte = {"desde": f"{t.date().isoformat()} {t.strftime('%H:%M')}", "avisado": False}
-        if not corte.get("avisado"):
+        if not corte.get("avisado") and not por_ntfy:
             av = _respaldo(almacen, "🔕 Se cortaron los avisos de la mesa",
                            "El celular dejó de recibir las notificaciones. Abrí la app de la mesa para reactivarlas (es automático).", 5)
             if av or nuevo:
                 corte["avisado"] = av
                 almacen.put("push/corte", corte)
-        if importante and titulo:
+        if importante and titulo and not por_ntfy:
             res["respaldo"] = _respaldo(almacen, titulo, texto or "Entrá a la mesa para ver el detalle.")
     elif (almacen.get("push/corte") or {}).get("desde"):
         almacen.put("push/corte", {})  # volvió a andar
