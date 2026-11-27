@@ -123,5 +123,6 @@ def test_posicion_larga_no_vende_la_mitad_porque_la_mesa_este_en_contra():
     op = {"METR": {"veredicto": "en contra", "a_favor": [], "en_contra": ["Técnico", "Economista"]}}
     pr = P.para_cartera([pos], lambda tk: t, lambda tk: v, op, props, {}, {}, None, [], hora="15:50")
     assert pr["METR"]["consejo"] == "Tomar parte"
-    out, av = S.armar([pos], pr, op, props, [], {}, {}, hoy, "15:50", [], {})
+    nots = {"METR": [{"dir": -1, "fuerza": 0.5, "texto": "Titular en contra", "agente": "noticias"}]}
+    out, av = S.armar([pos], pr, op, props, [], {}, {}, hoy, "15:50", [], nots)
     assert out["METR"]["sugerida"] not in ("vender_todo", "vender_mitad") and not any("VEND" in a["ticker"] for a in av)
