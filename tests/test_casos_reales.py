@@ -108,3 +108,20 @@ def test_posicion_larga_no_vende_por_devolver_un_dia():
     pr["EDN"]["max_desde_compra"] = 1152
     out, av = S.armar([pos], pr, {}, props, [], {}, {}, hoy, "14:10", [], {})
     assert out["EDN"]["sugerida"] not in ("vender_todo", "vender_mitad") and not av
+
+
+def test_posicion_larga_no_vende_la_mitad_porque_la_mesa_este_en_contra():
+    """27/11 15:50: METR (posición a 3 meses, compra 1.668, hoy 1.865): 'VENDÉ LA MITAD: la mesa hoy está en contra'."""
+    hoy = date(2026, 11, 27)
+    v = _velas(date(2025, 11, 1), 250, 1700, 0.0003)
+    pos = {"ticker": "METR", "cantidad": 44, "precio": 1668, "fecha": "2026-11-25", "propuesta_id": "513", "objetivo_idea": 2087.5,
+           "alertas": [{"tipo": "baja", "nivel": 1252.5, "moneda": "ARS", "nota": "Alarma de venta, stop del plan"}]}
+    props = [{"id": "513", "ticker": "METR", "linea": "posicion", "meses": 3, "decision": "pendiente",
+              "plan": {"entrada": 1670, "stop": 1252.5, "objetivo": 2087.5, "vence": "2027-02-23"}}]
+    t = {"ultimo": 1865, "grupo": "acciones", "variacion": 1.0, "maximo": 1880, "fecha": f"{hoy.isoformat()}T15:50:00",
+         "cierre_anterior": 1846, "volumen": 10000}
+    op = {"METR": {"veredicto": "en contra", "a_favor": [], "en_contra": ["Técnico", "Economista"]}}
+    pr = P.para_cartera([pos], lambda tk: t, lambda tk: v, op, props, {}, {}, None, [], hora="15:50")
+    assert pr["METR"]["consejo"] == "Tomar parte"
+    out, av = S.armar([pos], pr, op, props, [], {}, {}, hoy, "15:50", [], {})
+    assert out["METR"]["sugerida"] not in ("vender_todo", "vender_mitad") and not any("VEND" in a["ticker"] for a in av)
