@@ -92,3 +92,19 @@ def test_devolver_ganancia_lo_deciden_los_agentes():
     assert out["PAMP"]["sugerida"] == "mantener" and not av
     out, av = S.armar([pos], pr, {}, [], [], {}, {}, hoy, "11:00", [], {}, analizar_salida=cae)
     assert out["PAMP"]["sugerida"] == "vender_todo" and "más motivos para que siga bajando" in av[0]["texto"]
+
+
+def test_posicion_larga_no_vende_por_devolver_un_dia():
+    """27/11: EDN (posición a 3 meses, comprada el 26/11 a 1.087) llegó a 1.152 y volvió a +1,4%: 'VENDÉ TODO AHORA'."""
+    hoy = date(2026, 11, 27)
+    v = _velas(date(2025, 11, 1), 250, 1000, 0.0003)
+    pos = {"ticker": "EDN", "cantidad": 55, "precio": 1087, "fecha": "2026-11-26", "propuesta_id": "ee0",
+           "alertas": [{"tipo": "baja", "nivel": 817.5, "moneda": "ARS", "nota": "Alarma de venta, stop del plan"}]}
+    props = [{"id": "ee0", "ticker": "EDN", "linea": "posicion", "meses": 3, "decision": "pendiente",
+              "plan": {"entrada": 1090, "stop": 817.5, "objetivo": 1362.5, "vence": "2027-02-24"}}]
+    t = {"ultimo": 1102, "grupo": "acciones", "variacion": -1.0, "maximo": 1152, "fecha": f"{hoy.isoformat()}T14:10:00",
+         "cierre_anterior": 1110, "volumen": 10000}
+    pr = P.para_cartera([pos], lambda tk: t, lambda tk: v, {}, props, {}, {}, None, [], hora="14:10")
+    pr["EDN"]["max_desde_compra"] = 1152
+    out, av = S.armar([pos], pr, {}, props, [], {}, {}, hoy, "14:10", [], {})
+    assert out["EDN"]["sugerida"] not in ("vender_todo", "vender_mitad") and not av
